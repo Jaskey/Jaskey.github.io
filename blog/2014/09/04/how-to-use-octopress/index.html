@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>StackOverGiant</title>
+  <title>如何使用Octopress,Windows7 - StackOverGiant</title>
   <meta name="author" content="Jaskey Lam">
 
   
@@ -21,7 +21,7 @@ http://www.techelex.org/setup-octopress-on-windows7/ 准备工作： 安装Git
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/09/04/how-to-use-octopress">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="StackOverGiant" type="application/atom+xml">
@@ -66,173 +66,12 @@ http://www.techelex.org/setup-octopress-on-windows7/ 准备工作： 安装Git
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2014/09/04/how-to-octopress/">如何使用Octopress,Windows7</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-04T17:26:00+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:26 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>原文链接：
-<a href="http://www.techelex.org/setup-octopress-on-windows7/">http://www.techelex.org/setup-octopress-on-windows7/</a></p>
-
-<h2>准备工作：</h2>
-
-<ol>
-<li><a href="http://git-scm.com/">安装Git</a></li>
-<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
-<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 use <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
-<li>建立一个文件夹，例如在C：/github</li>
-</ol>
-
-
-<p>配置Octopress:</p>
-
-<pre><code>cd c:/github
-git clone git://github.com/imathis/octopress.git octopress #clone一个仓库，此处替换 octopress 成为 username.github.io
-cd octopress #进入clone出来的项目
-ruby --version # 应该会报出ruby 版本如 Ruby 1.9.3
-</code></pre>
-
-<p>然后进行相关初始化：</p>
-
-<pre><code>cd C:/RubyDevKit
-ruby dk.rb init
-ruby dk.rb install
-</code></pre>
-
-<p>安装依赖：</p>
-
-<pre><code>cd c:/github/octopress #replace octopress with username.github.io
-gem install bundler
-bundle install
-</code></pre>
-
-<p>安装默认的OctoPress 主题：</p>
-
-<pre><code>rake install
-</code></pre>
-
-<hr />
-
-<h2>建立Github的仓库</h2>
-
-<p>命名为：你的名字.github.io</p>
-
-<h2>部署</h2>
-
-<pre><code>rake setup_github_pages
-</code></pre>
-
-<p>这样做的结果是：</p>
-
-<ol>
-<li>询问你的Github Pages 的仓库URL。</li>
-<li>从orgin重命名指向imathis/octopress 的remote 到octopress</li>
-<li>增加你的Github pages 的仓库为默认的 origin remote</li>
-<li>当前branch 从master 转换到source</li>
-<li>配置你的博客url
-
-<ol>
-<li>在_deploy文件下下配置一个master 分支用于开发</li>
-</ol>
-</li>
-</ol>
-
-
-<hr />
-
-<h2>发布：</h2>
-
-<pre><code>rake generate
-rake deploy
-</code></pre>
-
-<hr />
-
-<p>这样就会生成你的博客，复制生成的文件到_deploy/下，并增加到git，commit 和push到master分支。</p>
-
-<p>最后，commit源文件</p>
-
-<pre><code>git add .
-git commit -m '提交信息'
-git push origin source
-</code></pre>
-
-<p>现在，访问你的用户名.github.io就可以访问你的博客了。（第一次可能会延迟十几分钟）</p>
-
-<hr />
-
-<h2>新增博文</h2>
-
-<p>rake new_post[&ldquo;title&rdquo;]</p>
-
-<p>这里会生成一个markdown文件到source/_posts下</p>
-
-<p>修改此markdown文件，再次发布，即可看到新的博文。</p>
-
-<p>有关markdown的语法和使用请参看<a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a></p>
-
-<p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/09/04/"></a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-04T17:25:17+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:25 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content">
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/09/04/how-to-use-octopress/">如何使用Octopress,Windows7</a></h1>
+      <h1 class="entry-title">如何使用Octopress,Windows7</h1>
     
     
       <p class="meta">
@@ -248,7 +87,7 @@ git push origin source
   </header>
 
 
-  <div class="entry-content"><p>原文链接：
+<div class="entry-content"><p>原文链接：
 <a href="http://www.techelex.org/setup-octopress-on-windows7/">http://www.techelex.org/setup-octopress-on-windows7/</a></p>
 
 <h2>准备工作：</h2>
@@ -351,18 +190,46 @@ git push origin source
 
 <p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
 </div>
-  
-  
 
 
-    </article>
+  <footer>
+    <p class="meta">
+      
   
-  <div class="pagination">
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-09-04T15:28:49+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>3:28 pm</span></time>
+      
+
+
+    </p>
     
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/09/04/how-to-use-octopress/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/09/04/how-to-use-octopress/" >Tweet</a>
+  
+  
+  
 </div>
+
+    
+    <p class="meta">
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/09/04/" title="Next Post: "> &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
 <aside class="sidebar">
   
     <section>
@@ -390,6 +257,7 @@ git push origin source
 
   
 </aside>
+
 
     </div>
   </div>

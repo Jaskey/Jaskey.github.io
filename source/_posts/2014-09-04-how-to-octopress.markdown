@@ -59,6 +59,7 @@ http://www.techelex.org/setup-octopress-on-windows7/
 1. 当前branch 从master 转换到source
 1. 配置你的博客url
 1. 在_deploy文件下下配置一个master 分支用于开发
+
 ----------
 
 ## 发布： ##
@@ -82,7 +83,7 @@ http://www.techelex.org/setup-octopress-on-windows7/
 
 ----------
 ## 新增博文 ##
-rake new_post["title"]
+    rake new_post["title"]
 
 这里会生成一个markdown文件到source/_posts下
 

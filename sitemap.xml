@@ -8,29 +8,17 @@
     <priority>0.8</priority>
   </url>
   
-  <url>
-    <loc>http://Jaskey.github.io/blog/2014/09/04/</loc>
-    <lastmod>2014-09-04T17:25:17+08:00</lastmod>
-    <priority>0.8</priority>
-  </url>
-  
-  <url>
-    <loc>http://Jaskey.github.io/blog/2014/09/04/how-to-use-octopress/</loc>
-    <lastmod>2014-09-04T15:28:49+08:00</lastmod>
-    <priority>0.8</priority>
-  </url>
-  
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-09-04T17:29:10+08:00</lastmod>
+    <lastmod>2014-09-04T17:40:42+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-09-04T17:29:10+08:00</lastmod>
+    <lastmod>2014-09-04T17:40:42+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

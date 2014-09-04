@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-04T15:50:27+08:00</updated>
+  <updated>2014-09-04T17:10:24+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,22 +12,5 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
-  
-  <entry>
-    <title type="html"><![CDATA[First_test_post]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/04/first-post/"/>
-    <updated>2014-09-04T15:28:49+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/04/first-post</id>
-    <content type="html"><![CDATA[<h1>This is a test</h1>
-
-<pre><code>publci static void main test(){
-    // here is the test
-    public static void main(String[] agrs){
-        ;       
-    }
-}
-</code></pre>
-]]></content>
-  </entry>
   
 </feed>

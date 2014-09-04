@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-04T17:46:17+08:00</updated>
+  <updated>2014-09-04T17:50:14+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -110,7 +110,8 @@ git push origin source
 
 <h2>新增博文</h2>
 
-<p>rake new_post[&ldquo;title&rdquo;]</p>
+<pre><code>rake new_post["title"]
+</code></pre>
 
 <p>这里会生成一个markdown文件到source/_posts下</p>
 

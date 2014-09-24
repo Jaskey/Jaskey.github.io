@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Stackovergiant,java | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/stackovergiant-java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-24T19:24:59+08:00</updated>
+  <updated>2014-09-24T20:04:15+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -24,22 +24,24 @@
 
 <p>我们假如需要输出一个人的信息，我们可能有以下的类</p>
 
-<pre><code class="java ">public static void printPersons(
+<pre><code>public static void printPersons(
     List&lt;Person&gt; roster, CheckPerson tester) {
     for (Person p : roster) {
         if (tester.test(p)) {
             p.printPerson();
         }
     }
-}
-</code></pre>
+} 
 
-<pre><code class="java">interface CheckPerson {//接口，用于对于Person对象的验证
+
+
+interface CheckPerson {//接口，用于对于Person对象的验证
     boolean test(Person p);
 }
-</code></pre>
 
-<pre><code class="java">class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的CheckPerson实现 
+
+
+class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的CheckPerson实现 
     public boolean test(Person p) {
         return p.gender == Person.Sex.MALE &amp;&amp;
             p.getAge() &gt;= 18 &amp;&amp;
@@ -48,10 +50,10 @@
 }
 </code></pre>
 
-<p>然后当我们调用的时候，我们会写：
-<code>java
-printPersons(roster, new CheckPersonEligibleForSelectiveService());
-</code></p>
+<p>然后当我们调用的时候，我们会写：</p>
+
+<pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
+</code></pre>
 
 <p>显然，的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
 
@@ -59,7 +61,7 @@ printPersons(roster, new CheckPersonEligibleForSelectiveService());
 
 <p>这时候，我们就需要Lambda了。</p>
 
-<pre><code class="java">printPersons(
+<pre><code>printPersons(
     roster,
     (Person p) -&gt; p.getGender() == Person.Sex.MALE
         &amp;&amp; p.getAge() &gt;= 18
@@ -71,7 +73,7 @@ printPersons(roster, new CheckPersonEligibleForSelectiveService());
 
 <p>当然，我们原本也可以使用匿名类去解决这个问题</p>
 
-<pre><code class="java">printPersons(
+<pre><code>printPersons(
     roster,
     new CheckPerson() {
         public boolean test(Person p) {

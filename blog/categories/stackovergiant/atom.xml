@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Stackovergiant | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/stackovergiant/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-24T20:42:46+08:00</updated>
+  <updated>2014-09-24T20:48:59+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -34,8 +34,8 @@
 <p>stackoverflow相关讨论：</p>
 
 <ul>
-<li><p><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/" title="Advantage of Static class over use of Singleton">http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/</a></p></li>
-<li><p><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class/3715017#3715017" title="Difference between singleton class and static class?">http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class/3715017#3715017</a></p></li>
+<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
+<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
 </ul>
 
 ]]></content>

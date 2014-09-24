@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-24T18:44:00+08:00</updated>
+  <updated>2014-09-24T18:47:55+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,19 +14,11 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Difference Between Cookies and Sessions]]></title>
+    <title type="html"><![CDATA[Cookie 与 Session的区别]]></title>
     <link href="http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/"/>
-    <updated>2014-09-24T00:00:00+08:00</updated>
+    <updated>2014-09-24T18:20:05+08:00</updated>
     <id>http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions</id>
-    <content type="html"><![CDATA[<p>n&mdash;
-layout: post
-title: &ldquo;cookie 与 session的区别&rdquo;
-date: 2014-09-24 18:20:05 +0800
-comments: true</p>
-
-<h2>categories: stackovergiant</h2>
-
-<p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
+    <content type="html"><![CDATA[<p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
 
 <p>其实不是。</p>
 

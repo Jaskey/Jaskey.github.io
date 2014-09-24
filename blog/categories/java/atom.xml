@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-24T20:08:07+08:00</updated>
+  <updated>2014-09-24T20:41:04+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -55,7 +55,7 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
 <pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
 </code></pre>
 
-<p>显然，的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
+<p>显然，<code>Person</code>的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
 
 <p>那假如封装的只是一个函数，然后我们可以简单的传递这样一个函数就能做到这些的话，是不是就很好了呢？这样的话，我们就不需要又创建一个实现类，又自己说动新建一个对象来仅仅只是调用一个函数了。</p>
 

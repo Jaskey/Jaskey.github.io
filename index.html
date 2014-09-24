@@ -9,7 +9,9 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="我们借用官方文档的例子：http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1 看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。 我们假如需要输出一个人的信息， &hellip;">
+  <meta name="description" content="经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？ 所有方法都是一些工具类的方法，如Math类
+不希望被gc回收又不想自己去处理实例。
+很确定这个类将来也不会是有状态的（ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -71,6 +73,54 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014/09/24/when-to-use-static-class/">When to Use Static Class</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-24T20:26:02+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:26 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
+
+<ol>
+<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
+<li>不希望被gc回收又不想自己去处理实例。</li>
+<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
+</ol>
+
+
+<p>注：</p>
+
+<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
+
+<p>stackoverflow相关讨论：</p>
+
+<ul>
+<li><p><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/" title="Advantage of Static class over use of Singleton">http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/</a></p></li>
+<li><p><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class/3715017#3715017" title="Difference between singleton class and static class?">http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class/3715017#3715017</a></p></li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/09/24/why-java8-introduces-lamda/">为什么java8引进了Lambda表达式</a></h1>
     
     
@@ -124,7 +174,7 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
 <pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
 </code></pre>
 
-<p>显然，的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
+<p>显然，<code>Person</code>的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
 
 <p>那假如封装的只是一个函数，然后我们可以简单的传递这样一个函数就能做到这些的话，是不是就很好了呢？这样的话，我们就不需要又创建一个实现类，又自己说动新建一个对象来仅仅只是调用一个函数了。</p>
 
@@ -351,6 +401,10 @@ git push origin source
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/09/24/when-to-use-static-class/">When to Use Static Class</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/09/24/why-java8-introduces-lamda/">为什么java8引进了Lambda表达式</a>

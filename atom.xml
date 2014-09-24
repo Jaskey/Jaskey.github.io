@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-24T20:41:04+08:00</updated>
+  <updated>2014-09-24T20:42:46+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[When to Use Static Class]]></title>
+    <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
     <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
     <updated>2014-09-24T20:26:02+08:00</updated>
     <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>

@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-09-24T20:48:59+08:00</updated>
+  <updated>2014-09-27T18:30:31+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,78 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[怎么在Spring Controller里面返回404]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/"/>
+    <updated>2014-09-27T18:02:48+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller</id>
+    <content type="html"><![CDATA[<p>由于客户端和服务端是独立的，客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。</p>
+
+<p>以404异常为例，在Spring 的Controller里面我们可以有以下两种方式处理：</p>
+
+<ol>
+<li><h2>自定义异常+@ResponseStatus注解：</h2>
+
+<pre><code> //定义一个自定义异常，抛出时返回状态码404
+ @ResponseStatus(value = HttpStatus.NOT_FOUND)
+ public class ResourceNotFoundException extends RuntimeException {
+     ...
+ }
+
+ //在Controller里面直接抛出这个异常
+ @Controller
+ public class SomeController {
+     @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
+     public @ResponseBody Video getVidoeById(@PathVariable long id){
+         if (isFound()) {
+             // 做该做的逻辑
+         }
+         else {
+             throw new ResourceNotFoundException();//把这个异常抛出 
+         }
+     }
+ }
+</code></pre></li>
+<li><h2>在Controller方法中通过HttpServletResponse参数直接设值</h2>
+
+<pre><code>//任何一个RequestMapping 的函数都可以接受一个HttpServletResponse类型的参数
+@Controller
+public class SomeController {
+    @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
+    public @ResponseBody Video getVidoeById(@PathVariable long id){
+        if (isFound()) {
+            // 做该做的逻辑
+        }
+        else {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);//设置状态码
+        }
+        return ....
+    }
+}
+</code></pre></li>
+<li><p>使用Spring的内置异常</p></li>
+</ol>
+
+
+<p>默认情况下，Spring 的<code>DispatcherServlet</code>注册了<code>DefaultHandlerExceptionResolver</code>,这个resolver会处理标准的Spring MVC异常来表示特定的状态码</p>
+
+<pre><code>    Exception                                   HTTP Status Code
+    ConversionNotSupportedException             500 (Internal Server Error)
+    HttpMediaTypeNotAcceptableException         406 (Not Acceptable)
+    HttpMediaTypeNotSupportedException          415 (Unsupported Media Type)
+    HttpMessageNotReadableException             400 (Bad Request)
+    HttpMessageNotWritableException             500 (Internal Server Error)
+    HttpRequestMethodNotSupportedException      405 (Method Not Allowed)
+    MissingServletRequestParameterException     400 (Bad Request)
+    NoSuchRequestHandlingMethodException        404 (Not Found)
+    TypeMismatchException                       400 (Bad Request)
+</code></pre>
+
+<p>更多详情：
+<a href="http://docs.spring.io/spring/docs/3.1.x/spring-framework-reference/html/mvc.html#mvc-exceptionhandlers" title="spring doc">Spring MVC 文档</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>

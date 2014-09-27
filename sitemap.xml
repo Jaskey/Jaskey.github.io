@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/</loc>
+    <lastmod>2014-09-27T18:02:48+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/</loc>
     <lastmod>2014-09-24T20:26:02+08:00</lastmod>
     <priority>0.8</priority>
@@ -29,14 +35,14 @@
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-09-24T20:48:59+08:00</lastmod>
+    <lastmod>2014-09-27T18:30:31+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-09-24T20:48:59+08:00</lastmod>
+    <lastmod>2014-09-27T18:30:31+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

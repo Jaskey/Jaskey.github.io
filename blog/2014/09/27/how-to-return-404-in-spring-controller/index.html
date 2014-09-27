@@ -9,7 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="由于客户端和服务端是独立的，客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。 以404异常为例，在Spring 的Controller里面我们可以有以下两种方式处理： 自定义异常+@ &hellip;">
+  <meta name="description" content="由于客户端和服务端是独立的，客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。 以404异常为例，在Spring 的Controller里面我们可以有以下3种方式处理： 自定义异常+@ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -86,7 +86,7 @@
 
 <div class="entry-content"><p>由于客户端和服务端是独立的，客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。</p>
 
-<p>以404异常为例，在Spring 的Controller里面我们可以有以下两种方式处理：</p>
+<p>以404异常为例，在Spring 的Controller里面我们可以有以下3种方式处理：</p>
 
 <ol>
 <li><h2>自定义异常+@ResponseStatus注解：</h2>
@@ -111,40 +111,40 @@
      }
  }
 </code></pre></li>
-<li><h2>在Controller方法中通过HttpServletResponse参数直接设值</h2>
-
-<pre><code>//任何一个RequestMapping 的函数都可以接受一个HttpServletResponse类型的参数
-@Controller
-public class SomeController {
-    @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
-    public @ResponseBody Video getVidoeById(@PathVariable long id){
-        if (isFound()) {
-            // 做该做的逻辑
-        }
-        else {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);//设置状态码
-        }
-        return ....
-    }
-}
-</code></pre></li>
-<li><p>使用Spring的内置异常</p></li>
-</ol>
-
+<li><h2>使用Spring的内置异常</h2>
 
 <p>默认情况下，Spring 的<code>DispatcherServlet</code>注册了<code>DefaultHandlerExceptionResolver</code>,这个resolver会处理标准的Spring MVC异常来表示特定的状态码</p>
 
-<pre><code>    Exception                                   HTTP Status Code
-    ConversionNotSupportedException             500 (Internal Server Error)
-    HttpMediaTypeNotAcceptableException         406 (Not Acceptable)
-    HttpMediaTypeNotSupportedException          415 (Unsupported Media Type)
-    HttpMessageNotReadableException             400 (Bad Request)
-    HttpMessageNotWritableException             500 (Internal Server Error)
-    HttpRequestMethodNotSupportedException      405 (Method Not Allowed)
-    MissingServletRequestParameterException     400 (Bad Request)
-    NoSuchRequestHandlingMethodException        404 (Not Found)
-    TypeMismatchException                       400 (Bad Request)
-</code></pre>
+<pre><code>  Exception                                   HTTP Status Code
+  ConversionNotSupportedException             500 (Internal Server Error)
+  HttpMediaTypeNotAcceptableException         406 (Not Acceptable)
+  HttpMediaTypeNotSupportedException          415 (Unsupported Media Type)
+  HttpMessageNotReadableException             400 (Bad Request)
+  HttpMessageNotWritableException             500 (Internal Server Error)
+  HttpRequestMethodNotSupportedException      405 (Method Not Allowed)
+  MissingServletRequestParameterException     400 (Bad Request)
+  NoSuchRequestHandlingMethodException        404 (Not Found)
+  TypeMismatchException                       400 (Bad Request)
+</code></pre></li>
+<li><h2>在Controller方法中通过HttpServletResponse参数直接设值</h2>
+
+<pre><code> //任何一个RequestMapping 的函数都可以接受一个HttpServletResponse类型的参数
+ @Controller
+ public class SomeController {
+     @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
+     public @ResponseBody Video getVidoeById(@PathVariable long id){
+         if (isFound()) {
+             // 做该做的逻辑
+         }
+         else {
+             response.setStatus(HttpServletResponse.SC_NOT_FOUND);//设置状态码
+         }
+         return ....
+     }
+ }
+</code></pre></li>
+</ol>
+
 
 <p>更多详情：
 <a href="http://docs.spring.io/spring/docs/3.1.x/spring-framework-reference/html/mvc.html#mvc-exceptionhandlers" title="spring doc">Spring MVC 文档</a></p>

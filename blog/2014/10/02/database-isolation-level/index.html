@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>数据库事务的隔离级别 - StackOverGiant</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="数据库拥有ACID四个基本属性。 其中的I（隔离性）要求并发事务中，事务的中间状态是无法被别的事务查看的。例如A账户转到B账户的事务中，不能让别的事务在B账户扣除了100块前查看到A事务增加了100块这个中间状态。 但出于性能的考虑，许多数据库都允许使用者配置隔离级别牺牲一定的隔离性换取并发性。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/10/02/database-isolation-level">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="StackOverGiant" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">StackOverGiant</a></h1>
+  
+    <h2>栈在巨人的肩膀上</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">数据库事务的隔离级别</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-02T21:58:06+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>9:58 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>数据库拥有ACID四个基本属性。</p>
+
+<p>其中的I（隔离性）要求并发事务中，事务的中间状态是无法被别的事务查看的。例如A账户转到B账户的事务中，不能让别的事务在B账户扣除了100块前查看到A事务增加了100块这个中间状态。</p>
+
+<p>但出于性能的考虑，许多数据库都允许使用者配置隔离级别牺牲一定的隔离性换取并发性。</p>
+
+<p>SQL定义了四种隔离级别：</p>
+
+<ol>
+<li>Read Uncommitted: 读取未提交的数据，即可读取其他事务修改了但是没有提交的数据。这是最低的隔离级别（会导致脏读）</li>
+<li>Read Committed：只能读取已经提交的数据。解决了脏读的问题但是没有解决“不可重复读”，即一个事务中多次读取的数据的内容可能是不一样的。例如，事务2在事务1开始后修改了A账户为150，而第一次读到A账户有100块，然后事务2提交，第二次读的时候就变成了150块。</li>
+<li>Repeatable Read:保证可以事务多次读取到的数据行的内容是一致的。但还是有可能导致幻读，即同一事务中，第二次读到的数据行中拥有第一次没有读取到的。</li>
+<li>Serializable:最高级别的隔离级别，即事务是可串行执行的，就像一个事务执行的时候没有别的事务执行一样。</li>
+</ol>
+
+
+<hr />
+
+<h1>并发控制</h1>
+
+<p>事务的锁分为读锁和写锁。允许为同一个元素增加多个读锁，但只允许加一个写锁，且写事务会阻塞读事务。</p>
+
+<p>由于互联网的业务属性决定，<strong>读事务远远比写事务多得多</strong>。而加锁一定程度上阻碍了读的性能，对于读性能的优化是一个刚需。</p>
+
+<p>现在有以下两种方法可以大大提高读取的效率而不需要加锁</p>
+
+<h2>写时复制（Copy-On-Write）</h2>
+
+<p>读操作不需要加锁，而当需要写操作的时候，以B+树为例：</p>
+
+<p>1 拷贝：将从叶子到根的所有节点拷贝出来</p>
+
+<p>2 对拷贝的内容进行修改。</p>
+
+<p>3 提交后，原子地切换根节点指向新的节点。</p>
+
+<p>这样读操作并不需要加锁，并不会被写操作所阻塞，但问题是写的时候需要拷贝结点，而且多个写操作是互斥的，一个时刻只能允许一个写操作</p>
+
+<h2>多版本并发控制（Multi-Version Concurrency Control，MVCC）</h2>
+
+<p>对于读操作也不需要加锁，<strong>原理是对于每行的数据维护多个数据版本</strong>。MySQL InnoDB的存储引擎为例，InnoDB对每行数据隐式地维护了两列——“最近被修改的事务号”和“被删除事务号”。</p>
+
+<p><strong>SELECT</strong>:
+需要满足以下两个条件才能返回</p>
+
+<ol>
+<li>行的修改版本号小于当前事务号。（证明事务开始前就被提交了）</li>
+<li>行的删除号不存在，或者大于该事务号。（没有被删除，或者事务开始后才被删除的，保证可重复读）
+在可重复读的隔离级别下，后开始的事务对数据的影响不应该被先前的事务看到，所以应该忽略后面事务的操作。</li>
+</ol>
+
+
+<p><strong>INSERT</strong></p>
+
+<p>直接把修改的事务号改为当前事务号</p>
+
+<p><strong>DELETE</strong></p>
+
+<p>直接把删除的事务号改为当前事务号。而不是真正的删除</p>
+
+<p><strong>UPDATE</strong>
+更新行的时候，复制一份数据并修改最近修改的事务号为当前事务。</p>
+
+<p>MVCC在读取数据时候不需要加锁，会通过对应的事务号返回需要的记录，大大提高了并发性。但由于维护了多个版本的数据，需要定期清理不再使用的数据。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-10-02T21:58:06+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>9:58 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/shu-ju-ku/'>数据库</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/10/02/database-isolation-level/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/10/02/database-isolation-level/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/09/27/how-to-return-404-in-spring-controller/" title="Previous Post: 怎么在Spring Controller里面返回404">&laquo; 怎么在Spring Controller里面返回404</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/02/database-isolation-level/">数据库事务的隔离级别</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/09/27/how-to-return-404-in-spring-controller/">怎么在Spring Controller里面返回404</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/09/24/when-to-use-static-class/">什么时候应该使用“静态类”而不使用单例？</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/09/24/why-java8-introduces-lamda/">为什么java8引进了Lambda表达式</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/09/24/difference-between-cookies-and-sessions/">Cookie 与 Session的区别</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Jaskey Lam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

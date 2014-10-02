@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-02T22:37:23+08:00</updated>
+  <updated>2014-10-02T22:43:55+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[数据库事务的隔离级别]]></title>
+    <title type="html"><![CDATA[数据库事务的隔离级别与并发控制]]></title>
     <link href="http://Jaskey.github.io/blog/2014/10/02/database-isolation-level/"/>
     <updated>2014-10-02T21:58:06+08:00</updated>
     <id>http://Jaskey.github.io/blog/2014/10/02/database-isolation-level</id>
@@ -78,8 +78,9 @@
 
 <p>直接把删除的事务号改为当前事务号。而不是真正的删除</p>
 
-<p><strong>UPDATE</strong>
-更新行的时候，复制一份数据并修改最近修改的事务号为当前事务。</p>
+<p><strong>UPDATE</strong></p>
+
+<p>更新行的时候，复制一份数据并修改最近修改的事务号为当前事务。</p>
 
 <p>MVCC在读取数据时候不需要加锁，会通过对应的事务号返回需要的记录，大大提高了并发性。但由于维护了多个版本的数据，需要定期清理不再使用的数据。</p>
 ]]></content>

@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://Jaskey.github.io/blog/2014/10/03/adb-problem/</loc>
+    <lastmod>2014-10-03T23:40:05+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://Jaskey.github.io/blog/2014/10/02/database-isolation-level/</loc>
     <lastmod>2014-10-02T21:58:06+08:00</lastmod>
     <priority>0.8</priority>
@@ -41,14 +47,14 @@
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-10-02T22:43:55+08:00</lastmod>
+    <lastmod>2014-10-03T23:59:26+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-10-02T22:43:55+08:00</lastmod>
+    <lastmod>2014-10-03T23:59:26+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

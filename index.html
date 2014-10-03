@@ -9,7 +9,9 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="数据库拥有ACID四个基本属性。 其中的I（隔离性）要求并发事务中，事务的中间状态是无法被别的事务查看的。例如A账户转到B账户的事务中，不能让别的事务在B账户扣除了100块前查看到A事务增加了100块这个中间状态。 但出于性能的考虑，许多数据库都允许使用者配置隔离级别牺牲一定的隔离性换取并发性。 &hellip;">
+  <meta name="description" content="这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误： [2014-10-03 12:15:43 - adb] ADB server didn't ACK
+[2014-10-03 12:15:43 - adb] * failed to start daemon *
+[2014- &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +67,76 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/03/adb-problem/">ADB Server Didn&#8217;t ACK ,failed to Start Daemon 解决方法(小心风行客户端)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-03T23:40:05+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>3</span><span class='date-suffix'>rd</span>, <span class='date-year'>2014</span></span> <span class='time'>11:40 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
+
+<pre><code>[2014-10-03 12:15:43 - adb] ADB server didn't ACK
+[2014-10-03 12:15:43 - adb] * failed to start daemon *
+[2014-10-03 12:15:43 - ddms] 'E:\Programming\ADT\adt-bundle-windows-x86_64-20140702\sdk\platform-tools\adb.exe,start-server' failed -- run manually if necessary
+</code></pre>
+
+<p>查了一下stackoverflow， 大多数的解决方案都是：</p>
+
+<ol>
+<li>关掉eclipse</li>
+<li>在任务管理器中把adb.exe关掉</li>
+<li>进入adb所在目录，然后执行adb start-server，成功执行则问题解决</li>
+</ol>
+
+
+<p><strong>问题应该就解决了。但我的问题是， adb start-server 启动不起来！</strong></p>
+
+<p>最后发现了是端口占用的原因导致。</p>
+
+<p>解决方法如下：</p>
+
+<p>1.<code>adb nodaemon server</code></p>
+
+<p>查看不能执行的原因，输出：</p>
+
+<blockquote><p>cannot bind &lsquo;tcp:5037&rsquo;</p></blockquote>
+
+<p>2.定位到了是端口的问题！是5037端口被占用了！</p>
+
+<p>3.<code>netstat -ano | findstr 5037</code></p>
+
+<p>查找谁占用了5037的进程，得到进程pid.</p>
+
+<p>4.杀死该进程。</p>
+
+<p>可以在任务管理器中杀死，或者使用命令：
+    taskkill /pid 端口号 -f</p>
+
+<p>最后发现是tfadb.exe这个程序占用了该端口。查询签名发现这是风行客户端！！</p>
+
+<p>真是无比坑爹啊，安装了风行的同学真的要注意下。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -586,6 +658,10 @@ git push origin source
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/10/03/adb-problem/">ADB Server Didn&#8217;t ACK ,failed to Start Daemon 解决方法(小心风行客户端)</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/02/database-isolation-level/">数据库事务的隔离级别与并发控制</a>
       </li>
     
@@ -599,10 +675,6 @@ git push origin source
     
       <li class="post">
         <a href="/blog/2014/09/24/why-java8-introduces-lamda/">为什么java8引进了Lambda表达式</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/09/24/difference-between-cookies-and-sessions/">Cookie 与 Session的区别</a>
       </li>
     
   </ul>

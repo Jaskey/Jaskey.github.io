@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Android | StackOverGiant]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/android/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2014-10-04T00:03:18+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[ADB Server Didn't ACK ,failed to Start Daemon 解决方法(小心风行客户端)]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/03/adb-problem/"/>
+    <updated>2014-10-03T23:40:05+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/03/adb-problem</id>
+    <content type="html"><![CDATA[<p>最近重新学习Android，但这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
+
+<pre><code>[2014-10-03 12:15:43 - adb] ADB server didn't ACK
+[2014-10-03 12:15:43 - adb] * failed to start daemon *
+[2014-10-03 12:15:43 - ddms] 'E:\Programming\ADT\adt-bundle-windows-x86_64-20140702\sdk\platform-tools\adb.exe,start-server' failed -- run manually if necessary
+</code></pre>
+
+<p>查了一下stackoverflow， 大多数的解决方案都是：</p>
+
+<ol>
+<li>关掉eclipse</li>
+<li>在任务管理器中把adb.exe关掉</li>
+<li>进入adb所在目录，然后执行adb start-server，成功执行则问题解决</li>
+</ol>
+
+
+<p><strong>问题应该就解决了。但我的问题是， adb start-server 启动不起来！</strong></p>
+
+<p>最后发现了是端口占用的原因导致。</p>
+
+<p>解决方法如下：</p>
+
+<p>1.<code>adb nodaemon server</code></p>
+
+<p>查看不能执行的原因，输出：</p>
+
+<blockquote><p>cannot bind &lsquo;tcp:5037&rsquo;</p></blockquote>
+
+<p>2.定位到了是端口的问题！是5037端口被占用了！</p>
+
+<p>3.<code>netstat -ano | findstr 5037</code></p>
+
+<p>查找谁占用了5037的进程，得到进程pid.</p>
+
+<p>4.杀死该进程。</p>
+
+<p>可以在任务管理器中杀死，或者使用命令：
+    taskkill /pid 端口号 -f</p>
+
+<p>最后发现是tfadb.exe这个程序占用了该端口。查询签名发现这是风行客户端！！</p>
+
+<p>真是无比坑爹啊，安装了风行的同学真的要注意下。</p>
+]]></content>
+  </entry>
+  
+</feed>

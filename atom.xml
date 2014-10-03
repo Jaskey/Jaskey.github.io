@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-03T23:59:26+08:00</updated>
+  <updated>2014-10-04T00:03:18+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -18,7 +18,7 @@
     <link href="http://Jaskey.github.io/blog/2014/10/03/adb-problem/"/>
     <updated>2014-10-03T23:40:05+08:00</updated>
     <id>http://Jaskey.github.io/blog/2014/10/03/adb-problem</id>
-    <content type="html"><![CDATA[<p>这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
+    <content type="html"><![CDATA[<p>最近重新学习Android，但这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
 
 <pre><code>[2014-10-03 12:15:43 - adb] ADB server didn't ACK
 [2014-10-03 12:15:43 - adb] * failed to start daemon *

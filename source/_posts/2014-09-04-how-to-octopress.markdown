@@ -1,13 +1,16 @@
 ---
 layout: post
-title: "如何使用Octopress,Windows7"
+title: "Windows7上配置和使用Octopress"
 date: 2014-09-04 17:26:00 +0800
 comments: true
 categories: 
 ---
 
-原文链接：
-http://www.techelex.org/setup-octopress-on-windows7/
+本文翻译自：
+[setup octopress on windows 7](http://www.techelex.org/setup-octopress-on-windows7/)
+
+----------
+
 
 ## 准备工作： ##
  
@@ -89,6 +92,12 @@ http://www.techelex.org/setup-octopress-on-windows7/
 
 修改此markdown文件，再次发布，即可看到新的博文。
 
-有关markdown的语法和使用请参看http://wowubuntu.com/markdown/basic.html
 
-更多octopress命令是查看：http://octopress.org/docs/blogging/
+----------
+
+
+有关markdown的语法和使用请参看[http://wowubuntu.com/markdown/basic.html](http://wowubuntu.com/markdown/basic.html)
+
+更多octopress命令是查看：[http://octopress.org/docs/blogging/](http://octopress.org/docs/blogging/)
+
+

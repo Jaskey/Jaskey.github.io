@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-11T11:32:18+08:00</updated>
+  <updated>2014-10-11T18:14:09+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,72 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[JVM垃圾回收算法]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/"/>
+    <updated>2014-10-10T17:09:51+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm</id>
+    <content type="html"><![CDATA[<p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
+
+<ul>
+<li><strong>引用计数收集器</strong></li>
+</ul>
+
+
+<hr />
+
+<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
+
+<p><img src="../images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
+
+<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
+
+<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
+
+<h2>- <strong>跟踪收集器</strong></h2>
+
+<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
+
+<ul>
+<li><strong>复制（Copying）</strong>
+复制收集器从根集合开始扫描所有存活的对象，把能达到的所有对象（存活对象）复制到一块新的未被使用的空间中，没有到达的对象则证明没有被引用，可以回收。这样就解决了循环引用不可回收的问题，如下图所示：</li>
+</ul>
+
+
+<p><img src="../images/gc/copying.jpg" title="复制算法" alt="复制" /></p>
+
+<p>好处：仅需扫描一次所有存活的对象，当存活对象较少时（垃圾对象多），比较高校。适合于新生代区</p>
+
+<p>坏处：需要额外的内存空间，不适合老年代（大部分是存活对象）</p>
+
+<ul>
+<li><strong>标记-清除(Mark-Sweep)</strong></li>
+</ul>
+
+
+<p>采用从根集合开始扫描，对能到达的对象（存活）进行标记，标记完成后，再扫描整个空间中未标记的对象，并进行回收。</p>
+
+<p><img src="../images/gc/mark-sweep" title="标记-清除法" alt="标记-清除" /></p>
+
+<p>好处：仅需扫描一次所有存活的对象，不需要移动对象，仅需要对不可达（垃圾对象）进行处理。适合于垃圾对象比较少的情况。</p>
+
+<p>坏处：容易造成内存碎片</p>
+
+<ul>
+<li><strong>标记-压缩(Mark-Compact)</strong></li>
+</ul>
+
+
+<p>和标记-清除一样对可达对象（存活对象）进行标记，但是回收垃圾对象的后，会对其他存活的对象往左端空闲空间进行移动，并更新引用对象的指针。如下图：</p>
+
+<p><img src="../images/gc/mark-compact.jpg" title="标记-清除法" alt="标记-压缩" /></p>
+
+<p>好处：对比标记-清除，避免了内存碎片</p>
+
+<p>坏处：增加了移动对象的成本。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[为什么java8引进了Lambda表达式]]></title>

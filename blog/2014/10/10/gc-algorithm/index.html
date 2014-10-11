@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>JVM垃圾回收算法 - StackOverGiant</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器 引用计数收集器 顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="StackOverGiant" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">StackOverGiant</a></h1>
+  
+    <h2>栈在巨人的肩膀上</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">JVM垃圾回收算法</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-10T17:09:51+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:09 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
+
+<ul>
+<li><strong>引用计数收集器</strong></li>
+</ul>
+
+
+<hr />
+
+<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
+
+<p><img src="../images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
+
+<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
+
+<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
+
+<h2>- <strong>跟踪收集器</strong></h2>
+
+<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
+
+<ul>
+<li><strong>复制（Copying）</strong>
+复制收集器从根集合开始扫描所有存活的对象，把能达到的所有对象（存活对象）复制到一块新的未被使用的空间中，没有到达的对象则证明没有被引用，可以回收。这样就解决了循环引用不可回收的问题，如下图所示：</li>
+</ul>
+
+
+<p><img src="../images/gc/copying.jpg" title="复制算法" alt="复制" /></p>
+
+<p>好处：仅需扫描一次所有存活的对象，当存活对象较少时（垃圾对象多），比较高校。适合于新生代区</p>
+
+<p>坏处：需要额外的内存空间，不适合老年代（大部分是存活对象）</p>
+
+<ul>
+<li><strong>标记-清除(Mark-Sweep)</strong></li>
+</ul>
+
+
+<p>采用从根集合开始扫描，对能到达的对象（存活）进行标记，标记完成后，再扫描整个空间中未标记的对象，并进行回收。</p>
+
+<p><img src="../images/gc/mark-sweep" title="标记-清除法" alt="标记-清除" /></p>
+
+<p>好处：仅需扫描一次所有存活的对象，不需要移动对象，仅需要对不可达（垃圾对象）进行处理。适合于垃圾对象比较少的情况。</p>
+
+<p>坏处：容易造成内存碎片</p>
+
+<ul>
+<li><strong>标记-压缩(Mark-Compact)</strong></li>
+</ul>
+
+
+<p>和标记-清除一样对可达对象（存活对象）进行标记，但是回收垃圾对象的后，会对其他存活的对象往左端空闲空间进行移动，并更新引用对象的指针。如下图：</p>
+
+<p><img src="../images/gc/mark-compact.jpg" title="标记-清除法" alt="标记-压缩" /></p>
+
+<p>好处：对比标记-清除，避免了内存碎片</p>
+
+<p>坏处：增加了移动对象的成本。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-10-10T17:09:51+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:09 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/10/03/adb-problem/" title="Previous Post: ADB server didn't ACK ,failed to start daemon 解决方法(小心风行客户端)">&laquo; ADB server didn&#8217;t ACK ,failed to start daemon 解决方法(小心风行客户端)</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/10/11/understanding-soa/" title="Next Post: 初探SOA">初探SOA &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/11/understanding-soa/">初探SOA</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/10/gc-algorithm/">JVM垃圾回收算法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/03/adb-problem/">ADB Server Didn&#8217;t ACK ,failed to Start Daemon 解决方法(小心风行客户端)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/02/database-isolation-level/">数据库事务的隔离级别与并发控制</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/09/27/how-to-return-404-in-spring-controller/">怎么在Spring Controller里面返回404</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Jaskey Lam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

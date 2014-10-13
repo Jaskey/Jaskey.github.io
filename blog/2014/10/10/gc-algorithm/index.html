@@ -152,7 +152,9 @@
 </ul>
 
 
-<p>由于大部分的回收算法在回收时候，只有垃圾回收进程在运行，其他进程都会被挂起，直到垃圾回收结束。这可能导致在垃圾回收很久时候，其他进程一直不工作，例如在Android应用中，如果UI进程5秒不响应就会出现ANR(Application Not Responding)错误。所以一个可行的方法是让垃圾进程与其他线程交替执行，每次垃圾回收仅进行部分内存的回收，减小系统的停顿时间。但由于线程的来回切换，提高了垃圾回收的开销。</p>
+<p>由于大部分的回收算法在回收时候，只有垃圾回收线程在运行，其他线程都会被挂起，直到垃圾回收结束。</p>
+
+<p>这将导致在垃圾回收很久时候，其他线程一直不工作，而导致系统无响应。例如在Android应用中，如果UI进程5秒不响应就会出现ANR(Application Not Responding)错误。所以一个可行的方法是让垃圾进程与其他线程交替执行，每次垃圾回收仅进行部分内存的回收，减小系统的停顿时间。但由于线程的来回切换，提高了垃圾回收的开销。</p>
 
 <hr />
 
@@ -215,6 +217,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/10/13/java-synchronization/">谈谈Java同步机制</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/11/understanding-soa/">初探SOA</a>
       </li>
     
@@ -228,10 +234,6 @@
     
       <li class="post">
         <a href="/blog/2014/10/02/database-isolation-level/">数据库事务的隔离级别与并发控制</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/09/27/how-to-return-404-in-spring-controller/">怎么在Spring Controller里面返回404</a>
       </li>
     
   </ul>

@@ -5,13 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>什么时候应该使用“静态类”而不使用单例？ - StackOverGiant</title>
+  <title>Category: Octopress - StackOverGiant</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？ 所有方法都是一些工具类的方法，如Math类
-不希望被gc回收又不想自己去处理实例。
-很确定这个类将来也不会是有状态的（ &hellip;">
+  <meta name="description" content="Category: octopress">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/categories/octopress">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="StackOverGiant" type="application/atom+xml">
@@ -66,91 +64,35 @@
   <div id="main">
     <div id="content">
       <div>
-<article class="hentry" role="article">
+<article role="article">
   
   <header>
-    
-      <h1 class="entry-title">什么时候应该使用“静态类”而不使用单例？</h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-24T20:26:02+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:26 pm</span></time>
-        
-      </p>
+    <h1 class="entry-title">Category: Octopress</h1>
     
   </header>
+  
+  <div id="blog-archives" class="category">
 
 
-<div class="entry-content"><p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
 
-<ol>
-<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
-<li>不希望被gc回收又不想自己去处理实例。</li>
-<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
-</ol>
+  
+  <h2>2014</h2>
+
+<article>
+  
+<h1><a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a></h1>
+<time datetime="2014-10-17T00:55:09+08:00" pubdate><span class='month'>Oct</span> <span class='day'>17</span> <span class='year'>2014</span></time>
+
+<footer>
+  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>octopress</a></span>
+</footer>
 
 
-<p>注：</p>
-
-<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
-
-<p>stackoverflow相关讨论：</p>
-
-<ul>
-<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
-<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
-</ul>
+</article>
 
 </div>
 
-
-  <footer>
-    <p class="meta">
-      
   
-
-<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
-
-      
-
-
-
-
-<time class='entry-date' datetime='2014-09-24T20:26:02+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:26 pm</span></time>
-      
-
-<span class="categories">
-  
-    <a class='category' href='/blog/categories/stackovergiant/'>stackovergiant</a>
-  
-</span>
-
-
-    </p>
-    
-      <div class="sharing">
-  
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/" >Tweet</a>
-  
-  
-  
-</div>
-
-    
-    <p class="meta">
-      
-        <a class="basic-alignment left" href="/blog/2014/09/24/why-java8-introduces-lamda/" title="Previous Post: 为什么java8引进了Lambda表达式">&laquo; 为什么java8引进了Lambda表达式</a>
-      
-      
-        <a class="basic-alignment right" href="/blog/2014/09/27/how-to-return-404-in-spring-controller/" title="Next Post: 怎么在Spring Controller里面返回404">怎么在Spring Controller里面返回404 &raquo;</a>
-      
-    </p>
-  </footer>
 </article>
 
 </div>

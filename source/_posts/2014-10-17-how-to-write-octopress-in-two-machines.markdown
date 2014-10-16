@@ -49,6 +49,7 @@ categories: octopress
 输入仓库的URL，这样你就完成了全新的一个本地博客副本。
 
 #更新变化（重要）#
+每次使用前，先确保拿到最新的文件
 
 	$ cd octopress  #进入项目目录
 	$ git pull origin source  # 更新本地source branch
@@ -70,6 +71,7 @@ categories: octopress
 
 #另外的机器更新变化#
 在另外的机器上，就可以获取到相应的变化。
+
 
 	$ cd octopress  #进入项目目录
 	$ git pull origin source  # 更新本地source branch

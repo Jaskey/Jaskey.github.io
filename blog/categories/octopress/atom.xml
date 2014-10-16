@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Octopress | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/octopress/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-17T01:51:02+08:00</updated>
+  <updated>2014-10-17T02:06:59+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -62,7 +62,9 @@ $ rake setup_github_pages
 
 <p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
 
-<h1>更新变化</h1>
+<h1>更新变化（重要）</h1>
+
+<p>每次使用前，先确保拿到最新的文件</p>
 
 <pre><code>$ cd octopress  #进入项目目录
 $ git pull origin source  # 更新本地source branch
@@ -83,11 +85,13 @@ $ rake deploy             # 更新远程 master branch，并部署博文
 
 <h1>另外的机器更新变化</h1>
 
-<p>在另外的机器上，就可以获取到相应的变化。
-    $ cd octopress  #进入项目目录
-    $ git pull origin source  # 更新本地source branch
-    $ cd ./<em>deploy  #进入</em>deploy目录
-    $ git pull origin master  # 更新本地master branch</p>
+<p>在另外的机器上，就可以获取到相应的变化。</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
 ]]></content>
   </entry>
   

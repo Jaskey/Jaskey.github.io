@@ -3,108 +3,91 @@
   
   
   <url>
+    <loc>http://Jaskey.github.io/blog/2014/10/17/performance/</loc>
+    <lastmod>2014-10-17T18:41:50+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/</loc>
-    
     <lastmod>2014-10-17T00:55:09+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/13/java-synchronization/</loc>
-    
     <lastmod>2014-10-13T21:11:20+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/11/understanding-soa/</loc>
-    
     <lastmod>2014-10-11T10:41:33+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/</loc>
-    
     <lastmod>2014-10-10T17:09:51+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/03/adb-problem/</loc>
-    
     <lastmod>2014-10-03T23:40:05+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/02/database-isolation-level/</loc>
-    
     <lastmod>2014-10-02T21:58:06+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/</loc>
-    
     <lastmod>2014-09-27T18:02:48+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/</loc>
-    
     <lastmod>2014-09-24T20:26:02+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/</loc>
-    
     <lastmod>2014-09-24T18:58:45+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/</loc>
-    
     <lastmod>2014-09-24T18:20:05+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/04/how-to-octopress/</loc>
-    
     <lastmod>2014-09-04T17:26:00+08:00</lastmod>
-    
     <priority>0.8</priority>
   </url>
   
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-10-17T02:06:59+08:00</lastmod>
+    <lastmod>2014-10-17T19:28:50+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-10-17T02:06:59+08:00</lastmod>
+    <lastmod>2014-10-17T19:28:50+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  
   
   
 </urlset>

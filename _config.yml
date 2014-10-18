@@ -110,5 +110,5 @@ weibo_verifier: 4b318246
 weibo_fansrow: 0   # 粉丝显示多少行
 weibo_show: true    # 是否显示最近微博内容
 weibo_pic: true     # 是否显示微博中的图片
-weibo_scrolling_speed: 300      # 摇滚速度，300为慢，50为快
+weibo_scrolling_speed: 300      # 摇滚速度，300为慢，50为快 
 weibo_skin: 9      # 使用哪种配色风格，数字为从1开始的微博秀风格序号

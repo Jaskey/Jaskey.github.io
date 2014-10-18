@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: 数据库 - StackOverGiant</title>
+  <title>如何在eclipse中修改源目录路径 - StackOverGiant</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Category: 数据库">
+  <meta name="description" content="在我们使用Maven或者Gradle的时候，源码目录要求是：src/main/java。 但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。 要解决这个问题， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/categories/shu-ju-ku">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="StackOverGiant" type="application/atom+xml">
@@ -64,35 +64,73 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Category: 数据库</h1>
+    
+      <h1 class="entry-title">如何在eclipse中修改源目录路径</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>7:37 pm</span></time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+<div class="entry-content"><p>在我们使用<code>Maven</code>或者<code>Gradle</code>的时候，源码目录要求是：src/main/java。</p>
 
-  
-  <h2>2014</h2>
+<p>但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。</p>
 
-<article>
-  
-<h1><a href="/blog/2014/10/02/database-isolation-level/">数据库事务的隔离级别与并发控制</a></h1>
-<time datetime="2014-10-02T21:58:06+08:00" pubdate><span class='month'>Oct</span> <span class='day'>02</span> <span class='year'>2014</span></time>
+<p>要解决这个问题，我们需要先让eclipse不要把src视为源目录(source folder)。方法：</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/shu-ju-ku/'>数据库</a></span>
-</footer>
+<p>右键src目录&mdash;>build path &mdash;> remove from build path.</p>
 
-
-</article>
-
+<p>这样以后，我们就可以建立我们的main和java文件夹在src下。
+然后右键java文件夹&mdash;>select build path &ndash;> use as source folder， 这样就可以把源目录指向src/main/java了</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>7:37 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/10/17/performance/" title="Previous Post: 浅谈网站性能优化">&laquo; 浅谈网站性能优化</a>
+      
+      
+    </p>
+  </footer>
 </article>
 
 </div>

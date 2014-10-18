@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-17T19:35:50+08:00</updated>
+  <updated>2014-10-18T19:48:06+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,24 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[如何在eclipse中修改源目录路径]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse/"/>
+    <updated>2014-10-18T19:37:41+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse</id>
+    <content type="html"><![CDATA[<p>在我们使用<code>Maven</code>或者<code>Gradle</code>的时候，源码目录要求是：src/main/java。</p>
+
+<p>但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。</p>
+
+<p>要解决这个问题，我们需要先让eclipse不要把src视为源目录(source folder)。方法：</p>
+
+<p>右键src目录&mdash;>build path &mdash;> remove from build path.</p>
+
+<p>这样以后，我们就可以建立我们的main和java文件夹在src下。
+然后右键java文件夹&mdash;>select build path &ndash;> use as source folder， 这样就可以把源目录指向src/main/java了</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[浅谈网站性能优化]]></title>

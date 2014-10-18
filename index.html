@@ -9,9 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="今天简单从上层的角度聊一下如何对有一个网站进行优化。 从用户在浏览器敲下回车，到数据回来，至少可以分为三个路径 在浏览器端，发送用户请求，并且接受服务器返回的响应数据进行页面渲染。
-请求数据在网络进行传输，发送到服务器。服务器把响应数据在网络传输返回。
-服务器端进行数据解析处理（访问文件，数据库等 &hellip;">
+  <meta name="description" content="在我们使用Maven或者Gradle的时候，源码目录要求是：src/main/java。 但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。 要解决这个问题， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +65,44 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>7:37 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在我们使用<code>Maven</code>或者<code>Gradle</code>的时候，源码目录要求是：src/main/java。</p>
+
+<p>但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。</p>
+
+<p>要解决这个问题，我们需要先让eclipse不要把src视为源目录(source folder)。方法：</p>
+
+<p>右键src目录&mdash;>build path &mdash;> remove from build path.</p>
+
+<p>这样以后，我们就可以建立我们的main和java文件夹在src下。
+然后右键java文件夹&mdash;>select build path &ndash;> use as source folder， 这样就可以把源目录指向src/main/java了</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -837,106 +873,6 @@ public int getNextI(){
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/09/24/why-java8-introduces-lamda/">为什么java8引进了Lambda表达式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-24T18:58:45+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>6:58 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
-
-<p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>
-
-<p>我们假如需要输出一个人的信息，我们可能有以下的类</p>
-
-<pre><code>public static void printPersons(
-    List&lt;Person&gt; roster, CheckPerson tester) {
-    for (Person p : roster) {
-        if (tester.test(p)) {
-            p.printPerson();
-        }
-    }
-} 
-
-
-
-interface CheckPerson {//接口，用于对于Person对象的验证
-    boolean test(Person p);
-}
-
-
-
-class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的CheckPerson实现 
-    public boolean test(Person p) {
-        return p.gender == Person.Sex.MALE &amp;&amp;
-            p.getAge() &gt;= 18 &amp;&amp;
-            p.getAge() &lt;= 25;
-    }
-}
-</code></pre>
-
-<p>然后当我们调用的时候，我们会写：</p>
-
-<pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
-</code></pre>
-
-<p>显然，<code>Person</code>的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
-
-<p>那假如封装的只是一个函数，然后我们可以简单的传递这样一个函数就能做到这些的话，是不是就很好了呢？这样的话，我们就不需要又创建一个实现类，又自己说动新建一个对象来仅仅只是调用一个函数了。</p>
-
-<p>这时候，我们就需要Lambda了。</p>
-
-<pre><code>printPersons(
-    roster,
-    (Person p) -&gt; p.getGender() == Person.Sex.MALE
-        &amp;&amp; p.getAge() &gt;= 18
-        &amp;&amp; p.getAge() &lt;= 25
-);
-</code></pre>
-
-<p>这样的代码极为的简洁而且具有可读性。而且，我们不需要手动去新建一个<code>CheckPersonEligibleForSelectiveService</code>实现类，而且也不需要手动去新建这样的对象，lambda都帮我们做好了。</p>
-
-<p>当然，我们原本也可以使用匿名类去解决这个问题</p>
-
-<pre><code>printPersons(
-    roster,
-    new CheckPerson() {
-        public boolean test(Person p) {
-            return p.getGender() == Person.Sex.MALE
-                &amp;&amp; p.getAge() &gt;= 18
-                &amp;&amp; p.getAge() &lt;= 25;
-        }
-    }
-);
-</code></pre>
-
-<p>但，我们问问自己，我们真的有必要创建一个对象就仅仅为了去做Person验证吗？这样非常的反直觉。</p>
-
-<p>如果我们需要的仅仅是一个函数而不是一整个对象，那么我们就应该关注在这个函数本身，而不是为了这个函数而衍生出一个类，一个对象。</p>
-
-<p>更多本问题讨论请参考：<a href="http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8">http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -952,6 +888,10 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/17/performance/">浅谈网站性能优化</a>
       </li>
     
@@ -965,10 +905,6 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
     
       <li class="post">
         <a href="/blog/2014/10/11/understanding-soa/">初探SOA</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/10/gc-algorithm/">JVM垃圾回收算法</a>
       </li>
     
   </ul>

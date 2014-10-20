@@ -13,7 +13,7 @@ description: Jaskey 的博客
 # You can customize the format as defined in
 # http://www.ruby-doc.org/core-1.9.2/Time.html#method-i-strftime
 # Additionally, %o will give you the ordinal representation of the day
-date_format: "%F, %a"
+date_format: "%F %a"  		#2012-01-01    
 #date_format: "ordinal"
 
 # RSS / Email (optional) subscription links (change if using something like Feedburner)

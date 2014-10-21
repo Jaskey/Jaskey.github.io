@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://Jaskey.github.io/blog/2014/10/21/about-wealth/</loc>
+    <lastmod>2014-10-21T19:34:50+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse/</loc>
     <lastmod>2014-10-18T19:37:41+08:00</lastmod>
     <priority>0.8</priority>
@@ -83,21 +89,21 @@
   
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2014-10-21T14:56:59+08:00</lastmod>
+    <lastmod>2014-10-21T21:17:02+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-10-21T14:56:59+08:00</lastmod>
+    <lastmod>2014-10-21T21:17:02+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-10-21T14:56:59+08:00</lastmod>
+    <lastmod>2014-10-21T21:17:02+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

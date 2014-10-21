@@ -83,21 +83,21 @@
   
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2014-10-21T14:51:02+08:00</lastmod>
+    <lastmod>2014-10-21T14:56:59+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-10-21T14:51:02+08:00</lastmod>
+    <lastmod>2014-10-21T14:56:59+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-10-21T14:51:02+08:00</lastmod>
+    <lastmod>2014-10-21T14:56:59+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -106,6 +106,12 @@
   <url>
     <loc>http://Jaskey.github.io/baidu_verify_fEOrou9JEs.html</loc>
     <lastmod>2014-10-21T14:33:46Z</lastmod>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://Jaskey.github.io/googlea1a65451bbdcb195.html</loc>
+    <lastmod>2014-10-21T14:50:22Z</lastmod>
     <priority>0.6</priority>
   </url>
   

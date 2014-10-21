@@ -52,7 +52,7 @@ titlecase: true       # Converts page and post titles to titlecase
 
 # list each of the sidebar modules you want to include, in the order you want them to appear.
 # To add custom asides, create files in /source/_includes/custom/asides/ and add them to the list like 'custom/asides/custom_aside_name.html'
-default_asides: [asides/recent_posts.html,custom/asides/weibo.html, asides/github.html, asides/delicious.html, asides/pinboard.html, asides/googleplus.html,custom/asides/about.html ] #add weibo and about here
+default_asides: [asides/recent_posts.html,custom/asides/weibo.html,custom/asides/douban.html,asides/github.html, asides/delicious.html, asides/pinboard.html, asides/googleplus.html,custom/asides/about.html ] #add weibo ,douban,  about here
 
 
 
@@ -113,3 +113,18 @@ weibo_show: true    # 是否显示最近微博内容
 weibo_pic: true     # 是否显示微博中的图片
 weibo_scrolling_speed: 300      # 摇滚速度，300为慢，50为快 
 weibo_skin: 9      # 使用哪种配色风格，数字为从1开始的微博秀风格序号
+
+
+# Douban
+# Please refer to http://www.douban.com/service/badgemakerjs to get your show link. 
+douban_user: linjunjie1103
+douban_selection: random  # 显示，latest（最近添加的）, favorite（推荐和力荐） ,random（随机）
+douban_picsize: small # small,medium ,图片大小
+douban_coulumn: 3 # 显示多少列
+douban_display_count: 9 #总共显示
+douban_hidelogo: false # 
+
+
+#uyan settings
+# comment and share
+comment_share: true

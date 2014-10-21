@@ -1,0 +1,17 @@
+{% if site.douban_user %}
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/{{site.douban_user}}/?
+    selection={{site.site.douban_selection}}&
+    amp;picsize={{site.douban_picsize}}&
+    amp;hidelogo={% if site.douban_hidelogo %}on{% else %}{% endif %}&
+    amp;show=collection&
+    amp;n={{site.douban_display_count}}&
+    amp;cat=movie%7Cbook&
+    amp;columns={{site.douban_coulumn}}">
+    </script>  
+  </div>
+</section>
+{% endif %}

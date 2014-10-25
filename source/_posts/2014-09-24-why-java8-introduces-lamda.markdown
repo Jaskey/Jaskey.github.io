@@ -3,7 +3,7 @@ layout: post
 title: "为什么java8引进了Lambda表达式"
 date: 2014-09-24 18:58:45 +0800
 comments: true
-categories: stackovergiant java
+categories: stackovergiant java lambda
 ---
 
 

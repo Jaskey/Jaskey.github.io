@@ -3,7 +3,7 @@ layout: post
 title: "ADB server didn't ACK ,failed to start daemon 解决方法(小心风行客户端)"
 date: 2014-10-03 23:40:05 +0800
 comments: true
-categories: Android
+categories: Android ADB
 ---
 
 最近重新学习Android，但这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：

@@ -3,7 +3,7 @@ layout: post
 title: "JVM垃圾回收算法"
 date: 2014-10-10 17:09:51 +0800
 comments: true
-categories: java
+categories: java JVM
 ---
 
 

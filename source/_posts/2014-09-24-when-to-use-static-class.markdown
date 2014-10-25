@@ -3,7 +3,7 @@ layout: post
 title: "什么时候应该使用“静态类”而不使用单例？"
 date: 2014-09-24 20:26:02 +0800
 comments: true
-categories: stackovergiant
+categories: stackovergiant java 单例
 ---
 
 经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？

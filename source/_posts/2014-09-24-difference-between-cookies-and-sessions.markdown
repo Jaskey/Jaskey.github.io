@@ -3,7 +3,7 @@ layout: post
 title: "cookie 与 session的区别"
 date: 2014-09-24 18:20:05 +0800
 comments: true
-categories: stackovergiant
+categories: stackovergiant cookie session
 ---
 
 我们有时候会对于`cookie`和`session`糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？

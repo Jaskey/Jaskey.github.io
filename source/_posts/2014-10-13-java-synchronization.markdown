@@ -3,7 +3,7 @@ layout: post
 title: "谈谈Java同步机制"
 date: 2014-10-13 21:11:20 +0800
 comments: true
-categories: 
+categories: java
 ---
 
 

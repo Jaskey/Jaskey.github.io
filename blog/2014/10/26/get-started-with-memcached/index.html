@@ -322,7 +322,7 @@ city from memcached: shenzhen
 
 <pre><code>    Future&lt;Object&gt; fobject = client.asyncGet("emp");
     try {
-        Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的延迟
+        Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的timeout
         System.out.println("emp from memcached"+emp);
     } catch (InterruptedException e) {
         e.printStackTrace();

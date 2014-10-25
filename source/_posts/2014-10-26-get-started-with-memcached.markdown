@@ -242,7 +242,7 @@ memcached的守护进程是对不知道集群的存在和server设置的。实�
 
         Future<Object> fobject = client.asyncGet("emp");
         try {
-			Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的延迟
+			Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的timeout
 			System.out.println("emp from memcached"+emp);
         } catch (InterruptedException e) {
 			e.printStackTrace();

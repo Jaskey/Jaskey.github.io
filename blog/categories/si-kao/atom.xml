@@ -1,90 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
 
-<!DOCTYPE html>
-<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
-<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
-<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  <title>大学生与烧饼小贩 - StackOverGiant</title>
-  <meta name="author" content="Jaskey Lam">
-
-  
-  <meta name="description" content="最近写技术的东西比较多，刚好也在看《黑客与画家》，里面讲到的关于如何创造财富这一论点引起了我极大的共鸣和思考，觉得既然博客折腾起来了，就简单整理下，写下点东西。刚好最近大学生校园招聘的季节，就从这个话题切入扯点东西吧。 在当今社会，什么东西都离不开钱，似乎没有钱，就生存不下去了（似乎的确是这样子 &hellip;">
-  
-
-  <!-- http://t.co/dKP3o1e -->
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/10/21/about-wealth">
-  <link href="/favicon.png" rel="icon">
-  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="StackOverGiant" type="application/atom+xml">
-  <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
-  <script src="/javascripts/octopress.js" type="text/javascript"></script>
-  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-
-  
-
-</head>
-
-<body   >
-  <header role="banner"><hgroup>
-  <h1><a href="/">StackOverGiant</a></h1>
-  
-    <h2>栈在巨人的肩膀上思考</h2>
-  
-</hgroup>
-
-</header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
-  
-</ul>
-  
-<form action="https://www.google.com/search" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="q" value="site:Jaskey.github.io" />
-    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
-  </fieldset>
-</form>
-  
-<ul class="main-navigation">
-  <li><a href="/">Blog</a></li>
-  <li><a href="/blog/archives">Archives</a></li>
-</ul>
-
-</nav>
-  <div id="main">
-    <div id="content">
-      <div>
-<article class="hentry" role="article">
-  
-  <header>
+  <title><![CDATA[Category: 思考 | StackOverGiant]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/si-kao/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2014-10-26T02:25:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
     
-      <h1 class="entry-title">大学生与烧饼小贩</h1>
-    
-    
-      <p class="meta">
-        
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
 
-
-
-
-<time class='entry-date' datetime='2014-10-21T19:34:50+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>7:34 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-<div class="entry-content"><p>最近写技术的东西比较多，刚好也在看《黑客与画家》，里面讲到的关于如何创造财富这一论点引起了我极大的共鸣和思考，觉得既然博客折腾起来了，就简单整理下，写下点东西。刚好最近大学生校园招聘的季节，就从这个话题切入扯点东西吧。</p>
+  
+  <entry>
+    <title type="html"><![CDATA[大学生与烧饼小贩]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/21/about-wealth/"/>
+    <updated>2014-10-21T19:34:50+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/21/about-wealth</id>
+    <content type="html"><![CDATA[<p>最近写技术的东西比较多，刚好也在看《黑客与画家》，里面讲到的关于如何创造财富这一论点引起了我极大的共鸣和思考，觉得既然博客折腾起来了，就简单整理下，写下点东西。刚好最近大学生校园招聘的季节，就从这个话题切入扯点东西吧。</p>
 
 <p>在当今社会，什么东西都离不开钱，似乎没有钱，就生存不下去了（似乎的确是这样子）。然后，我们从出生那天起，就被安排着如何成为一个会赚钱的人。</p>
 
@@ -133,209 +67,7 @@
 <p>Fair enough! 十分公平。也许你的工作并不比卖烧饼的轻松（不过很多的确比烧饼轻松得多），而且我们的前期投入也肯定比小贩们投入得多得多（无论教育费用，时间），但这就是市场给予我们的回应。一个人的收入，与他创造财富的能力相匹配，这是我能想到的最为公平且合理的资源配置方式。当然，除了创造财富外，还有另外一种获得财富的手段，那就是偷窃。这不包括真真意义上的偷，而还包括贪污、资源垄断，他们和偷窃都拥有一样的特点——没有创造财富而获取创造出来的财富，这在中国还十分的严重，但对比历史已经好得多得多。至少，以前的首富都是达官贵人，现在我们的首富却是马云。</p>
 
 <p>那么，自己能拿多少钱？应该问的，不是自己付出了多少，自己的学历，自己的身份，而是问自己到底能创造多少财富，<strong>在市场化的社会里，最简单、最公平的获取财富的手段，就是创造财富了。</strong></p>
-</div>
-
-
-  <footer>
-    <p class="meta">
-      
+]]></content>
+  </entry>
   
-
-<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
-
-      
-
-
-
-
-<time class='entry-date' datetime='2014-10-21T19:34:50+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>7:34 pm</span></time>
-      
-
-<span class="categories">
-  
-    <a class='category' href='/blog/categories/si-kao/'>思考</a>, <a class='category' href='/blog/categories/sheng-huo/'>生活</a>
-  
-</span>
-
-
-    </p>
-	
-	<p class="meta">
-    <div class="about">
-     <span class="about-image">
-          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
-     </span>
-     <span class="about-desc">
-          <span>站在风口，只有猪才能飞起来</span>
-          <br/>
-          <hr/>
-		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
-		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
-		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
-     </span>
-</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
-    </p>
-    
-	
-      <div class="sharing">
-  
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/10/21/about-wealth/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/10/21/about-wealth/" >Tweet</a>
-  
-  
-  
-  
-  
-	<!-- JiaThis Button BEGIN -->
-<div class="jiathis_style_24x24">
-	<a class="jiathis_button_qzone"></a>
-	<a class="jiathis_button_tsina"></a>
-	<a class="jiathis_button_tqq"></a>
-	<a class="jiathis_button_weixin"></a>
-	<a class="jiathis_button_renren"></a>
-	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
-</div>
-<script type="text/javascript">
-var jiathis_config = {data_track_clickback:'true'};
-</script>
-<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
-<!-- JiaThis Button END -->
-	
-<!-- UY BEGIN -->
-<div id="uyan_frame"></div>
-<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
-<!-- UY END -->
-
-  
-</div>
-
-    
-	
-
-
-    <p class="meta">
-      
-        <a class="basic-alignment left" href="/blog/2014/10/18/change-source-folder-in-eclipse/" title="Previous Post: 如何在eclipse中修改源目录路径">&laquo; 如何在eclipse中修改源目录路径</a>
-      
-      
-        <a class="basic-alignment right" href="/blog/2014/10/26/get-started-with-memcached/" title="Next Post: 快速入门Memcached">快速入门Memcached &raquo;</a>
-      
-    </p>
-  </footer>
-</article>
-
-</div>
-
-<aside class="sidebar">
-  
-    <section>
-  <h1>Recent Posts</h1>
-  <ul id="recent_posts">
-    
-      <li class="post">
-        <a href="/blog/2014/10/26/get-started-with-memcached/">快速入门Memcached</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/21/about-wealth/">大学生与烧饼小贩</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/17/performance/">浅谈网站性能优化</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a>
-      </li>
-    
-  </ul>
-</section>
-
-<section>
-  <h1>Jaskey Lam的微博</h1>
-  <ul id="weibo">
-    <li>
-		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
-				src="http://widget.weibo.com/weiboshow/index.php?
-				language=&
-				width=0&
-				height=550&
-				fansRow=0& 
-				ptype=1&
-				speed=300&
-				skin=9&
-				isTitle=0&
-				noborder=0&
-				isWeibo=1&
-				isFans=0&
-				uid=1762728080&
-				verifier=4b318246&
-				dpc=1">
-		</iframe>
-    </li>
-  </ul>
-</section>
-
-<section>
-	<h1>我的豆瓣<h1>
-  <div>
-    <script type="text/javascript" 
-    src="http://www.douban.com/service/badge/linjunjie1103/?
-    selection=&
-    amp;picsize=small&
-    amp;hidelogo=&
-    amp;show=collection&
-    amp;n=9&
-    amp;cat=movie%7Cbook&
-    amp;columns=3">
-    </script>  
-  </div>
-</section>
-
-
-
-
-<section>
-  <h1>About Me</h1>
-  <p>如果说我为什么能编程，那是因为我”栈“在巨人的肩膀上思考</p>
-</section>
-
-  
-</aside>
-
-
-    </div>
-  </div>
-  <footer role="contentinfo"><p>
-  Copyright &copy; 2014 - Jaskey Lam -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
-</p>
-
-</footer>
-  
-
-
-
-
-
-
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = '//platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
-
-
-
-
-
-</body>
-</html>
+</feed>

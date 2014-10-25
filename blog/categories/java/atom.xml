@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-21T22:11:51+08:00</updated>
+  <updated>2014-10-26T02:25:00+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,69 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[谈谈Java同步机制]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/13/java-synchronization/"/>
+    <updated>2014-10-13T21:11:20+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/13/java-synchronization</id>
+    <content type="html"><![CDATA[<p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
+今天简单谈谈Java的同步机制。</p>
+
+<p>我们以一个十分简单的例子讲起。</p>
+
+<pre><code>int i=0
+public int getNextI(){
+    return ++i;
+}
+</code></pre>
+
+<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
+
+<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
+
+<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
+
+<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
+
+<h2>volatile</h2>
+
+<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
+
+<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
+
+<h2>synchronized</h2>
+
+<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
+
+<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
+
+<p>我们可以改成</p>
+
+<pre><code>public synchronized int getNextI(){
+    return i++;
+}
+</code></pre>
+
+<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
+
+<p>注：
+如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
+
+<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
+
+<pre><code>public  int getNextI(){
+    synchronized(this){
+        return i++;
+    }
+}
+</code></pre>
+
+<p>更多文档可参考：</p>
+
+<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[JVM垃圾回收算法]]></title>
@@ -95,6 +158,34 @@
 <h2>总结：</h2>
 
 <p>一个对象新创建的时候进入到新生代，然后垃圾回收几次后，该对象依然存活，于是就放入老年代。所以，新生代适合使用复制算法（大多是垃圾对象，复制开销小），老年代多用标记-压缩算法（大多是存活对象，回收对象少）。然后整个垃圾回收器的工作线程是用增量算法，时间轮转片执行。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
+    <updated>2014-09-24T20:26:02+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
+    <content type="html"><![CDATA[<p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
+
+<ol>
+<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
+<li>不希望被gc回收又不想自己去处理实例。</li>
+<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
+</ol>
+
+
+<p>注：</p>
+
+<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
+
+<p>stackoverflow相关讨论：</p>
+
+<ul>
+<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
+<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
+</ul>
+
 ]]></content>
   </entry>
   

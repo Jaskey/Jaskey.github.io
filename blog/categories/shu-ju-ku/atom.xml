@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 数据库 | StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/blog/categories/shu-ju-ku/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-10-26T23:21:52+08:00</updated>
+  <updated>2014-10-26T23:26:57+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -186,7 +186,7 @@ SELECT order_id,order_num,customer_name FROM ORDERS WHERE not exist
 <h2>关于缓存</h2>
 
 <ul>
-<li><p><strong>在MySQL中使用缓存把缓存结果保留能有效减小SQL查询时间</strong></p></li>
+<li><p><strong>在MySQL中使用缓存把查询结果保留能有效减小SQL查询时间</strong></p></li>
 <li><p><strong>在应用程序中使用缓存</strong></p></li>
 </ul>
 

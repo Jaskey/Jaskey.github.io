@@ -9,7 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="最近在学习MySQL的优化，今天整理下一些对于开发人员有必要了解的一些技巧。 关于索引 很多SQL优化都和索引有关，所以，在了解SQL优化前，最好先理解什么是索引，索引做的是什么。关于这点，stackoverflow上有很好的一个问题：how does database indexing work &hellip;">
+  <meta name="description" content="随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。 从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。 CPU 由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。 上下文切换 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,167 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-31T17:44:25+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>5:44 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
+
+<p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>
+
+<h2>CPU</h2>
+
+<p>由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。</p>
+
+<h4>上下文切换</h4>
+
+<p>如果有频繁的上下文切换，则会造成内核占据较多的CPU使用，降低系统性能。典型的例子有是有非常强烈的锁竞争情况。这会导致当前进程频繁的进入阻塞或者休眠状态，使得应用响应下降。</p>
+
+<p>这类型的解决方法有，</p>
+
+<ol>
+<li>减小Thread的数量</li>
+<li>降低锁竞争，如分多把锁。</li>
+</ol>
+
+
+<h4>线程一直处于Running</h4>
+
+<p>还有另外一种情况是线程一直处于Running状态，这会导致该线程消耗大部分的CPU，通常情况是进行循环，或者大批量计算。</p>
+
+<p>例如</p>
+
+<pre><code>while(somevalue!=XXX){//
+   ;//死循环
+}   
+</code></pre>
+
+<p>或者有一个大批量的数据操作，如对集合进行很大数据量的增加操作：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+    list.add(value[i])
+}
+</code></pre>
+
+<p>以上两种例子都会使得线程一直处于running状态而不释放CPU，一个可取的方法是进行部分操作后进行<code>Thread.sleep()</code>,让出CPU。</p>
+
+<p>如上面第二个例子：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+   list.add(value[i])
+   if(i%50==0){//每50个就让出一次CPU 
+        Thread.sleep(1);
+    }
+}
+</code></pre>
+
+<p>当然，对于第一个例子，假如是希望线程中的协作的话，最好使用的是monitor object 的wait()/notify()之类的方法。</p>
+
+<p>如</p>
+
+<pre><code>while(!some_condition){
+    condition.wait();//挂起等待notify
+}
+</code></pre>
+
+<h2>内存</h2>
+
+<p>如果消耗了过多的JVM Heap内存，将会频繁触发GC，将大大影响系统的性能。</p>
+
+<h4>使用对象缓存池</h4>
+
+<p>使用对象池可以一定程度创建对象所花费的CPU和内存</p>
+
+<h4>采用合理的缓存失效算法</h4>
+
+<p>上面讲到了对象池降低内存消耗，但假如放入太多对象到缓存池里面，反而会造成更严重的内存消耗，这是因为池本身对于对象持有引用，从而可能造成频繁的Full GC。所以，需要控制池中对象的数量。</p>
+
+<p>当池中对象达到最大值后，如果需要加入新的对象，则需要采用合理的失效算法清除池中的对象。如FIFO,LRU,LFU。</p>
+
+<h4>中途释放不用的大对象引用</h4>
+
+<p>如：</p>
+
+<pre><code>void foo(){
+  Object bigObject=new Object();
+  bigObject.doSomething();//下面不需要了
+  // 下面有很多其他耗时，耗内存的操作的话，可考虑释放bigObject的引用
+  bigObject=null;
+
+  //some long opertions
+}
+</code></pre>
+
+<h4>合理使用WeakReference 和 SoftReference</h4>
+
+<p>有些对象我们允许在某些情况下即使我们还有引用，也要被GC。这时候可以考虑使用弱引用或者软引用。</p>
+
+<p>当某些对象用作类似缓存对象的时候，内存不足就可以被回收的话，这类对象可以使用软引用。</p>
+
+<p>而当某些对象A如果依附于某个对象B存在，如果B不存在了，A就没有必要存在，并且A的存在与否不应该阻碍B是否存在，那么A引用B的时候可以考虑使用弱引用。</p>
+
+<p>关于两者区别可以参考<a href="http://stackoverflow.com/questions/299659/what-is-the-difference-between-a-soft-reference-and-a-weak-reference-in-java">what is the difference between a soft reference and a weak reference</a></p>
+
+<h2>文件IO</h2>
+
+<p>文件IO严重的主要原因是多个线程在写大量的数据在同一个文件，导致文件变得很大，写入速度越来越慢，并造成线程竞争文件锁激烈。</p>
+
+<p>解决此类问题的方向有：</p>
+
+<h4>异步写文件</h4>
+
+<p>把文件的写入操作改为异步，如写日志的时候使用<code>log4j</code>的<a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/AsyncAppender.html">AsynAppender</a></p>
+
+<h4>批量读写</h4>
+
+<p>如大数据插入数据库改改为批量的插入操作数据库的操作：</p>
+
+<pre><code>  PreparedStatement ps = c.prepareStatement("INSERT INTO employees VALUES (?, ?)");
+
+  ps.setString(1, "John");
+  ps.setString(2,"Doe");
+  ps.addBatch();
+
+  ps.clearParameters();
+  ps.setString(1, "Dave");
+  ps.setString(2,"Smith");
+  ps.addBatch();
+
+  ps.clearParameters();
+  int[] results = ps.executeBatch();
+</code></pre>
+
+<h4>限制文件大小</h4>
+
+<p>无论数据库表，还是日志文件，我们都应该限制其的大小。</p>
+
+<p>有必要的话，对于数据库表，需要分拆成小表，增加读写速度。</p>
+
+<p>对于文件如日志文件则需要设置一个最大值，超过后生成另外一个新文件。如<code>log4j</code>中使用<code>RollingFileAppender</code>的<code>maxFileSize</code>属性。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1146,76 +1307,6 @@ public int getNextI(){
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/03/adb-problem/">ADB Server Didn&#8217;t ACK ,failed to Start Daemon 解决方法(小心风行客户端)</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-03T23:40:05+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>3</span><span class='date-suffix'>rd</span>, <span class='date-year'>2014</span></span> <span class='time'>11:40 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近重新学习Android，但这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
-
-<pre><code>[2014-10-03 12:15:43 - adb] ADB server didn't ACK
-[2014-10-03 12:15:43 - adb] * failed to start daemon *
-[2014-10-03 12:15:43 - ddms] 'E:\Programming\ADT\adt-bundle-windows-x86_64-20140702\sdk\platform-tools\adb.exe,start-server' failed -- run manually if necessary
-</code></pre>
-
-<p>查了一下stackoverflow， 大多数的解决方案都是：</p>
-
-<ol>
-<li>关掉eclipse</li>
-<li>在任务管理器中把adb.exe关掉</li>
-<li>进入adb所在目录，然后执行adb start-server，成功执行则问题解决</li>
-</ol>
-
-
-<p><strong>问题应该就解决了。但我的问题是， adb start-server 启动不起来！</strong></p>
-
-<p>最后发现了是端口占用的原因导致。</p>
-
-<p>解决方法如下：</p>
-
-<p>1.<code>adb nodaemon server</code></p>
-
-<p>查看不能执行的原因，输出：</p>
-
-<blockquote><p>cannot bind &lsquo;tcp:5037&rsquo;</p></blockquote>
-
-<p>2.定位到了是端口的问题！是5037端口被占用了！</p>
-
-<p>3.<code>netstat -ano | findstr 5037</code></p>
-
-<p>查找谁占用了5037的进程，得到进程pid.</p>
-
-<p>4.杀死该进程。</p>
-
-<p>可以在任务管理器中杀死，或者使用命令：
-    taskkill /pid 端口号 -f</p>
-
-<p>最后发现是tfadb.exe这个程序占用了该端口。查询签名发现这是风行客户端！！</p>
-
-<p>真是无比坑爹啊，安装了风行的同学真的要注意下。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1231,6 +1322,10 @@ public int getNextI(){
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/26/sql-optimization/">SQL优化的一些技巧</a>
       </li>
     
@@ -1244,10 +1339,6 @@ public int getNextI(){
     
       <li class="post">
         <a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/17/performance/">浅谈网站性能优化</a>
       </li>
     
   </ul>

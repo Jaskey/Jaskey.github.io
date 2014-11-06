@@ -9,7 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。 从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。 CPU 由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。 上下文切换 &hellip;">
+  <meta name="description" content="最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件： 对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。 今天把写的过程分享一下，5分钟便可自己写上一个了。 语法部分 详细的官网文档是：https://developer.mozilla. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,126 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>3:18 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
+
+<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
+
+<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
+
+<h2>语法部分</h2>
+
+<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
+
+<p>我们直接上一个例子，这样上手最快。</p>
+
+<p>先简单浏览下写搜索引擎插件的语法：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
+  &lt;Description&gt;engineDescription&lt;/Description&gt;
+  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
+  &lt;Url type="text/html" method="method" template="searchURL"&gt;
+    &lt;Param name="paramName1" value="paramValue1"/&gt;
+    ...
+    &lt;Param name="paramNameN" value="paramValueN"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
+  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
+
+<p>解释一下其中某些标签的作用：</p>
+
+<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
+
+<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
+
+<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
+
+<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
+
+<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
+
+<h2>例子——豆瓣</h2>
+
+<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
+
+<p>首先，在 火狐安装路径\Mozilla Firefox\browser\searchplugins 下新建一个xml文件，如douban.xml</p>
+
+<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
+  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
+  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
+  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
+     &lt;Param name="source" value="suggest"/&gt;
+     &lt;Param name="q" value="{searchTerms}"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
+
+<p>还有，这里我使用的搜索建议是谷歌的，假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
+
+<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
+</code></pre>
+
+<p>最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
+
+<p>最后保存，重启火狐浏览器，就能够看到自己增加的小插件啦。</p>
+
+<p>注：在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
+
+<h2>发布分享</h2>
+
+<p>写完之后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a>
+提交这个xml文件就可以供大家使用了。</p>
+
+<p>大家可以在<a href="https://addons.mozilla.org/en-US/firefox/addon/%E8%B1%86%E7%93%A3%E6%90%9C%E7%B4%A2/">https://addons.mozilla.org/en-US/firefox/addon/%E8%B1%86%E7%93%A3%E6%90%9C%E7%B4%A2/</a> 找到我豆瓣的这个例子</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1202,111 +1322,6 @@ public int getNextI(){
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/10/gc-algorithm/">JVM垃圾回收算法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-10T17:09:51+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:09 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
-
-<ul>
-<li><strong>引用计数收集器</strong></li>
-</ul>
-
-
-<hr />
-
-<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
-
-<p><img src="http://jaskey.github.io/images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
-
-<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
-
-<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
-
-<h2>- <strong>跟踪收集器</strong></h2>
-
-<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
-
-<ul>
-<li><strong>复制（Copying）</strong>
-复制收集器从根集合开始扫描所有存活的对象，把能达到的所有对象（存活对象）复制到一块新的未被使用的空间中，没有到达的对象则证明没有被引用，可以回收。这样就解决了循环引用不可回收的问题，如下图所示：</li>
-</ul>
-
-
-<p><img src="../images/gc/copying.jpg" alt="复制" /></p>
-
-<p><img src="http://jaskey.github.io/images/gc/copying.jpg" alt="复制算法" /></p>
-
-<p>好处：仅需扫描一次所有存活的对象，当存活对象较少时（垃圾对象多），比较高效。适合于新生代区</p>
-
-<p>坏处：需要额外的内存空间，不适合老年代（大部分是存活对象）</p>
-
-<ul>
-<li><strong>标记-清除(Mark-Sweep)</strong></li>
-</ul>
-
-
-<p>采用从根集合开始扫描，对能到达的对象（存活）进行标记，标记完成后，再扫描整个空间中未标记的对象，并进行回收。</p>
-
-<p><img src="http://jaskey.github.io/images/gc/mark-sweep.jpg" title="标记-清除法" alt="标记-清除" /></p>
-
-<p>好处：仅需扫描一次所有存活的对象，不需要移动对象，仅需要对不可达对象（垃圾对象）进行处理。适合于垃圾对象比较少的情况。</p>
-
-<p>坏处：容易造成内存碎片</p>
-
-<ul>
-<li><strong>标记-压缩(Mark-Compact)</strong></li>
-</ul>
-
-
-<p>和标记-清除一样对可达对象（存活对象）进行标记，但是回收垃圾对象的后，会对其他存活的对象往左端空闲空间进行移动，并更新引用对象的指针。适合老年代。如下图：</p>
-
-<p><img src="http://jaskey.github.io/images/gc/mark-compact.jpg" title="标记-压缩法" alt="标记-压缩" /></p>
-
-<p>好处：对比标记-清除，避免了内存碎片</p>
-
-<p>坏处：增加了移动对象的成本。</p>
-
-<hr />
-
-<ul>
-<li><strong>增量算法</strong></li>
-</ul>
-
-
-<p>由于大部分的回收算法在回收时候，只有垃圾回收线程在运行，其他线程都会被挂起，直到垃圾回收结束。</p>
-
-<p>这将导致在垃圾回收很久时候，其他线程一直不工作，而导致系统无响应。例如在Android应用中，如果UI进程5秒不响应就会出现ANR(Application Not Responding)错误。所以一个可行的方法是让垃圾进程与其他线程交替执行，每次垃圾回收仅进行部分内存的回收，减小系统的停顿时间。但由于线程的来回切换，提高了垃圾回收的开销。</p>
-
-<hr />
-
-<h2>总结：</h2>
-
-<p>一个对象新创建的时候进入到新生代，然后垃圾回收几次后，该对象依然存活，于是就放入老年代。所以，新生代适合使用复制算法（大多是垃圾对象，复制开销小），老年代多用标记-压缩算法（大多是存活对象，回收对象少）。然后整个垃圾回收器的工作线程是用增量算法，时间轮转片执行。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1322,6 +1337,10 @@ public int getNextI(){
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a>
       </li>
     
@@ -1335,10 +1354,6 @@ public int getNextI(){
     
       <li class="post">
         <a href="/blog/2014/10/21/about-wealth/">大学生与烧饼小贩</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a>
       </li>
     
   </ul>

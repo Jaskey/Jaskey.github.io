@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-11-06T22:08:05+08:00</updated>
+  <updated>2014-11-06T22:19:17+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -71,7 +71,7 @@
 
 <p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
 
-<p>首先，在 火狐安装路径\Mozilla Firefox\browser\searchplugins 下新建一个xml文件，如douban.xml</p>
+<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
 
 <p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
 
@@ -102,7 +102,15 @@
 
 <p>最后保存，重启火狐浏览器，就能够看到自己增加的小插件啦。</p>
 
-<p>注：在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
+<p>注：</p>
+
+<p>1 .  如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
+
+<p><code>user_pref("browser.search.selectedEngine", "engine_name");</code></p>
+
+<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox</a></p>
+
+<p>2 .  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
 
 <h2>发布分享</h2>
 

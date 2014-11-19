@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Stateless | StackOverGiant]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/stateless/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2014-11-19T20:23:08+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Stateless的web架构]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/11/10/stateful-vs-stateless/"/>
+    <updated>2014-11-10T21:26:13+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/11/10/stateful-vs-stateless</id>
+    <content type="html"><![CDATA[<h2>分布式架构中用户状态的问题</h2>
+
+<p>传统的web架构中，我们通常会用使用session保存用户的当前状态用以标记一个用户，例如用户在不同的请求中都能找到他的购物车中的物品。</p>
+
+<p>但随着用户量的增长，无法避免的，我们需要使用使用分布式的系统。而在分布式场景，问题将会变得复杂起来。</p>
+
+<p>例如，现在有三台应用服务器A,B,C。第一次用户的请求被负载均衡器路由到了A服务器，相关的状态被保存了起来，那么下次一个请求过来的时候，假如负载均衡器把他的请求路由到了B上，所有的已有状态都将丢失。就好像你刚刚在购物车上抢到了一台小米手机，准备付款的时候发现购物车居然是空的！这是我们需要急切避免的问题！</p>
+
+<h2>Sticky Session</h2>
+
+<p>要解决这种场景，如果我们使用原来的架构，就必须更改负载均衡器的策略，可使用一个sticky session 的策略。</p>
+
+<p>即同一个用户的请求都转发到同一台的服务器，这样，session就不用丢失。服务器依旧可以在session中找到用户的相关信息。负载均衡器可以在查看HTTP头中的Cookies（我们设置用户的标识到其中）去判断应该路由到哪台具体的服务器上，以便获取到local session。</p>
+
+<p>用sticky session解决这类问题有两个较为明显的<strong>好处</strong>：</p>
+
+<ol>
+<li>所有的应用代码都不需要修改，本来单机使用session的，分布式环境依旧可以使用。</li>
+<li>有利于命中本机的RAM缓存，例如可以有效的存储某些用户的静态信息在本机，下次有效的使用缓存增加响应速度</li>
+</ol>
+
+
+<p>但是，sticky session 有如下<strong>坏处</strong>：</p>
+
+<ol>
+<li>如果一台服务器宕机，该服务器上的session就会丢失（这是local session的通病）。这对于状态敏感的应用，如购物车，是极大的问题。</li>
+<li>由于负载均衡器使用了sticky,这可能导致负载很不均衡。</li>
+<li>如果负载过重，希望横向扩展，不能即时的收到效果。因为原来的用户的所有存有session的请求都会路由到原来的服务器。</li>
+</ol>
+
+
+<h2>Stateless Archetecture</h2>
+
+<p>可见，sticky session 很难解决用户状态不丢失的问题，那么要避免sticky session缺点而又解决这类的用户状态的问题，现在流行的架构是无状态的（stateless），也就是说，不使用session，server端不保留用户的任何状态。</p>
+
+<p>一旦我们把应用做成无状态的，有很多好处</p>
+
+<p>1 . 最明显的就是易于横向扩展！服务器不需要维护用户的状态，所以每一台服务器去处理用户的请求，都是一样的。负载均衡器可以使用最简单最优的策略，如随机/轮询等策略负载到具体的应用服务器上。</p>
+
+<p>2 . 即便应用服务器宕机，也不会丢失用户状态，因为状态没有保存在该机上。而当需要增加机器已处理大量用户请求，由于无状态，可以让新的机器快速的拥有一定负载(load)。</p>
+
+<p>我们这里说的无状态的架构，指的是应用服务器的无状态。实际上，在整个物理世界都有状态的服务中，是不可能做到完全的无状态，但是，我们可以把状态转移。</p>
+
+<p>应用服务器前接客户端，后接数据库。所以我们可以把状态转移到这两者之一。</p>
+
+<p>1 .转移到client</p>
+
+<p>这也是REST的约束之一。我们可以把用户的相关状态通过cookie设置在HTTP Response，这样应用服务器获取状态的责任就转移到客户端本身。例如标识一个用户ID（加密的hash串）之类的，可以设置到cookie中，但这仅限于某些不敏感的状态。而且，cookie中能设置的数据大小也很有限。</p>
+
+<p>2 .转移到数据库（分布式缓存）中。</p>
+
+<p>另外一个更为可取的方法是使用数据库或者分布式缓存（如memcache）存储用户的状态，这样无状态的服务器依旧可以使用可靠的方式获取到用户的状态而做出合理的逻辑处理。</p>
+]]></content>
+  </entry>
+  
+</feed>

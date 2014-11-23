@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/</loc>
+    <lastmod>2014-11-23T23:10:43+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://Jaskey.github.io/blog/2014/11/10/stateful-vs-stateless/</loc>
     <lastmod>2014-11-10T21:26:13+08:00</lastmod>
     <priority>0.8</priority>
@@ -119,21 +125,21 @@
   
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2014-11-19T20:23:08+08:00</lastmod>
+    <lastmod>2014-11-23T23:24:35+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-11-19T20:23:08+08:00</lastmod>
+    <lastmod>2014-11-23T23:24:35+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-11-19T20:23:08+08:00</lastmod>
+    <lastmod>2014-11-23T23:24:35+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

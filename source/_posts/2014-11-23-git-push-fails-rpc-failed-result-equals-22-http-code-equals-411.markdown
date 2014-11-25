@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "git push： RPC failed- result=22-HTTP code = 411，解决方案"
+title: "git push error: RPC failed; result=22, HTTP code = 411 解决方案"
 date: 2014-11-23 23:10:43 +0800
 comments: true
 categories: git 

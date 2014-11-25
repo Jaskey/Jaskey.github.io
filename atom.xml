@@ -4,7 +4,7 @@
   <title><![CDATA[StackOverGiant]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-11-23T23:24:35+08:00</updated>
+  <updated>2014-11-26T00:24:16+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,7 +14,191 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Git Push： RPC Failed- result=22-HTTP Code = 411，解决方案]]></title>
+    <title type="html"><![CDATA[Maven 配置 BAE SDK]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup/"/>
+    <updated>2014-11-25T23:38:51+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup</id>
+    <content type="html"><![CDATA[<p>百度BAE的官方文档没有一个完整的使用Maven配置BAE SDK的例子，而<a href="http://godbae.duapp.com/?p=366">BAE官方博客</a>上的配置也不可用。</p>
+
+<p>经过多日的调试和BAE客服的交流，最后成功配置出了一个maven 配置的 pom.xml文件。今天决定分享一下，可能是现在网上能搜到的第一篇可用的配置步骤了。</p>
+
+<p>1.建立Maven项目</p>
+
+<p>2.下载BAE SDK 这里使用的是<a href="http://bcs.duapp.com/baev3-sdk/java-runtime/baev3-sdk-1.0.0.zip">baev3-sdk-1.0.1</a>（下载还是必须的）</p>
+
+<p>3.添加如下repository 到pom.xml中</p>
+
+<pre><code>&lt;repositories&gt;
+   &lt;repository&gt;
+        &lt;id&gt;bae&lt;/id&gt;
+        &lt;url&gt;http://maven.duapp.com/nexus/content/groups/public/&lt;/url&gt;
+        &lt;releases&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+        &lt;/releases&gt;
+   &lt;/repository&gt;
+&lt;/repositories&gt;
+</code></pre>
+
+<p>4.添加依赖包：</p>
+
+<pre><code>    &lt;!-- ===================bae=============================== --&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;junit&lt;/groupId&gt;
+        &lt;artifactId&gt;junit&lt;/artifactId&gt;
+        &lt;version&gt;3.8.1&lt;/version&gt;
+        &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu.bae&lt;/groupId&gt;
+        &lt;artifactId&gt;baev3-sdk&lt;/artifactId&gt;
+        &lt;version&gt;1.0.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu&lt;/groupId&gt;
+        &lt;artifactId&gt;mcpack&lt;/artifactId&gt;
+        &lt;version&gt;1.0.9&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.thrift&lt;/groupId&gt;
+        &lt;artifactId&gt;libthrift&lt;/artifactId&gt;
+        &lt;version&gt;0.9.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.google.code.gson&lt;/groupId&gt;
+        &lt;artifactId&gt;gson&lt;/artifactId&gt;
+        &lt;version&gt;2.2.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.ezmorph&lt;/groupId&gt;
+        &lt;artifactId&gt;ezmorph&lt;/artifactId&gt;
+        &lt;version&gt;1.0.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+     &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.json-lib&lt;/groupId&gt;
+        &lt;artifactId&gt;json-lib&lt;/artifactId&gt;
+        &lt;version&gt;2.4&lt;/version&gt;
+        &lt;classifier&gt;jdk15&lt;/classifier&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-beanutils&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-beanutils&lt;/artifactId&gt;
+        &lt;version&gt;1.8.0&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpmime&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpcore&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+        &lt;type&gt;jar&lt;/type&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpclient&lt;/artifactId&gt;
+        &lt;version&gt;4.2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-codec&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-codec&lt;/artifactId&gt;
+        &lt;version&gt;1.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-io&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+        &lt;version&gt;1.4&lt;/version&gt;
+    &lt;/dependency&gt; 
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-lang&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang&lt;/artifactId&gt;
+        &lt;version&gt;2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang3&lt;/artifactId&gt;
+        &lt;version&gt;3.1&lt;/version&gt;
+    &lt;/dependency&gt;   
+
+    &lt;!-- Log4j --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;log4j&lt;/groupId&gt;
+        &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+        &lt;version&gt;1.2.17&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;   
+</code></pre>
+
+<p>5.到这一步，你可能会发现如下错误：</p>
+
+<pre><code>Missing artifact com.baidu:mcpack:jar:1.0.0.9
+</code></pre>
+
+<p>这时候，去到下载的BAE SDK下载的dependencies目录下，找到<code>mcpack-1.0.0.9.jar</code></p>
+
+<p>在cmd命令行中使用如下命令（需要配置好maven的环境变量）：</p>
+
+<pre><code>mvn install:install-file -Dfile=下载路径\baev3-sdk-1.0.1\dependencies\mcpack-1.0.0.9.jar -DgroupId=com.baidu -DartifactId=mcpack -Dversion=1.0.9 -Dpackaging=jar
+</code></pre>
+
+<p><img src="http://Jaskey.github.io/images/bae/install_mcpack.jpg" title="安装mcpack到本地路径" alt="安装mcpack到本地路径" /></p>
+
+<p>然后去本地repo下查看是否存在此依赖包（默认在window用户目录下.m2）去查看本地安装的mcpack包。</p>
+
+<p><img src="http://Jaskey.github.io/images/bae/repo_mcpack.jpg" title="查看mcpack是否安装成功" alt="查看mcpack是否安装成功" /></p>
+
+<p>6.更新maven 项目，应该就可以了。</p>
+
+<h2>测试分布式日志</h2>
+
+<p>在<code>log4j.properties</code>中加入如下类似配置：</p>
+
+<pre><code>log4j.rootLogger=DEBUG,BAE
+##################分布式日志###############
+log4j.appender.BAE=com.baidu.bae.api.log.BaeLogAppender
+log4j.appender.BAE.ak=BAE的API KEY
+log4j.appender.BAE.sk=BAE的的Secrete Key
+log4j.appender.BAE.Threshold = DEBUG
+log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
+</code></pre>
+
+<p>maven install 并发布。在扩展服务中测试分布式日志</p>
+
+<p><img src="http://Jaskey.github.io/images/bae/BAE_distrubuted_logs.jpg" alt="测试分布式日志" /></p>
+
+<p>如果能看到日志打印成功，则证明BAE的SDK配置成功了</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案]]></title>
     <link href="http://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/"/>
     <updated>2014-11-23T23:10:43+08:00</updated>
     <id>http://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411</id>
@@ -1581,116 +1765,6 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
 
 <p>更多解析，可参考stackoverflow:
 <a href="http://stackoverflow.com/questions/359434/differences-between-cookies-and-sessions">Differences between cookies and sessions?</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Windows7上配置和使用Octopress]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/04/how-to-octopress/"/>
-    <updated>2014-09-04T17:26:00+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/04/how-to-octopress</id>
-    <content type="html"><![CDATA[<p>本文翻译自：
-<a href="http://www.techelex.org/setup-octopress-on-windows7/">setup octopress on windows 7</a></p>
-
-<hr />
-
-<h2>准备工作：</h2>
-
-<ol>
-<li><a href="http://git-scm.com/">安装Git</a></li>
-<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
-<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 use <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
-<li>建立一个文件夹，例如在C：/github</li>
-</ol>
-
-
-<p>配置Octopress:</p>
-
-<pre><code>cd c:/github
-git clone git://github.com/imathis/octopress.git octopress #clone一个仓库，此处替换 octopress 成为 username.github.io
-cd octopress #进入clone出来的项目
-ruby --version # 应该会报出ruby 版本如 Ruby 1.9.3
-</code></pre>
-
-<p>然后进行相关初始化：</p>
-
-<pre><code>cd C:/RubyDevKit
-ruby dk.rb init
-ruby dk.rb install
-</code></pre>
-
-<p>安装依赖：</p>
-
-<pre><code>cd c:/github/octopress #replace octopress with username.github.io
-gem install bundler
-bundle install
-</code></pre>
-
-<p>安装默认的OctoPress 主题：</p>
-
-<pre><code>rake install
-</code></pre>
-
-<hr />
-
-<h2>建立Github的仓库</h2>
-
-<p>命名为：你的名字.github.io</p>
-
-<h2>部署</h2>
-
-<pre><code>rake setup_github_pages
-</code></pre>
-
-<p>这样做的结果是：</p>
-
-<ol>
-<li>询问你的Github Pages 的仓库URL。</li>
-<li>从orgin重命名指向imathis/octopress 的remote 到octopress</li>
-<li>增加你的Github pages 的仓库为默认的 origin remote</li>
-<li>当前branch 从master 转换到source</li>
-<li>配置你的博客url</li>
-<li>在_deploy文件下下配置一个master 分支用于开发</li>
-</ol>
-
-
-<hr />
-
-<h2>发布：</h2>
-
-<pre><code>rake generate
-rake deploy
-</code></pre>
-
-<hr />
-
-<p>这样就会生成你的博客，复制生成的文件到_deploy/下，并增加到git，commit 和push到master分支。</p>
-
-<p>最后，commit源文件</p>
-
-<pre><code>git add .
-git commit -m '提交信息'
-git push origin source
-</code></pre>
-
-<p>现在，访问你的用户名.github.io就可以访问你的博客了。（第一次可能会延迟十几分钟）</p>
-
-<hr />
-
-<h2>新增博文</h2>
-
-<pre><code>rake new_post["title"]
-</code></pre>
-
-<p>这里会生成一个markdown文件到source/_posts下</p>
-
-<p>修改此markdown文件，再次发布，即可看到新的博文。</p>
-
-<hr />
-
-<p>有关markdown的语法和使用请参看<a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a></p>
-
-<p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
 ]]></content>
   </entry>
   

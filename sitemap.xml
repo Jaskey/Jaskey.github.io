@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://Jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/</loc>
+    <lastmod>2014-11-28T16:58:21+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup/</loc>
     <lastmod>2014-11-25T23:38:51+08:00</lastmod>
     <priority>0.8</priority>
@@ -131,21 +137,21 @@
   
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2014-11-28T16:52:08+08:00</lastmod>
+    <lastmod>2014-11-28T17:07:31+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2014-11-28T16:52:08+08:00</lastmod>
+    <lastmod>2014-11-28T17:07:31+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2014-11-28T16:52:08+08:00</lastmod>
+    <lastmod>2014-11-28T17:07:31+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

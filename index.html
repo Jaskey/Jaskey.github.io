@@ -9,7 +9,8 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="百度BAE的官方文档没有一个完整的使用Maven配置BAE SDK的例子，而BAE官方博客上的配置也不可用。 经过多日的调试和BAE客服的交流，最后成功配置出了一个maven 配置的 pom.xml文件。今天决定分享一下，可能是现在网上能搜到的第一篇可用的配置步骤了。 1.建立Maven项目 2. &hellip;">
+  <meta name="description" content="每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码： 定义一个用户环境变量%HOME%， value=%USERPROFILE%。（windows会把路径自动替换为用户路径）
+在%HOME% &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +66,56 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-28T16:58:21+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>4:58 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码：</p>
+
+<ul>
+<li>定义一个用户环境变量%HOME%， value=%USERPROFILE%。（windows会把路径自动替换为用户路径）</li>
+<li>在%HOME%路径下新建一个文件<code>_netrc</code></li>
+<li><p>在<code>_netrc</code>文件中增加下面的配置：</p>
+
+<p>  machine <hostname1>
+  login <login1>
+  password <password1>
+  machine <hostname2>
+  login <login2>
+  password <password2></p></li>
+</ul>
+
+
+<p>如：</p>
+
+<pre><code>machine github.com
+login cnblogs_user
+password cnblogs_pwd
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1313,86 +1364,6 @@ city from memcached: shenzhen
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/17/performance/">浅谈网站性能优化</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>6:41 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>今天简单从上层的角度聊一下如何对有一个网站进行优化。</p>
-
-<p>从用户在浏览器敲下回车，到数据回来，至少可以分为三个路径</p>
-
-<ol>
-<li>在浏览器端，发送用户请求，并且接受服务器返回的响应数据进行页面渲染。</li>
-<li>请求数据在网络进行传输，发送到服务器。服务器把响应数据在网络传输返回。</li>
-<li>服务器端进行数据解析处理（访问文件，数据库等），最后返回响应数据。</li>
-</ol>
-
-
-<p>我们把第一路径简要称为“前端”，第三路径称为“后端”，看看能在这三层如何对网站的性能做出优化。</p>
-
-<h2>前端的过程</h2>
-
-<p>1 . 本地DNS解析域名，得到IP地址（并将IP地址缓存起来），向目标IP发送请求（通常为HTTP）</p>
-
-<p>以上过程可以优化的地方主要依靠减少DNS解析的次数。如果用户的浏览器设置了缓存，那么第二次访问相同域名的时候就不会请求DNS服务器了，而是直接用缓存中的IP发送请求。这主要依靠浏览器的相关设置，但我们也可以在页面告知浏览器需要做DNS的预取：</p>
-
-<pre><code>&lt;meta http-equiv="x-dns-prefetch-control" content="on" /&gt;
-</code></pre>
-
-<p>2 . 浏览器得到相应数据做出渲染计算</p>
-
-<p>在这阶段，浏览器主要做的是解析相应数据，创建DOM树，下载CSS样式应用到DOM树中，下载JS文件开始解析。</p>
-
-<p>为了提高页面的访问速度，我们应该尽可能让CSS样式放到<code>&lt;head&gt;</code>中并且让下载js的语句放到<code>&lt;body&gt;</code>的末尾，这样就可以使得页面先渲染起来再执行js脚本，用户的等待时间将减小。</p>
-
-<p>注：HTML5支持<code>async</code>属性支持脚本的异步执行，如：</p>
-
-<pre><code>&lt;script type="text/javascript" src="demo_async.js" async="async"&gt;&lt;/script&gt;
-</code></pre>
-
-<p>同时，我们可以设置浏览器的缓存，让浏览器下次防蚊时从缓存中读取内容，减小HTTP请求。</p>
-
-<h2>网络传输（第二阶段）</h2>
-
-<p>这是阶段的速度取决于网络情况，由于用户的请求的数据很小但往往接受的响应数据很大，所以这要求企业的网络带宽要有快的上行速度，这和用户的带宽是相反的。</p>
-
-<h2>后端过程</h2>
-
-<p>后端是主要可以发挥的地方，这里包括处理请求，访问数据库等资源的过程。</p>
-
-<p>我们主要可以优化的地方有：</p>
-
-<p>1 .   <strong>使用缓存，减缓数据库压力</strong></p>
-
-<p>我们应该尽可能使用缓存提高常用数据的读取数据，减少访问数据库的次数。现在分布式的场景下，可以使用Memcached搭建起分布式缓存。</p>
-
-<p>2 .  <strong>使用异步操作代替同步操作，避免阻塞的等待时间，提高性能。</strong></p>
-
-<p>在高并发的情况，同步的请求操作（如数据库插入）会对数据库造成很大压力，同时也会导致用户的等待时间增长，我们应该尽可能使用异步的请求操作代替同步操作，以提高整体服务的响应速度，具体的操作将进入消息队列处理。最终的结果可以使用其他的方式告知用户，如邮件提醒的方式。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1408,6 +1379,10 @@ city from memcached: shenzhen
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a>
       </li>
     
@@ -1421,10 +1396,6 @@ city from memcached: shenzhen
     
       <li class="post">
         <a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a>
       </li>
     
   </ul>

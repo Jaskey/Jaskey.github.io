@@ -81,30 +81,38 @@ categories: firefox
 
 其中值得留意的地方就是`value ="{searchTerms}"`这里,{serachTerms}表示的是用户在搜框输入的字符串。
 
-还有，这里我使用的搜索建议是谷歌的，假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：
+
+而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。
+
+**关于搜索建议**
+
+这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。
+
+      <Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;q={searchTerms}"/>
+
+假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：
     
     ["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
 
+所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。
 
-最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。
+最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。
 
-最后保存，重启火狐浏览器，就能够看到自己增加的小插件啦。
+--------------
 
-注：
-
-1 .  如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：
-
-`user_pref("browser.search.selectedEngine", "engine_name");`
-
-以上解决方案来源于：http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox
+注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：
 
 
-2 .  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。
+	user_pref("browser.search.selectedEngine", "engine_name");
+
+
+以上解决方案来源于：[adding a custom search engine tofirefox](http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox)
+
+注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。
 
 ## 发布分享 ##
 
-写完之后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到https://addons.mozilla.org/zh-CN/developers/addon/submit/1
-提交这个xml文件就可以供大家使用了。
+写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到https://addons.mozilla.org/zh-CN/developers/addon/submit/1 提交这个xml文件就可以供大家使用了。
 
 
-大家可以在https://addons.mozilla.org/en-US/firefox/addon/%E8%B1%86%E7%93%A3%E6%90%9C%E7%B4%A2/ 找到我豆瓣的这个例子
+大家可以在https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach 找到我豆瓣的这个例子

@@ -38,7 +38,7 @@ categories:
 
     cd c:/github/octopress #replace octopress with username.github.io
     gem install bundler
-    bundle install
+    bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port
 
 安装默认的OctoPress 主题：
     
@@ -57,7 +57,7 @@ categories:
 这样做的结果是：
 
 1. 询问你的Github Pages 的仓库URL。
-1. 从orgin重命名指向imathis/octopress 的remote 到octopress
+1. 从origin重命名指向imathis/octopress 的remote 到octopress
 1. 增加你的Github pages 的仓库为默认的 origin remote
 1. 当前branch 从master 转换到source
 1. 配置你的博客url

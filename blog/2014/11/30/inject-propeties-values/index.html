@@ -5,13 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>什么时候应该使用“静态类”而不使用单例？ - 栈在巨人肩上的猪</title>
+  <title>从属性文件为变量赋值，Spring - 栈在巨人肩上的猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？ 所有方法都是一些工具类的方法，如Math类
-不希望被gc回收又不想自己去处理实例。
-很确定这个类将来也不会是有状态的（ &hellip;">
+  <meta name="description" content="有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。 Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。 配置 1. 新建属性文件 如application.properties 里面的格式为 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="栈在巨人肩上的猪" type="application/atom+xml">
@@ -70,7 +68,7 @@
   
   <header>
     
-      <h1 class="entry-title">什么时候应该使用“静态类”而不使用单例？</h1>
+      <h1 class="entry-title">从属性文件为变量赋值，Spring</h1>
     
     
       <p class="meta">
@@ -79,33 +77,70 @@
 
 
 
-<time class='entry-date' datetime='2014-09-24T20:26:02+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:26 pm</span></time>
+<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>3:38 am</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
+<div class="entry-content"><p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
 
-<ol>
-<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
-<li>不希望被gc回收又不想自己去处理实例。</li>
-<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
-</ol>
+<p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
 
+<h2>配置</h2>
 
-<p>注：</p>
+<p><strong>1. 新建属性文件</strong></p>
 
-<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
+<p>如<code>application.properties</code></p>
 
-<p>stackoverflow相关讨论：</p>
+<p>里面的格式为： <code>name=value</code></p>
 
-<ul>
-<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
-<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
-</ul>
+<p>如：</p>
 
+<pre><code>weixin_id=zhuaguinow
+developer_id= wx9bf6a481c573dee3
+token=wodinow
+domain=http://wodinowspring.duapp.com   
+</code></pre>
+
+<p><strong>2. 配置属性文件路径</strong></p>
+
+<pre><code>&lt;context:property-placeholder location="classpath:application.properties" /&gt;
+</code></pre>
+
+<hr />
+
+<h2>使用注解注入</h2>
+
+<p>在一个Bean中， 使用@Value注解使用${name}格式，如在@Controller中</p>
+
+<pre><code>@Controller
+public class CoreController {   
+
+    @Value("${developer_id}")
+    private String developerID;
+
+    }
+</code></pre>
+
+<h2>为静态变量注入</h2>
+
+<p>Spring不能为静态变量注入属性值，但我们可以配置一个setter完成此项工作，如：</p>
+
+<pre><code>@Component
+public class SignUtil {  
+
+    //需要从属性文件中读值的静态变量
+    private static  String TOKEN;  
+
+    //配置一个setter, 为该静态变量赋值
+    @Value("${token}")
+    private void setTOKEN(String token) {
+        SignUtil.TOKEN = token;
+    }  
+｝
+</code></pre>
 </div>
 
 
@@ -121,12 +156,12 @@
 
 
 
-<time class='entry-date' datetime='2014-09-24T20:26:02+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:26 pm</span></time>
+<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>3:38 am</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/stackovergiant/'>stackovergiant</a>, <a class='category' href='/blog/categories/dan-li/'>单例</a>
+    <a class='category' href='/blog/categories/spring/'>spring</a>
   
 </span>
 
@@ -152,7 +187,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/" >Tweet</a>
   
   
   
@@ -187,10 +222,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/09/24/why-java8-introduces-lamda/" title="Previous Post: 为什么java8引进了Lambda表达式">&laquo; 为什么java8引进了Lambda表达式</a>
+        <a class="basic-alignment left" href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/" title="Previous Post: 通过VM参数选择本地log4j配置文件">&laquo; 通过VM参数选择本地log4j配置文件</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2014/09/27/how-to-return-404-in-spring-controller/" title="Next Post: 怎么在Spring Controller里面返回404">怎么在Spring Controller里面返回404 &raquo;</a>
       
     </p>
   </footer>

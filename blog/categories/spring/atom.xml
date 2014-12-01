@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: Spring | StackOverGiant]]></title>
+  <title><![CDATA[Category: Spring | 栈在巨人肩上的猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/spring/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2014-11-28T17:07:31+08:00</updated>
+  <updated>2014-12-01T10:50:21+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,71 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[从属性文件为变量赋值，Spring]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/"/>
+    <updated>2014-11-30T03:38:56+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values</id>
+    <content type="html"><![CDATA[<p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
+
+<p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
+
+<h2>配置</h2>
+
+<p><strong>1. 新建属性文件</strong></p>
+
+<p>如<code>application.properties</code></p>
+
+<p>里面的格式为： <code>name=value</code></p>
+
+<p>如：</p>
+
+<pre><code>weixin_id=zhuaguinow
+developer_id= wx9bf6a481c573dee3
+token=wodinow
+domain=http://wodinowspring.duapp.com   
+</code></pre>
+
+<p><strong>2. 配置属性文件路径</strong></p>
+
+<pre><code>&lt;context:property-placeholder location="classpath:application.properties" /&gt;
+</code></pre>
+
+<hr />
+
+<h2>使用注解注入</h2>
+
+<p>在一个Bean中， 使用@Value注解使用${name}格式，如在@Controller中</p>
+
+<pre><code>@Controller
+public class CoreController {   
+
+    @Value("${developer_id}")
+    private String developerID;
+
+    }
+</code></pre>
+
+<h2>为静态变量注入</h2>
+
+<p>Spring不能为静态变量注入属性值，但我们可以配置一个setter完成此项工作，如：</p>
+
+<pre><code>@Component
+public class SignUtil {  
+
+    //需要从属性文件中读值的静态变量
+    private static  String TOKEN;  
+
+    //配置一个setter, 为该静态变量赋值
+    @Value("${token}")
+    private void setTOKEN(String token) {
+        SignUtil.TOKEN = token;
+    }  
+｝
+</code></pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[怎么在Spring Controller里面返回404]]></title>

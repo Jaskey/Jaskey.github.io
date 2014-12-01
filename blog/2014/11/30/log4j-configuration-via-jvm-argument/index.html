@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: Firefox - 栈在巨人肩上的猪</title>
+  <title>通过VM参数选择本地log4j配置文件 - 栈在巨人肩上的猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Category: firefox">
+  <meta name="description" content="有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。 在项目的参数中加入： -Dlog4j.configuration=file:log4j配置文件路径 注：路径需要以file:开头，如： -Dlog4j. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/categories/firefox">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="栈在巨人肩上的猪" type="application/atom+xml">
@@ -64,35 +64,127 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Category: Firefox</h1>
+    
+      <h1 class="entry-title">通过VM参数选择本地log4j配置文件</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-30T02:32:58+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>2:32 am</span></time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+<div class="entry-content"><p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
 
-  
-  <h2>2014</h2>
+<p>在项目的参数中加入：</p>
 
-<article>
-  
-<h1><a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a></h1>
-<time datetime="2014-11-06T15:18:03+08:00" pubdate><span class='month'>Nov</span> <span class='day'>06</span> <span class='year'>2014</span></time>
+<pre><code>-Dlog4j.configuration=file:log4j配置文件路径
+</code></pre>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/firefox/'>firefox</a></span>
-</footer>
+<p>注：路径需要以file:开头，如：</p>
 
+<pre><code>-Dlog4j.configuration=file:E:\Programming\debug_log4j.properties
+</code></pre>
 
-</article>
-
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-11-30T02:32:58+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>2:32 am</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/log4j/'>log4j</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/" title="Previous Post: 在windows上使用_netrc文件让Git记住用户名和密码">&laquo; 在windows上使用_netrc文件让Git记住用户名和密码</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/11/30/inject-propeties-values/" title="Next Post: 从属性文件为变量赋值，Spring">从属性文件为变量赋值，Spring &raquo;</a>
+      
+    </p>
+  </footer>
 </article>
 
 </div>

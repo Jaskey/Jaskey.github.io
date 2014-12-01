@@ -1,13 +1,13 @@
-# ----------------------- #
+﻿# ----------------------- #
 #      Main Configs       #
 # ----------------------- #
 
-url: http://Jaskey.github.io
-title: StackOverGiant
-subtitle: 栈在巨人的肩膀上思考
+url: http://jaskey.github.io
+title: 栈在巨人肩上的猪
+subtitle: “栈”在巨人的肩膀上，猪都能看得很远
 author: Jaskey Lam
 simple_search: https://www.google.com/search
-description: Jaskey 的博客
+description: Jaskey的博客
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in

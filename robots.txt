@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: http://Jaskey.github.io/sitemap.xml 
+Sitemap: http://jaskeylam.github.io/sitemap.xml 

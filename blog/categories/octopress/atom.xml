@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Octopress | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/octopress/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/octopress/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[如何在两台机器上使用octopress]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/"/>
     <updated>2014-10-17T00:55:09+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines</id>
+    <id>http://jaskeylam.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines</id>
     <content type="html"><![CDATA[<p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
 
 <h2>准备工作：</h2>

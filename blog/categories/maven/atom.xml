@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Maven | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/maven/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/maven/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Maven 配置 BAE SDK]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/11/25/bae-maven-setup/"/>
     <updated>2014-11-25T23:38:51+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup</id>
+    <id>http://jaskeylam.github.io/blog/2014/11/25/bae-maven-setup</id>
     <content type="html"><![CDATA[<p>百度BAE的官方文档没有一个完整的使用Maven配置BAE SDK的例子，而<a href="http://godbae.duapp.com/?p=366">BAE官方博客</a>上的配置也不可用。</p>
 
 <p>经过多日的调试和BAE客服的交流，最后成功配置出了一个maven 配置的 pom.xml文件。今天决定分享一下，可能是现在网上能搜到的第一篇可用的配置步骤了。</p>

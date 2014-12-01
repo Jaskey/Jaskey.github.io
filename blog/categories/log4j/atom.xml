@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Log4j | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/log4j/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/log4j/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[通过VM参数选择本地log4j配置文件]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/"/>
     <updated>2014-11-30T02:32:58+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument</id>
+    <id>http://jaskeylam.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument</id>
     <content type="html"><![CDATA[<p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
 
 <p>在项目的参数中加入：</p>

@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Stateless | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/stateless/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/stateless/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Stateless的web架构]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/11/10/stateful-vs-stateless/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/11/10/stateful-vs-stateless/"/>
     <updated>2014-11-10T21:26:13+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/11/10/stateful-vs-stateless</id>
+    <id>http://jaskeylam.github.io/blog/2014/11/10/stateful-vs-stateless</id>
     <content type="html"><![CDATA[<h2>分布式架构中用户状态的问题</h2>
 
 <p>传统的web架构中，我们通常会用使用session保存用户的当前状态用以标记一个用户，例如用户在不同的请求中都能找到他的购物车中的物品。</p>

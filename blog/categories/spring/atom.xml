@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Spring | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/spring/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/spring/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[从属性文件为变量赋值，Spring]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/11/30/inject-propeties-values/"/>
     <updated>2014-11-30T03:38:56+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values</id>
+    <id>http://jaskeylam.github.io/blog/2014/11/30/inject-propeties-values</id>
     <content type="html"><![CDATA[<p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
 
 <p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
@@ -80,9 +80,9 @@ public class SignUtil {
   
   <entry>
     <title type="html"><![CDATA[怎么在Spring Controller里面返回404]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/"/>
     <updated>2014-09-27T18:02:48+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller</id>
+    <id>http://jaskeylam.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller</id>
     <content type="html"><![CDATA[<p>由于大多的客户端和服务端是独立的（可能用不同语言编写），客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。</p>
 
 <p>以返回404状态码为例，在Spring 的Controller里面我们可以有以下3种方式处理：</p>

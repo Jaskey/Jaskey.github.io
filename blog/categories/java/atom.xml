@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Java | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/java/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[谈谈性能瓶颈及简单调优]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/31/program-tunning/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/10/31/program-tunning/"/>
     <updated>2014-10-31T17:44:25+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/31/program-tunning</id>
+    <id>http://jaskeylam.github.io/blog/2014/10/31/program-tunning</id>
     <content type="html"><![CDATA[<p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
 
 <p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>
@@ -156,9 +156,9 @@
   
   <entry>
     <title type="html"><![CDATA[谈谈Java同步机制]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/13/java-synchronization/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/10/13/java-synchronization/"/>
     <updated>2014-10-13T21:11:20+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/13/java-synchronization</id>
+    <id>http://jaskeylam.github.io/blog/2014/10/13/java-synchronization</id>
     <content type="html"><![CDATA[<p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
 今天简单谈谈Java的同步机制。</p>
 
@@ -219,9 +219,9 @@ public int getNextI(){
   
   <entry>
     <title type="html"><![CDATA[JVM垃圾回收算法]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/10/10/gc-algorithm/"/>
     <updated>2014-10-10T17:09:51+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm</id>
+    <id>http://jaskeylam.github.io/blog/2014/10/10/gc-algorithm</id>
     <content type="html"><![CDATA[<p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
 
 <ul>
@@ -304,9 +304,9 @@ public int getNextI(){
   
   <entry>
     <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/09/24/when-to-use-static-class/"/>
     <updated>2014-09-24T20:26:02+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
+    <id>http://jaskeylam.github.io/blog/2014/09/24/when-to-use-static-class</id>
     <content type="html"><![CDATA[<p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
 
 <ol>
@@ -332,9 +332,9 @@ public int getNextI(){
   
   <entry>
     <title type="html"><![CDATA[为什么java8引进了Lambda表达式]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
     <updated>2014-09-24T18:58:45+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
+    <id>http://jaskeylam.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
     <content type="html"><![CDATA[<p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
 
 <p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>

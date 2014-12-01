@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: 性能 | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/xing-neng/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/xing-neng/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[谈谈性能瓶颈及简单调优]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/31/program-tunning/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/10/31/program-tunning/"/>
     <updated>2014-10-31T17:44:25+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/31/program-tunning</id>
+    <id>http://jaskeylam.github.io/blog/2014/10/31/program-tunning</id>
     <content type="html"><![CDATA[<p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
 
 <p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>

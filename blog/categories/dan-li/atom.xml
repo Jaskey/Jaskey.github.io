@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: 单例 | 栈在巨人肩上的猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/dan-li/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2014-12-01T10:50:21+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="http://jaskeylam.github.io/blog/categories/dan-li/atom.xml" rel="self"/>
+  <link href="http://jaskeylam.github.io/"/>
+  <updated>2014-12-01T10:58:33+08:00</updated>
+  <id>http://jaskeylam.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
+    <link href="http://jaskeylam.github.io/blog/2014/09/24/when-to-use-static-class/"/>
     <updated>2014-09-24T20:26:02+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
+    <id>http://jaskeylam.github.io/blog/2014/09/24/when-to-use-static-class</id>
     <content type="html"><![CDATA[<p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
 
 <ol>

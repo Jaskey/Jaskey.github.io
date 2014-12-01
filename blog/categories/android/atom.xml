@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Android | 栈在巨人肩上的猪]]></title>
-  <link href="http://jaskeylam.github.io/blog/categories/android/atom.xml" rel="self"/>
-  <link href="http://jaskeylam.github.io/"/>
-  <updated>2014-12-01T10:58:33+08:00</updated>
-  <id>http://jaskeylam.github.io/</id>
+  <link href="http://jaskey.github.io/blog/categories/android/atom.xml" rel="self"/>
+  <link href="http://jaskey.github.io/"/>
+  <updated>2014-12-01T11:14:34+08:00</updated>
+  <id>http://jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[ADB Server Didn't ACK ,failed to Start Daemon 解决方法(小心风行客户端)]]></title>
-    <link href="http://jaskeylam.github.io/blog/2014/10/03/adb-problem/"/>
+    <link href="http://jaskey.github.io/blog/2014/10/03/adb-problem/"/>
     <updated>2014-10-03T23:40:05+08:00</updated>
-    <id>http://jaskeylam.github.io/blog/2014/10/03/adb-problem</id>
+    <id>http://jaskey.github.io/blog/2014/10/03/adb-problem</id>
     <content type="html"><![CDATA[<p>最近重新学习Android，但这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
 
 <pre><code>[2014-10-03 12:15:43 - adb] ADB server didn't ACK

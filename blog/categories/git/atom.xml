@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Git | 栈在巨人肩上的猪]]></title>
-  <link href="http://jaskeylam.github.io/blog/categories/git/atom.xml" rel="self"/>
-  <link href="http://jaskeylam.github.io/"/>
-  <updated>2014-12-01T10:58:33+08:00</updated>
-  <id>http://jaskeylam.github.io/</id>
+  <link href="http://jaskey.github.io/blog/categories/git/atom.xml" rel="self"/>
+  <link href="http://jaskey.github.io/"/>
+  <updated>2014-12-01T11:14:34+08:00</updated>
+  <id>http://jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[在windows上使用_netrc文件让Git记住用户名和密码]]></title>
-    <link href="http://jaskeylam.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/"/>
+    <link href="http://jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/"/>
     <updated>2014-11-28T16:58:21+08:00</updated>
-    <id>http://jaskeylam.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password</id>
+    <id>http://jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password</id>
     <content type="html"><![CDATA[<p>每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码：</p>
 
 <ul>
@@ -45,9 +45,9 @@ password cnblogs_pwd
   
   <entry>
     <title type="html"><![CDATA[Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案]]></title>
-    <link href="http://jaskeylam.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/"/>
+    <link href="http://jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/"/>
     <updated>2014-11-23T23:10:43+08:00</updated>
-    <id>http://jaskeylam.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411</id>
+    <id>http://jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411</id>
     <content type="html"><![CDATA[<p>有时候git push 会报类似的错误，如在BAE上push一个项目较大的时候，可能就会报此错误。由于遇到很多次，今天记录下解决方法：</p>
 
 <p>默认情况下，Git设置了HTTP操作的最大值为一MB，所以当你push代码的时候如果超过这个值，则可能发生错误。</p>

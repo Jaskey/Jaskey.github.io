@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: 数据库 | 栈在巨人肩上的猪]]></title>
-  <link href="http://jaskeylam.github.io/blog/categories/shu-ju-ku/atom.xml" rel="self"/>
-  <link href="http://jaskeylam.github.io/"/>
-  <updated>2014-12-01T10:58:33+08:00</updated>
-  <id>http://jaskeylam.github.io/</id>
+  <link href="http://jaskey.github.io/blog/categories/shu-ju-ku/atom.xml" rel="self"/>
+  <link href="http://jaskey.github.io/"/>
+  <updated>2014-12-01T11:14:34+08:00</updated>
+  <id>http://jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[SQL优化的一些技巧]]></title>
-    <link href="http://jaskeylam.github.io/blog/2014/10/26/sql-optimization/"/>
+    <link href="http://jaskey.github.io/blog/2014/10/26/sql-optimization/"/>
     <updated>2014-10-26T21:19:25+08:00</updated>
-    <id>http://jaskeylam.github.io/blog/2014/10/26/sql-optimization</id>
+    <id>http://jaskey.github.io/blog/2014/10/26/sql-optimization</id>
     <content type="html"><![CDATA[<p>最近在学习MySQL的优化，今天整理下一些对于开发人员有必要了解的一些技巧。</p>
 
 <h2>关于索引</h2>
@@ -210,9 +210,9 @@ IF CACHE EMPTY
   
   <entry>
     <title type="html"><![CDATA[数据库事务的隔离级别与并发控制]]></title>
-    <link href="http://jaskeylam.github.io/blog/2014/10/02/database-isolation-level/"/>
+    <link href="http://jaskey.github.io/blog/2014/10/02/database-isolation-level/"/>
     <updated>2014-10-02T21:58:06+08:00</updated>
-    <id>http://jaskeylam.github.io/blog/2014/10/02/database-isolation-level</id>
+    <id>http://jaskey.github.io/blog/2014/10/02/database-isolation-level</id>
     <content type="html"><![CDATA[<p>数据库拥有ACID四个基本属性。</p>
 
 <p>其中的I（隔离性）要求并发事务中，事务的中间状态是无法被别的事务查看的。例如A账户转到B账户的事务中，不能让别的事务在B账户扣除了100块前查看到A事务增加了100块这个中间状态。</p>

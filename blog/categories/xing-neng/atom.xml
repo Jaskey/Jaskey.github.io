@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: 性能 | 栈在巨人肩上的猪]]></title>
+  <title><![CDATA[Category: 性能 | 力学笃行的猪]]></title>
   <link href="http://jaskey.github.io/blog/categories/xing-neng/atom.xml" rel="self"/>
   <link href="http://jaskey.github.io/"/>
-  <updated>2014-12-01T11:14:34+08:00</updated>
+  <updated>2014-12-03T10:58:11+08:00</updated>
   <id>http://jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -143,6 +143,8 @@
   ps.clearParameters();
   int[] results = ps.executeBatch();
 </code></pre>
+
+<p>具体可参考：<a href="http://viralpatel.net/blogs/batch-insert-in-java-jdbc/">batch insert in java</a></p>
 
 <h4>限制文件大小</h4>
 

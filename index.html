@@ -9,7 +9,8 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。 Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。 配置 1. 新建属性文件 如application.properties 里面的格式为 &hellip;">
+  <meta name="description" content="很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让.gitignore生效，以下是步骤 确保你现在branch上的重要文件已经commit.
+在项目根路径运行： git rm -r --cached . &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +66,52 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Ignore Files That Have Already Been Committed</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-12-03T00:00:00+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>3</span><span class='date-suffix'>rd</span>, <span class='date-year'>2014</span></span> <span class='time'>12:00 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
+
+<ol>
+<li>确保你现在branch上的重要文件已经commit.</li>
+<li><p>在项目根路径运行：</p>
+
+<pre><code> git rm -r --cached .
+</code></pre></li>
+<li><p>然后从staging area中移除所有已经改变的文件:</p>
+
+<pre><code> git add .
+</code></pre></li>
+<li><p>最后再提交即可</p>
+
+<pre><code> git commit -m ".gitignore is working, fixed untracked files"
+</code></pre></li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1089,290 +1136,6 @@ IF CACHE EMPTY
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/26/get-started-with-memcached/">快速入门Memcached</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-26T00:41:53+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>12:41 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近学习Memcahced,使用了一天时间搭建了memcached的集群，并使用memcached的客户端<code>spymemcached</code>成功访问到集群。今天整理下学习的笔记。</p>
-
-<h2>Linux下安装Memcached</h2>
-
-<p>以<code>Ubuntu</code>为例。</p>
-
-<p>1.更新本地仓库</p>
-
-<pre><code>sudo apt-get update
-</code></pre>
-
-<p>2.安装<code>memcached Service</code></p>
-
-<pre><code>sudo apt-get install memcached
-</code></pre>
-
-<p>3.安装成功后，使用<code>ps aux | grep memcached</code>可检查<code>memcached</code>服务是否已启动。你可能会看到类似下面的信息，证明memcached服务已经启动。</p>
-
-<pre><code>memcache  1027  0.0  0.1  46336  1080 ?        Sl   00:38   0:00 /usr/bin/memcached -m 64 -p 11211 -u memcache -l 0.0.0.0
-jaskey    2477  0.0  0.0   4372   832 pts/1    S+   00:49   0:00 grep --color=auto memcached
-</code></pre>
-
-<p>注：默认情况下，memcached的服务进程只在默认的localhost监听。所以如果我们需要从其他机器访问该服务，需要修改监听的ip</p>
-
-<h2>修改memcached服务监听地址</h2>
-
-<p>打开配置文件：<code>memcached.conf</code>(在/etc下)</p>
-
-<pre><code># Specify which IP address to listen on. The default is to listen on all IP addresses
-# This parameter is one of the only security measures that memcached has, so make sure
-# it's listening on a firewalled interface.
--l 127.0.0.1
-</code></pre>
-
-<p>找到相关-l 的配置，修改为<code>0.0.0.0</code>即可</p>
-
-<p>其余重要还有-m(内存大小)，-p(默认端口号)</p>
-
-<pre><code># Start with a cap of 64 megs of memory. It's reasonable, and the daemon default
-# Note that the daemon will grow to this size, but does not start out holding this much
-# memory
--m 64
-
-# Default connection port is 11211
--p 11211
-</code></pre>
-
-<h2>使用telnet与memcached通信</h2>
-
-<p>1.首先，安装telnet客户端</p>
-
-<pre><code>sudo apt-get install telnet
-</code></pre>
-
-<p>2.使用telnet访问</p>
-
-<pre><code>telnet localhost 11211
-</code></pre>
-
-<p>其中11211为memcached默认端口。</p>
-
-<p>如果你能看到类似以下的输出，则证明访问成功。</p>
-
-<pre><code>Trying 127.0.0.1...Connected to localhost.Escape character is '^]'.
-</code></pre>
-
-<p>我们可以使用<code>stats</code>命令获得memcached的基本信息</p>
-
-<pre><code>Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-stats
-STAT pid 1027
-STAT uptime 1487
-STAT time 1414256583
-STAT version 1.4.13
-STAT libevent 2.0.16-stable
-STAT pointer_size 32
-STAT rusage_user 0.040002
-STAT rusage_system 0.252015
-STAT curr_connections 5
-STAT total_connections 6
-STAT connection_structures 6
-STAT reserved_fds 20
-STAT cmd_get 0
-STAT cmd_set 0
-STAT cmd_flush 0
-STAT cmd_touch 0
-STAT get_hits 0
-STAT get_misses 0
-STAT delete_misses 0
-STAT delete_hits 0
-STAT incr_misses 0
-STAT incr_hits 0
-STAT decr_misses 0
-STAT decr_hits 0
-STAT cas_misses 0
-STAT cas_hits 0
-STAT cas_badval 0
-STAT touch_hits 0
-STAT touch_misses 0
-STAT auth_cmds 0
-STAT auth_errors 0
-STAT bytes_read 7
-STAT bytes_written 0
-STAT limit_maxbytes 67108864
-STAT accepting_conns 1
-STAT listen_disabled_num 0
-STAT threads 4
-STAT conn_yields 0
-STAT hash_power_level 16
-STAT hash_bytes 262144
-STAT hash_is_expanding 0
-STAT expired_unfetched 0
-STAT evicted_unfetched 0
-STAT bytes 0
-STAT curr_items 0
-STAT total_items 0
-STAT evictions 0
-STAT reclaimed 0
-END
-</code></pre>
-
-<h2>往memcached存储/获取值</h2>
-
-<p>使用<code>add</code>命令</p>
-
-<pre><code>add newkey 0 60 5
-abcde
-</code></pre>
-
-<p>如果现实STORED则为存储成功:</p>
-
-<p>然后就可以使用<code>get newkey</code>获取到这个存储的值了。</p>
-
-<pre><code>get newkey
-VALUE newkey 0 5
-abcde
-END
-</code></pre>
-
-<p><strong>命令解析</strong>：</p>
-
-<pre><code>&lt;command name&gt; &lt;key&gt; &lt;flags&gt; &lt;exptime&gt; &lt;bytes&gt;
-</code></pre>
-
-<p>常用command name 有 <code>add</code> , <code>set</code>,  <code>replace</code>, <code>append</code>。</p>
-
-<p><code>flags</code></p>
-
-<p>是一个16为无符号整形，memcached server会把这个flags和key一起存储起来，并且访问该key的时候，也会返回这个<code>flags</code>。我们可以根据需要设置这个key的格外信息。</p>
-
-<p><code>exptime</code></p>
-
-<p>值超时的时间，单位为秒。如果设置为0，则不会超时。</p>
-
-<p><code>bytes</code></p>
-
-<p>存储的值的大小，在我们这个例子，由于我们需要存储abcde,所以我们设置改参数为5。</p>
-
-<hr />
-
-<h2>建立分布式memcached集群</h2>
-
-<p>到此为止，我们已经可以访问到默认启动的memcached服务了，但是实际上我们需要一个memcached集群。我们可以在多台机器上启动memcached服务，这样就可以获取一个无限制内存大小的缓存服务。然后使用memcached客户端连接上去。</p>
-
-<p>鉴于在学习阶段，我们可以尝试在不同的端口上启动memcached，然后获得一个本地集群。</p>
-
-<p>启动memcached:
-    memcached -d -l 0.0.0.0 -m 64 -p 12122</p>
-
-<p>其中<code>-d</code>参数表示启动为daemon, -l 指定监听ip，-p监听端口，-m指定服务的内存大小。</p>
-
-<p>然后使用<code>ps aux |grep memcached</code>确认端口的确运行成功。</p>
-
-<h2>使用memcached客户端</h2>
-
-<p>memcached的守护进程是对不知道集群的存在和server设置的。实际上，是memcached client把数据分布式的存储在不同memcached服务上。所以，同一份存储的数据，你只能在一个memcached服务中访问，其他的memcached都无法获得。</p>
-
-<p>我们这里以java语言作为例子，演示如何使用java访问memcached server。这里使用的是<code>spymemcached</code>这个memcached client。</p>
-
-<p>在<code>maven</code>中添加spymemacached依赖：</p>
-
-<pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;net.spy&lt;/groupId&gt;
-    &lt;artifactId&gt;spymemcached&lt;/artifactId&gt;
-    &lt;version&gt;2.10.1&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<p>代码示例如下：</p>
-
-<pre><code>public class MemcachedDemo 
-{
-
-    static final  InetSocketAddress[] servers=new InetSocketAddress[]{  //创建好需要连接的memcached集群的ip和端口
-        new InetSocketAddress("192.168.56.101",11211),
-        new InetSocketAddress("192.168.56.101",11212)
-    };
-
-    public static void main( String[] args ) throws IOException{
-        System.out.println( "Begin memcached" );
-        MemcachedClient client=new MemcachedClient(servers);//建立memcached client对象连接到集群，注：spymemcahced,会处理重新连接
-
-
-        //存储两个对象，一个String类型，一个自定义对象（需要实现Serializable接口）
-        client.set("city", 60, "shenzhen");//expired in 60 seconds
-        System.out.println( "city is set" );
-        client.set("emp", 0, new Employee("jaskey", 23));//never expired,注：Employee对象需要实现java.io.Serializable接口        
-
-        //从memcached server中获取对象
-        Employee empFromServer=(Employee)client.get("emp");
-        String city=(String)client.get("city");
-
-        System.out.println("emp from memcached: "+empFromServer);
-        System.out.println("city from memcached: "+city);
-
-        client.shutdown();
-        }
-}
-</code></pre>
-
-<p>输出：</p>
-
-<pre><code>Begin memcached
-2014-10-26 01:56:51.431 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=/192.168.56.101:11211, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
-2014-10-26 01:56:51.435 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=/192.168.56.101:11212, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
-2014-10-26 01:56:51.443 INFO net.spy.memcached.MemcachedConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@72a7d24a
-emp is set
-emp from memcached: Employee("jaskey", 23)
-city from memcached: shenzhen
-2014-10-26 01:56:51.492 INFO net.spy.memcached.MemcachedConnection:  Shut down memcached client
-</code></pre>
-
-<p>其中，get操作是同步的，如果希望使用异步get，可以使用<code>asyncGet</code>方法返回一个<code>Future</code>对象：</p>
-
-<pre><code>    Future&lt;Object&gt; fobject = client.asyncGet("emp");
-    try {
-        Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的timeout
-        System.out.println("emp from memcached"+emp);
-    } catch (InterruptedException e) {
-        e.printStackTrace();
-    } catch (ExecutionException e) {
-        e.printStackTrace();
-    } catch (TimeoutException e) {
-        e.printStackTrace();
-    }
-</code></pre>
-
-<h2>关于集群</h2>
-
-<p>如果这时候，你使用telnet命令分别访问不同的memcached服务，你很可能发现emp这个值只存在于其中的一个服务，而其他服务是获取不到的。</p>
-
-<p>这样证明一份数据只被保存了一遍，然而对于客户端而言，具体保存在哪里却是完全透明的，因为spymemcahced把这个数据映射的工作做了。</p>
-
-<p>这样我们就好像操作一份很大内存空间的缓存一样，而实际上，我们是对分布在不同memcached 服务的内存空间在进行操作。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1388,6 +1151,10 @@ city from memcached: shenzhen
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Ignore Files That Have Already Been Committed</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a>
       </li>
     
@@ -1401,10 +1168,6 @@ city from memcached: shenzhen
     
       <li class="post">
         <a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/">Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案</a>
       </li>
     
   </ul>

@@ -3,8 +3,8 @@
 # ----------------------- #
 
 url: http://jaskey.github.io
-title: 栈在巨人肩上的猪
-subtitle: “栈”在巨人的肩膀上，猪都能看得很远
+title: 力学笃行的猪
+subtitle: 站在巨人肩膀学习，猪都能看得很远
 author: Jaskey Lam
 simple_search: https://www.google.com/search
 description: Jaskey的博客
@@ -52,7 +52,7 @@ titlecase: true       # Converts page and post titles to titlecase
 
 # list each of the sidebar modules you want to include, in the order you want them to appear.
 # To add custom asides, create files in /source/_includes/custom/asides/ and add them to the list like 'custom/asides/custom_aside_name.html'
-default_asides: [asides/recent_posts.html,custom/asides/weibo.html,custom/asides/douban.html,asides/github.html, asides/delicious.html, asides/pinboard.html, asides/googleplus.html,custom/asides/about.html ] #add weibo ,douban,  about here
+default_asides: [asides/recent_posts.html,custom/asides/weibo.html,custom/asides/douban.html,asides/github.html, asides/delicious.html, asides/pinboard.html, asides/googleplus.html ] #add weibo ,douban,
 
 
 

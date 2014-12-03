@@ -126,7 +126,7 @@ categories: java 性能
 	  ps.clearParameters();
 	  int[] results = ps.executeBatch();
 
-
+具体可参考：[batch insert in java](http://viralpatel.net/blogs/batch-insert-in-java-jdbc/)
 ####限制文件大小####
 
 无论数据库表，还是日志文件，我们都应该限制其的大小。

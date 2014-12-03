@@ -4,7 +4,7 @@
   <title><![CDATA[力学笃行的猪]]></title>
   <link href="http://jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://jaskey.github.io/"/>
-  <updated>2014-12-03T11:49:21+08:00</updated>
+  <updated>2014-12-03T20:38:07+08:00</updated>
   <id>http://jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -18,7 +18,9 @@
     <link href="http://jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed/"/>
     <updated>2014-12-03T11:35:01+08:00</updated>
     <id>http://jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed</id>
-    <content type="html"><![CDATA[<p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
+    <content type="html"><![CDATA[<p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，Git 不会忽略这些文件因为你在这之后才增加的rule。</p>
+
+<p>如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
 
 <ol>
 <li>确保你现在branch上的重要文件已经commit.</li>

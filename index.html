@@ -9,8 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，Git 不会忽略这些文件因为你在这之后才增加的rule。 如何把这些提交了的文件忽略并且不在本地删除这些文件，让.gitignore生效，以下是步骤 确保你现在branch上的重要文件已经commit.
-在项目根路径运行 &hellip;">
+  <meta name="description" content="关于String, StringBuilder/StringBuffer 这些本来都是老生长谈的话题了。但今天仍然想要总结下到底这些有什么区别，具体什么场合适合适用哪种。 关于StringBuilder和 StringBuffer就一个线程不安全，一个线程安全，今天暂且不讨论。 + &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +65,110 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/12/16/plus-vs-stringbuilder/">+ 操作符vs StringBuilder.append</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-12-16T11:10:13+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>11:10 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>关于String, StringBuilder/StringBuffer 这些本来都是老生长谈的话题了。但今天仍然想要总结下到底这些有什么区别，具体什么场合适合适用哪种。</p>
+
+<p>关于<code>StringBuilder</code>和 <code>StringBuffer</code>就一个线程不安全，一个线程安全，今天暂且不讨论。</p>
+
+<h1><code>+</code>操作符背后发生了什么</h1>
+
+<p>所有的<code>+</code>操作符，其实都会被编译器改写。但有以下两种情况:</p>
+
+<ul>
+<li><p><strong>String的链接(+)，将被编译器改写成StringBuilder的连接。</strong></p></li>
+<li><p><strong>String literal（字符串值）的连接(+)，将被编译器改写成新的字符串常量值(String literal)。</strong></p></li>
+</ul>
+
+
+<p>以下举例说明：</p>
+
+<pre><code>public void method1() {
+    System.out.println("hello  " + "world");
+}
+
+public void method2(String name) {
+    System.out.println("hello " + name);
+}
+
+public void method3(name) {
+    String a = "hello " + name;
+    System.out.println(a + " I am a programmer");
+}
+</code></pre>
+
+<p> 实际上会被编译器改写成：</p>
+
+<pre><code>public void method1()
+{
+    System.out.println("hello world");//被直接改写成新的字符串值
+}
+
+public void method2(String name)
+{
+    System.out.println((new StringBuilder("hello ")).append(name).toString());//使用StringBuilder改写
+}
+
+public void method3(String name)
+{
+    String a = (new StringBuilder("hello ")).append(name).toString();//使用StringBuilder改写
+    System.out.println((new StringBuilder(String.valueOf(a))).append(" I am a programmer").toString());//又创建了一个StringBuilder对象改写
+}
+</code></pre>
+
+<ul>
+<li><code>method1</code>，String字符串值（String literal）的连接，编译器已经在编译时就改写成了一个新的字符串值。</li>
+<li><code>method2</code>, String的连接会被改写成使用StringBuilder</li>
+<li><code>method3</code>,由于有两次的连接，编译器帮我们新建了第二个StringBuilder的实例而不是重用之前的</li>
+</ul>
+
+
+<h1>如何选择</h1>
+
+<p>由上可知，所有字符串的连接实际上要不就在编译被改写成新的字符串值，要不就是改用<code>StringBuilder</code>去做连接操作。所以，对于简单的操作，<code>String</code>的<code>+</code>操作，实际上性能不会低于StringBuilder，甚至会高于（在字符串本身是常量值的连接时）。所以所有的简单单句话字符串连接，都应该直接使用<code>+</code>，这性能并不会低反而可能更加高，而且更具有可读性。</p>
+
+<p>这明显和我们常听说的不一致，主要原因在于像以上的<code>method3</code>,由于每一句单独的<code>+</code>操作语句，都会新建立一个StringBuilder对象去处理连接操作。这当然是性能很差的，我们更加希望就重用一个对象，在改对象不断的新增加值。典型的例子如在循环中构建字符串对象：</p>
+
+<pre><code>String result = "";
+for (String s : hugeArray) {
+    result = result + s;//每次的连接都会新创建一个StringBuilder对象去处理，将重复创建非常多的StringBuilder对象
+}
+</code></pre>
+
+<p>我们就应该手动的重用一个StringBuilder对象去处理：</p>
+
+<pre><code>StringBuilder sb = new StringBuilder();
+for (String s : hugeArray) {
+    sb.append(s);//重用一个StringBuilder对象，直接处理新增字符串值的操作
+}
+String result = sb.toString();
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -923,221 +1026,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/26/sql-optimization/">SQL优化的一些技巧</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-26T21:19:25+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:19 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近在学习MySQL的优化，今天整理下一些对于开发人员有必要了解的一些技巧。</p>
-
-<h2>关于索引</h2>
-
-<p>很多SQL优化都和索引有关，所以，在了解SQL优化前，最好先理解什么是索引，索引做的是什么。关于这点，stackoverflow上有很好的一个问题：<a href="http://stackoverflow.com/questions/1108/how-does-database-indexing-work/1130#1130">how does database indexing work</a>。</p>
-
-<p>简单说，索引就是把数据库中的字段进行了一定规则的建立额外的排序，使得SQL查找可以快速找到所需的数据块，避免全表搜索。</p>
-
-<p>关于如何建立索引，以下有一张图可以给出一个较好的指导：</p>
-
-<p><img src="http://jaskey.github.io/images/SQL/Index_SQL_Tunning.png" alt="method 1" /></p>
-
-<h2>索引列相关的SQL优化技巧</h2>
-
-<ul>
-<li><strong>避免在索引列使用通配符%开头</strong></li>
-</ul>
-
-
-<p>如（&#8217;%.com&#8217;），这将会令MySQL无法使用改列索引，而使用%结尾则可以（如&#8217;www.%&lsquo;）使用索引。</p>
-
-<p>如果需要经常基于某索引列作以通配符开头的查询，如查询所有.com结尾的ip     <code>email like '%.com'</code>，可以在数据库中保存改列的反序值(如reverse_email)，然后搜索的时候使用 <code>reverse_email like REVERSE('%.com')</code>，则可以使用到reverse_email的索引了。</p>
-
-<ul>
-<li><strong>避免在索引列使用函数或者计算</strong></li>
-</ul>
-
-
-<p>如 <code>where trunc(create_date)=trunc(:date1)</code>这样的where 条件将无法使用到create_date的索引。</p>
-
-<ul>
-<li><p><strong>避免在索引列上出现数据类型转换</strong></p></li>
-<li><p><strong>避免在索引字段上使用not，&lt;></strong></p></li>
-</ul>
-
-
-<hr />
-
-<h2>其他技巧：</h2>
-
-<ul>
-<li><strong>尽量避免使用相关子查询</strong></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>SELECT c.Name, 
-       c.City,
-       (SELECT CompanyName FROM Company WHERE ID = c.CompanyID) AS CompanyName 
-FROM Customer c
-</code></pre>
-
-<p>其中子查询 <code>SELECT CompanyName....</code>的结果与外层查询结果相关，这样会导致每一个外层查询的结果都会返回到子查询中查询一遍，导致性能下降。这种子查询大多可以改造为表的join：</p>
-
-<pre><code>SELECT c.Name, 
-       c.City, 
-       co.CompanyName 
-FROM Customer c 
-    LEFT JOIN Company co
-        ON c.CompanyID = co.CompanyID
-</code></pre>
-
-<ul>
-<li><strong>避免循环中使用SQL</strong></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>//查询满足
-SELECT a.id,a.author_id,a.title //找出满足某条件的文章的作者 
-FROM article a
-WHERE a.type=2
-AND a.created&gt; '2011-06-01';
-
-
-//For 循环这些记录，然后查询作者信息，
-select id, name,age
-from arthor where id=:author_id 
-</code></pre>
-
-<p>这类问题常被称作N+1问题，即每对应外层的每一行都生成了一条SQL语句，这导致了很多的SQL语句重复执行。</p>
-
-<p>这种SQL通常也可以通过join而被改写为单条SQL语句：</p>
-
-<pre><code>SELECT a.id, a.title,au.author_id,au.author_name,au.age
-FROM artitle a
-INNER JOIN author au on a.author_id = au.id
-WHERE a.type=2
-AND a.created&gt; '2011-06-01';
-</code></pre>
-
-<ul>
-<li><strong>不要使用SELECT *</strong></li>
-</ul>
-
-
-<p>使用<code>SELECT *</code> 有很多的坏处，例如：</p>
-
-<ol>
-<li>选择过多的列导致不必要的开销。有些时候我们只需要两列，但select * 会把所有的列（可能20列）全部返回，这是额外的IO开销。</li>
-<li>SELECT * 不容易针对化的建立索引。由于不知道该 SQL语句中具体需要哪些列，就很难针对化的设计所需的索引。而且，即便按照所有的列都设计了索引，一旦表结构发生了增加列的情况，此索引也会失效，而且后来的人很难发觉。</li>
-<li>MySQL 引擎需要解释*所代表的列，也会带来一定的开销</li>
-</ol>
-
-
-<p>更多相关讨论可以参考：<a href="http://stackoverflow.com/questions/3639861/why-is-select-considered-harmful#answer-3639964">why is select * considered harmful</a></p>
-
-<ul>
-<li><strong>拆分大的INSERT/DELETE语句</strong></li>
-</ul>
-
-
-<p>如果有一个很大批量的INSERT/DELETE（需要锁表）语句需要执行，例如对几十万行的语句执行，可以考虑分量的一批一批执行，每次执行完后放开CPU，这样可以避免阻塞其他线程的操作。如：</p>
-
-<pre><code>    while (1) {
-        //每次只做1000条
-        pst.execute("DELETE FROM logs WHERE log_date &lt;= '2009-11-01' LIMIT 1000");
-        if row return 0 {
-            // 没得可删了，退出！
-            break;
-        }
-        // 每次都要sleep一段时间让出CPU
-        sleep(50000);
-    }
-</code></pre>
-
-<ul>
-<li><strong>当只需要一行数据的时候，使用LIMIT 1</strong></li>
-</ul>
-
-
-<p>当你查询表的有些时候，如果我们知道只会有一条结果，加上 LIMIT 1 可以增加性能。这样一样，MySQL数据库引擎会在找到一条数据后停止搜索，而不是继续往后查少下一条符合记录的数据。
-    请看下面伪代码：</p>
-
-<pre><code>    // 没有效率的：
-    result_set= ps.execute_query("SELECT user_name FROM user WHERE country = 'China'");
-    if (result_set.hasNext()) {
-        // ...
-    }
-
-    //更好效率的：
-    result_set= ps.execute_query("SELECT user_name FROM user WHERE country = 'China' LIMIT 1");
-    if (result_set.hasNext()) {
-        // ...
-    }
-</code></pre>
-
-<ul>
-<li><strong>避免在WHERE子句中使用in，not  in</strong></li>
-</ul>
-
-
-<p>可以使用 exist 和not exist代替 in和not in。</p>
-
-<pre><code>//低效
-SELECT order_id,order_num,customer_name  FROM ORDERS WHERE CUSTOMER_NAME NOT IN 
-(SELECT CUSTOMER_NAME FROM CUSTOMER)
-
-//高效    
-SELECT order_id,order_num,customer_name FROM ORDERS WHERE not exist 
-(SELECT CUSTOMER_NAME FROM CUSTOMER where CUSTOMER.customer_name = ORDERS.customer_name)
-</code></pre>
-
-<h2>关于缓存</h2>
-
-<ul>
-<li><p><strong>在MySQL中使用缓存把查询结果保留能有效减小SQL查询时间</strong></p></li>
-<li><p><strong>在应用程序中使用缓存</strong></p></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>IF CACHE NOT EMPTY
-SELECT FROM CACHE
-
-IF CACHE EMPTY
-    SELECT TABLE 
-    PUT INTO CACHE
-</code></pre>
-
-<p>但需要注意一旦表发生了改变，需要移除CACHE的相关数据。</p>
-
-<p>注：
-可用流行的<code>memcached</code>框架缓存查询结果，减小数据库压力。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1153,6 +1041,10 @@ IF CACHE EMPTY
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/12/16/plus-vs-stringbuilder/">+ 操作符vs StringBuilder.append</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">忽略gitignore文件中已经被commit的文件</a>
       </li>
     
@@ -1166,10 +1058,6 @@ IF CACHE EMPTY
     
       <li class="post">
         <a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a>
       </li>
     
   </ul>

@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Cookie 与 Session的区别 - 力学笃行的猪</title>
+  <title>+ 操作符vs StringBuilder.append - 力学笃行的猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="我们有时候会对于cookie和session糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？ 其实不是。 session是服务端的文件用于存储用户信息， &hellip;">
+  <meta name="description" content="关于String, StringBuilder/StringBuffer 这些本来都是老生长谈的话题了。但今天仍然想要总结下到底这些有什么区别，具体什么场合适合适用哪种。 关于StringBuilder和 StringBuffer就一个线程不安全，一个线程安全，今天暂且不讨论。 + &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions">
+  <link rel="canonical" href="http://jaskey.github.io/blog/2014/12/16/plus-vs-stringbuilder">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="力学笃行的猪" type="application/atom+xml">
@@ -68,7 +68,7 @@
   
   <header>
     
-      <h1 class="entry-title">Cookie 与 Session的区别</h1>
+      <h1 class="entry-title">+ 操作符vs StringBuilder.append</h1>
     
     
       <p class="meta">
@@ -77,33 +77,89 @@
 
 
 
-<time class='entry-date' datetime='2014-09-24T18:20:05+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>6:20 pm</span></time>
+<time class='entry-date' datetime='2014-12-16T11:10:13+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>11:10 am</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
+<div class="entry-content"><p>关于String, StringBuilder/StringBuffer 这些本来都是老生长谈的话题了。但今天仍然想要总结下到底这些有什么区别，具体什么场合适合适用哪种。</p>
 
-<p>其实不是。</p>
+<p>关于<code>StringBuilder</code>和 <code>StringBuffer</code>就一个线程不安全，一个线程安全，今天暂且不讨论。</p>
 
-<p><code>session</code>是服务端的文件用于存储用户信息，而<code>cookie</code>是存储用户信息的客户端文件。</p>
+<h1><code>+</code>操作符背后发生了什么</h1>
 
-<p><code>cookie</code>是一个短的字符串，用于在客户端和服务端来回发送。我们可以保存类似于name=bob&amp;password=asdf在cookie然后在两端来回发送。
-这样做就像，去银行办业务，而银行的业务员极为健忘，然后他需要我们每次进行交易的时候都出示身份。当然，如果我们用cookie取存储这种敏感的信息的话是极为不安全的，而且cookie本身也有大小的限制。</p>
+<p>所有的<code>+</code>操作符，其实都会被编译器改写。但有以下两种情况:</p>
 
-<p>那么，如果这个业务员意识到了自己的健忘病，他可以在纸上记下你的相关信息然后递给你一个号码，然后以后你再办业务的时候你就可以简单的说
-“我是12号客户”，这样就不需要每次都出示身份证啊，银行个人账号去标识自己了。</p>
+<ul>
+<li><p><strong>String的链接(+)，将被编译器改写成StringBuilder的连接。</strong></p></li>
+<li><p><strong>String literal（字符串值）的连接(+)，将被编译器改写成新的字符串常量值(String literal)。</strong></p></li>
+</ul>
 
-<p>对应着在Web服务器，服务器会记录相关的信息在一个<code>session</code>对象，然后创建一个<code>session ID</code>然后发送给客户端保存在<code>cookie</code>中。当客户端发送这个cookie回来的时候，服务端就能简单的用<code>session ID</code>去查找<code>session</code>对象。</p>
 
-<p>所以，如果我们删除了<code>cookie</code>(如在浏览器中清空历史记录)，这个<code>session</code>就丢失了。</p>
+<p>以下举例说明：</p>
 
-<p>还有一种方法是，用URL来交换<code>session id</code>，例如有一个link www.myserver.com/myApp.jsp, 然后我们可以重写每一个url让他成为类似于www.myserver.com/myApp.jsp?sessionID=asdf 甚至even www.myserver.com/asdf/myApp.jsp 用于标识<code>session id</code>。</p>
+<pre><code>public void method1() {
+    System.out.println("hello  " + "world");
+}
 
-<p>更多解析，可参考stackoverflow:
-<a href="http://stackoverflow.com/questions/359434/differences-between-cookies-and-sessions">Differences between cookies and sessions?</a></p>
+public void method2(String name) {
+    System.out.println("hello " + name);
+}
+
+public void method3(name) {
+    String a = "hello " + name;
+    System.out.println(a + " I am a programmer");
+}
+</code></pre>
+
+<p> 实际上会被编译器改写成：</p>
+
+<pre><code>public void method1()
+{
+    System.out.println("hello world");//被直接改写成新的字符串值
+}
+
+public void method2(String name)
+{
+    System.out.println((new StringBuilder("hello ")).append(name).toString());//使用StringBuilder改写
+}
+
+public void method3(String name)
+{
+    String a = (new StringBuilder("hello ")).append(name).toString();//使用StringBuilder改写
+    System.out.println((new StringBuilder(String.valueOf(a))).append(" I am a programmer").toString());//又创建了一个StringBuilder对象改写
+}
+</code></pre>
+
+<ul>
+<li><code>method1</code>，String字符串值（String literal）的连接，编译器已经在编译时就改写成了一个新的字符串值。</li>
+<li><code>method2</code>, String的连接会被改写成使用StringBuilder</li>
+<li><code>method3</code>,由于有两次的连接，编译器帮我们新建了第二个StringBuilder的实例而不是重用之前的</li>
+</ul>
+
+
+<h1>如何选择</h1>
+
+<p>由上可知，所有字符串的连接实际上要不就在编译被改写成新的字符串值，要不就是改用<code>StringBuilder</code>去做连接操作。所以，对于简单的操作，<code>String</code>的<code>+</code>操作，实际上性能不会低于StringBuilder，甚至会高于（在字符串本身是常量值的连接时）。所以所有的简单单句话字符串连接，都应该直接使用<code>+</code>，这性能并不会低反而可能更加高，而且更具有可读性。</p>
+
+<p>这明显和我们常听说的不一致，主要原因在于像以上的<code>method3</code>,由于每一句单独的<code>+</code>操作语句，都会新建立一个StringBuilder对象去处理连接操作。这当然是性能很差的，我们更加希望就重用一个对象，在改对象不断的新增加值。典型的例子如在循环中构建字符串对象：</p>
+
+<pre><code>String result = "";
+for (String s : hugeArray) {
+    result = result + s;//每次的连接都会新创建一个StringBuilder对象去处理，将重复创建非常多的StringBuilder对象
+}
+</code></pre>
+
+<p>我们就应该手动的重用一个StringBuilder对象去处理：</p>
+
+<pre><code>StringBuilder sb = new StringBuilder();
+for (String s : hugeArray) {
+    sb.append(s);//重用一个StringBuilder对象，直接处理新增字符串值的操作
+}
+String result = sb.toString();
+</code></pre>
 </div>
 
 
@@ -119,12 +175,12 @@
 
 
 
-<time class='entry-date' datetime='2014-09-24T18:20:05+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>6:20 pm</span></time>
+<time class='entry-date' datetime='2014-12-16T11:10:13+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>11:10 am</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/cookie/'>cookie</a>, <a class='category' href='/blog/categories/session/'>session</a>, <a class='category' href='/blog/categories/stackovergiant/'>stackovergiant</a>
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/string/'>string</a>
   
 </span>
 
@@ -150,7 +206,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/" data-via="" data-counturl="http://jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://jaskey.github.io/blog/2014/12/16/plus-vs-stringbuilder/" data-via="" data-counturl="http://jaskey.github.io/blog/2014/12/16/plus-vs-stringbuilder/" >Tweet</a>
   
   
   
@@ -185,10 +241,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/09/04/how-to-octopress/" title="Previous Post: Windows7上配置和使用Octopress">&laquo; Windows7上配置和使用Octopress</a>
+        <a class="basic-alignment left" href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/" title="Previous Post: 忽略gitignore文件中已经被commit的文件">&laquo; 忽略gitignore文件中已经被commit的文件</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2014/09/24/why-java8-introduces-lamda/" title="Next Post: 为什么java8引进了Lambda表达式">为什么java8引进了Lambda表达式 &raquo;</a>
       
     </p>
   </footer>

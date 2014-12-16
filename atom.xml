@@ -4,7 +4,7 @@
   <title><![CDATA[力学笃行的猪]]></title>
   <link href="http://jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://jaskey.github.io/"/>
-  <updated>2014-12-16T11:34:13+08:00</updated>
+  <updated>2014-12-16T11:38:30+08:00</updated>
   <id>http://jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -68,20 +68,20 @@ public void method3(String name)
 </code></pre>
 
 <ul>
-<li><code>method1</code>，String字符串值（String literal）的连接，编译器已经在编译时就改写成了一个新的字符串值。</li>
-<li><code>method2</code>, String的连接会被改写成使用StringBuilder</li>
-<li><code>method3</code>,由于有两次的连接，编译器帮我们新建了第二个StringBuilder的实例而不是重用之前的</li>
+<li><code>method1</code>，<code>String</code>字符串值（String literal）的连接，编译器已经在编译时就改写成了一个新的字符串值。</li>
+<li><code>method2</code>, <code>String</code>的连接会被改写成使用StringBuilder</li>
+<li><code>method3</code>,由于有两次的连接，编译器帮我们新建了第二个<code>StringBuilder</code>的实例而不是重用之前的</li>
 </ul>
 
 
 <h1>如何选择</h1>
 
-<p>由上可知，所有字符串的连接实际上要不就在编译被改写成新的字符串值，要不就是改用<code>StringBuilder</code>去做连接操作。所以，对于简单的操作，<code>String</code>的<code>+</code>操作，实际上性能不会低于StringBuilder，甚至会高于（在字符串本身是常量值的连接时）。所以所有的简单单句话字符串连接，都应该直接使用<code>+</code>，这性能并不会低反而可能更加高，而且更具有可读性。</p>
+<p>由上可知，所有字符串的连接实际上要不就在编译被改写成新的字符串值，要不就是改用<code>StringBuilder</code>去做连接操作。所以，对于简单的操作，<code>String</code>的<code>+</code>操作，实际上性能不会低于StringBuilder，甚至会高于（在字符串本身是常量值的连接时）。那么所有的简单单句话字符串连接，都应该直接使用<code>+</code>，这性能并不会低反而可能更加高，而且更具有可读性。</p>
 
-<p>这明显和我们常听说的不一致，主要原因在于像以上的<code>method3</code>,由于每一句单独的<code>+</code>操作语句，都会新建立一个StringBuilder对象去处理连接操作。这当然是性能很差的，我们更加希望就重用一个对象，在改对象不断的新增加值。典型的例子如在循环中构建字符串对象：</p>
+<p>这明显和我们常听说的不一致，主要原因在于像以上的<code>method3</code>,由于每一句单独的<code>+</code>操作语句，都会新建立一个StringBuilder对象去处理连接操作。这当然是性能很差的，我们更加希望就重用一个对象，在该对象上不断的新增加值。典型的例子如在循环中构建字符串对象：</p>
 
 <pre><code>String result = "";
-for (String s : hugeArray) {
+for (String s : hugeArray) {//一个大循环
     result = result + s;//每次的连接都会新创建一个StringBuilder对象去处理，将重复创建非常多的StringBuilder对象
 }
 </code></pre>
@@ -89,7 +89,7 @@ for (String s : hugeArray) {
 <p>我们就应该手动的重用一个StringBuilder对象去处理：</p>
 
 <pre><code>StringBuilder sb = new StringBuilder();
-for (String s : hugeArray) {
+for (String s : hugeArray) {//一个大循环
     sb.append(s);//重用一个StringBuilder对象，直接处理新增字符串值的操作
 }
 String result = sb.toString();

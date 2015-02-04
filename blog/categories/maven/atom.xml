@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Maven | 力学笃行的猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/maven/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2015-02-04T10:47:27+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Maven 配置 BAE SDK]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup/"/>
+    <updated>2014-11-25T23:38:51+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup</id>
+    <content type="html"><![CDATA[<p>百度BAE的官方文档没有一个完整的使用Maven配置BAE SDK的例子，而<a href="http://godbae.duapp.com/?p=366">BAE官方博客</a>上的配置也不可用。</p>
+
+<p>经过多日的调试和BAE客服的交流，最后成功配置出了一个maven 配置的 pom.xml文件。今天决定分享一下，可能是现在网上能搜到的第一篇可用的配置步骤了。</p>
+
+<p>1.建立Maven项目</p>
+
+<p>2.下载BAE SDK 这里使用的是<a href="http://bcs.duapp.com/baev3-sdk/java-runtime/baev3-sdk-1.0.0.zip">baev3-sdk-1.0.1</a>（下载还是必须的）</p>
+
+<p>3.添加如下repository 到pom.xml中</p>
+
+<pre><code>&lt;repositories&gt;
+   &lt;repository&gt;
+        &lt;id&gt;bae&lt;/id&gt;
+        &lt;url&gt;http://maven.duapp.com/nexus/content/groups/public/&lt;/url&gt;
+        &lt;releases&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+        &lt;/releases&gt;
+   &lt;/repository&gt;
+&lt;/repositories&gt;
+</code></pre>
+
+<p>4.添加依赖包：</p>
+
+<pre><code>    &lt;!-- ===================bae=============================== --&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;junit&lt;/groupId&gt;
+        &lt;artifactId&gt;junit&lt;/artifactId&gt;
+        &lt;version&gt;3.8.1&lt;/version&gt;
+        &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu.bae&lt;/groupId&gt;
+        &lt;artifactId&gt;baev3-sdk&lt;/artifactId&gt;
+        &lt;version&gt;1.0.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu&lt;/groupId&gt;
+        &lt;artifactId&gt;mcpack&lt;/artifactId&gt;
+        &lt;version&gt;1.0.9&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.thrift&lt;/groupId&gt;
+        &lt;artifactId&gt;libthrift&lt;/artifactId&gt;
+        &lt;version&gt;0.9.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.google.code.gson&lt;/groupId&gt;
+        &lt;artifactId&gt;gson&lt;/artifactId&gt;
+        &lt;version&gt;2.2.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.ezmorph&lt;/groupId&gt;
+        &lt;artifactId&gt;ezmorph&lt;/artifactId&gt;
+        &lt;version&gt;1.0.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+     &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.json-lib&lt;/groupId&gt;
+        &lt;artifactId&gt;json-lib&lt;/artifactId&gt;
+        &lt;version&gt;2.4&lt;/version&gt;
+        &lt;classifier&gt;jdk15&lt;/classifier&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-beanutils&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-beanutils&lt;/artifactId&gt;
+        &lt;version&gt;1.8.0&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpmime&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpcore&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+        &lt;type&gt;jar&lt;/type&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpclient&lt;/artifactId&gt;
+        &lt;version&gt;4.2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-codec&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-codec&lt;/artifactId&gt;
+        &lt;version&gt;1.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-io&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+        &lt;version&gt;1.4&lt;/version&gt;
+    &lt;/dependency&gt; 
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-lang&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang&lt;/artifactId&gt;
+        &lt;version&gt;2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang3&lt;/artifactId&gt;
+        &lt;version&gt;3.1&lt;/version&gt;
+    &lt;/dependency&gt;   
+
+    &lt;!-- Log4j --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;log4j&lt;/groupId&gt;
+        &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+        &lt;version&gt;1.2.17&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;   
+</code></pre>
+
+<p>5.到这一步，你可能会发现如下错误：</p>
+
+<pre><code>Missing artifact com.baidu:mcpack:jar:1.0.0.9
+</code></pre>
+
+<p>这时候，去到下载的BAE SDK下载的dependencies目录下，找到<code>mcpack-1.0.0.9.jar</code></p>
+
+<p>在cmd命令行中使用如下命令（需要配置好maven的环境变量）：</p>
+
+<pre><code>mvn install:install-file -Dfile=下载路径\baev3-sdk-1.0.1\dependencies\mcpack-1.0.0.9.jar -DgroupId=com.baidu -DartifactId=mcpack -Dversion=1.0.9 -Dpackaging=jar
+</code></pre>
+
+<p><img src="/images/bae/install_mcpack.jpg" title="安装mcpack到本地路径" alt="安装mcpack到本地路径" /></p>
+
+<p>然后去本地repo下查看是否存在此依赖包（默认在window用户目录下.m2）去查看本地安装的mcpack包。</p>
+
+<p><img src="/images/bae/repo_mcpack.jpg" title="查看mcpack是否安装成功" alt="查看mcpack是否安装成功" /></p>
+
+<p>6.更新maven 项目，应该就可以了。</p>
+
+<h2>测试分布式日志</h2>
+
+<p>在<code>log4j.properties</code>中加入如下类似配置：</p>
+
+<pre><code>log4j.rootLogger=DEBUG,BAE
+##################分布式日志###############
+log4j.appender.BAE=com.baidu.bae.api.log.BaeLogAppender
+log4j.appender.BAE.ak=BAE的API KEY
+log4j.appender.BAE.sk=BAE的的Secrete Key
+log4j.appender.BAE.Threshold = DEBUG
+log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
+</code></pre>
+
+<p>maven install 并发布。在扩展服务中测试分布式日志</p>
+
+<p><img src="/images/bae/BAE_distrubuted_logs.jpg" alt="测试分布式日志" /></p>
+
+<p>如果能看到日志打印成功，则证明BAE的SDK配置成功了</p>
+]]></content>
+  </entry>
+  
+</feed>

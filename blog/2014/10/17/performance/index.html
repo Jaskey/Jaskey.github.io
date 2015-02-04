@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>浅谈网站性能优化 - 力学笃行的猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="今天简单从上层的角度聊一下如何对有一个网站进行优化。 从用户在浏览器敲下回车，到数据回来，至少可以分为三个路径 在浏览器端，发送用户请求，并且接受服务器返回的响应数据进行页面渲染。
+请求数据在网络进行传输，发送到服务器。服务器把响应数据在网络传输返回。
+服务器端进行数据解析处理（访问文件，数据库等 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/10/17/performance">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="力学笃行的猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">力学笃行的猪</a></h1>
+  
+    <h2>站在巨人肩膀学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">浅谈网站性能优化</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>6:41 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>今天简单从上层的角度聊一下如何对有一个网站进行优化。</p>
+
+<p>从用户在浏览器敲下回车，到数据回来，至少可以分为三个路径</p>
+
+<ol>
+<li>在浏览器端，发送用户请求，并且接受服务器返回的响应数据进行页面渲染。</li>
+<li>请求数据在网络进行传输，发送到服务器。服务器把响应数据在网络传输返回。</li>
+<li>服务器端进行数据解析处理（访问文件，数据库等），最后返回响应数据。</li>
+</ol>
+
+
+<p>我们把第一路径简要称为“前端”，第三路径称为“后端”，看看能在这三层如何对网站的性能做出优化。</p>
+
+<h2>前端的过程</h2>
+
+<p>1 . 本地DNS解析域名，得到IP地址（并将IP地址缓存起来），向目标IP发送请求（通常为HTTP）</p>
+
+<p>以上过程可以优化的地方主要依靠减少DNS解析的次数。如果用户的浏览器设置了缓存，那么第二次访问相同域名的时候就不会请求DNS服务器了，而是直接用缓存中的IP发送请求。这主要依靠浏览器的相关设置，但我们也可以在页面告知浏览器需要做DNS的预取：</p>
+
+<pre><code>&lt;meta http-equiv="x-dns-prefetch-control" content="on" /&gt;
+</code></pre>
+
+<p>2 . 浏览器得到相应数据做出渲染计算</p>
+
+<p>在这阶段，浏览器主要做的是解析相应数据，创建DOM树，下载CSS样式应用到DOM树中，下载JS文件开始解析。</p>
+
+<p>为了提高页面的访问速度，我们应该尽可能让CSS样式放到<code>&lt;head&gt;</code>中并且让下载js的语句放到<code>&lt;body&gt;</code>的末尾，这样就可以使得页面先渲染起来再执行js脚本，用户的等待时间将减小。</p>
+
+<p>注：HTML5支持<code>async</code>属性支持脚本的异步执行，如：</p>
+
+<pre><code>&lt;script type="text/javascript" src="demo_async.js" async="async"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>同时，我们可以设置浏览器的缓存，让浏览器下次防蚊时从缓存中读取内容，减小HTTP请求。</p>
+
+<h2>网络传输（第二阶段）</h2>
+
+<p>这是阶段的速度取决于网络情况，由于用户的请求的数据很小但往往接受的响应数据很大，所以这要求企业的网络带宽要有快的上行速度，这和用户的带宽是相反的。</p>
+
+<h2>后端过程</h2>
+
+<p>后端是主要可以发挥的地方，这里包括处理请求，访问数据库等资源的过程。</p>
+
+<p>我们主要可以优化的地方有：</p>
+
+<p>1 .   <strong>使用缓存，减缓数据库压力</strong></p>
+
+<p>我们应该尽可能使用缓存提高常用数据的读取数据，减少访问数据库的次数。现在分布式的场景下，可以使用Memcached搭建起分布式缓存。</p>
+
+<p>2 .  <strong>使用异步操作代替同步操作，避免阻塞的等待时间，提高性能。</strong></p>
+
+<p>在高并发的情况，同步的请求操作（如数据库插入）会对数据库造成很大压力，同时也会导致用户的等待时间增长，我们应该尽可能使用异步的请求操作代替同步操作，以提高整体服务的响应速度，具体的操作将进入消息队列处理。最终的结果可以使用其他的方式告知用户，如邮件提醒的方式。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>6:41 pm</span></time>
+      
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/10/17/performance/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/10/17/performance/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/" title="Previous Post: 如何在两台机器上使用octopress">&laquo; 如何在两台机器上使用octopress</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/10/18/change-source-folder-in-eclipse/" title="Next Post: 如何在eclipse中修改源目录路径">如何在eclipse中修改源目录路径 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/02/02/javascript_static_method/">JavaScript的静态方法/实例方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Jaskey Lam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

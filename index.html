@@ -1,0 +1,1139 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>力学笃行的猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="最近学习JavaScript,遇到了函数闭包的相关问题，由于这是Java没有的概念，认知上容易糊涂。到底 function a(){ function b(){ alert('b'); } return b;//没有括号
+} 和 function a(){ function b(){ alert &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="力学笃行的猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">力学笃行的猪</a></h1>
+  
+    <h2>站在巨人肩膀学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/02/02/javascript_static_method/">JavaScript的静态方法/实例方法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-02T18:20:05+08:00'><span class='date'>2015-02-02 Mon</span> <span class='time'>6:20 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近学习JavaScript,遇到了函数闭包的相关问题，由于这是Java没有的概念，认知上容易糊涂。到底</p>
+
+<pre><code>function a(){
+    function b(){
+        alert('b');
+      } 
+        return b;//没有括号
+} 
+</code></pre>
+
+<p>和<br/>
+    function a(){
+        function b(){
+            alert(&lsquo;b&rsquo;);
+        }
+            return b();//多一个括号
+    }</p>
+
+<p>有何区别呢？ 在Java中，我们是不能返回一个函数的，也不能为一个对象的属性赋值为函数，但这在Javascript中都可以。以上两种的函数都是正确的，但却表达着完全一样的意义。</p>
+
+<p>第一种方式返回时候不带括号，return函数的名称时，<strong>返回的其实是一个函数b的引用</strong>，即<code>function a</code> 返回的结果是<code>function b</code>的引用。</p>
+
+<p>而第二种方式带着括号，其实是返回b的执行结果。而b本身不返回东西，所以<code>return undefined</code>。</p>
+
+<p>请观察以下几个demo：</p>
+
+<pre><code>function a() {
+    alert('A');
+}
+//alerts 'A', returns undefined
+
+function b() {
+    alert('B');
+    return a;
+}
+//alerts 'B', returns function a
+
+function c() {
+    alert('C');
+    return a();
+}
+//alerts 'C', alerts 'A', returns undefined
+
+alert("Function 'a' returns " + a());
+alert("Function 'b' returns " + b());//特别留意这里，b()返回的是整一个函数。
+alert("Function 'c' returns " + c());//这里是返回a()的结果，所以会先alert('A'),再返回underfined
+</code></pre>
+
+<p>加上参数以便更加理解这一例子：</p>
+
+<pre><code>function a(who) {
+    alert('a say hello to '+ who);
+}
+//alerts 'A', returns undefined
+
+function b(who) {
+    alert('b say hello to '+ who);
+    return a;
+}
+//alerts 'B', returns function a
+
+function c(who) {
+    alert('c say hello to '+ who);
+    return a(who);
+}
+//alerts 'C', alerts 'A', returns undefined
+
+alert("Function 'a' returns " + a("junjie"));//return undefined
+alert("Function 'b' returns " + b("junjie"));//返回整个函数a的定义
+alert("Function 'c' returns " + c('junjie'));//先调用了a(who)，所以alert 了"a say hello to junjie"，再返回undefined，因为a本身不返回值
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-12-03T11:35:01+08:00'><span class='date'>2014-12-03 Wed</span> <span class='time'>11:35 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
+
+<ol>
+<li>确保你现在branch上的重要文件已经commit.</li>
+<li><p>在项目根路径运行：</p>
+
+<pre><code> git rm -r --cached .
+</code></pre></li>
+<li><p>然后从staging area中移除所有已经改变的文件:</p>
+
+<pre><code> git add .
+</code></pre></li>
+<li><p>最后再提交即可</p>
+
+<pre><code> git commit -m ".gitignore is working, fixed untracked files"
+</code></pre></li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>3:38 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
+
+<p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
+
+<h2>配置</h2>
+
+<p><strong>1. 新建属性文件</strong></p>
+
+<p>如<code>application.properties</code></p>
+
+<p>里面的格式为： <code>name=value</code></p>
+
+<p>如：</p>
+
+<pre><code>token=wodinow
+</code></pre>
+
+<p><strong>2. 配置属性文件路径</strong></p>
+
+<pre><code>&lt;context:property-placeholder location="classpath:application.properties" /&gt;
+</code></pre>
+
+<hr />
+
+<h2>使用注解注入</h2>
+
+<p>在一个Bean中， 使用@Value注解使用${name}格式，如在@Controller中</p>
+
+<pre><code>@Controller
+public class CoreController {   
+
+    @Value("${developer_id}")
+    private String developerID;
+
+    }
+</code></pre>
+
+<h2>为静态变量注入</h2>
+
+<p>Spring不能为静态变量注入属性值，但我们可以配置一个setter完成此项工作，如：</p>
+
+<pre><code>@Component
+public class SignUtil {  
+
+    //需要从属性文件中读值的静态变量
+    private static  String TOKEN;  
+
+    //配置一个setter, 为该静态变量赋值
+    @Value("${token}")
+    private void setTOKEN(String token) {
+        SignUtil.TOKEN = token;
+    }  
+｝
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-30T02:32:58+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>2:32 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
+
+<p>在项目的参数中加入：</p>
+
+<pre><code>-Dlog4j.configuration=file:log4j配置文件路径
+</code></pre>
+
+<p>注：路径需要以file:开头，如：</p>
+
+<pre><code>-Dlog4j.configuration=file:E:\Programming\debug_log4j.properties
+</code></pre>
+
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-28T16:58:21+08:00'><span class='date'>2014-11-28 Fri</span> <span class='time'>4:58 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码：</p>
+
+<ul>
+<li>定义一个用户环境变量%HOME%， value=%USERPROFILE%。（windows会把路径自动替换为用户路径）</li>
+<li>在%HOME%路径下新建一个文件<code>_netrc</code></li>
+<li><p>在<code>_netrc</code>文件中增加下面的配置：</p>
+
+<p>  machine <hostname1>
+  login <login1>
+  password <password1>
+  machine <hostname2>
+  login <login2>
+  password <password2></p></li>
+</ul>
+
+
+<p>如：</p>
+
+<pre><code>machine github.com
+login cnblogs_user
+password cnblogs_pwd
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-25T23:38:51+08:00'><span class='date'>2014-11-25 Tue</span> <span class='time'>11:38 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>百度BAE的官方文档没有一个完整的使用Maven配置BAE SDK的例子，而<a href="http://godbae.duapp.com/?p=366">BAE官方博客</a>上的配置也不可用。</p>
+
+<p>经过多日的调试和BAE客服的交流，最后成功配置出了一个maven 配置的 pom.xml文件。今天决定分享一下，可能是现在网上能搜到的第一篇可用的配置步骤了。</p>
+
+<p>1.建立Maven项目</p>
+
+<p>2.下载BAE SDK 这里使用的是<a href="http://bcs.duapp.com/baev3-sdk/java-runtime/baev3-sdk-1.0.0.zip">baev3-sdk-1.0.1</a>（下载还是必须的）</p>
+
+<p>3.添加如下repository 到pom.xml中</p>
+
+<pre><code>&lt;repositories&gt;
+   &lt;repository&gt;
+        &lt;id&gt;bae&lt;/id&gt;
+        &lt;url&gt;http://maven.duapp.com/nexus/content/groups/public/&lt;/url&gt;
+        &lt;releases&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+        &lt;/releases&gt;
+   &lt;/repository&gt;
+&lt;/repositories&gt;
+</code></pre>
+
+<p>4.添加依赖包：</p>
+
+<pre><code>    &lt;!-- ===================bae=============================== --&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;junit&lt;/groupId&gt;
+        &lt;artifactId&gt;junit&lt;/artifactId&gt;
+        &lt;version&gt;3.8.1&lt;/version&gt;
+        &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu.bae&lt;/groupId&gt;
+        &lt;artifactId&gt;baev3-sdk&lt;/artifactId&gt;
+        &lt;version&gt;1.0.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu&lt;/groupId&gt;
+        &lt;artifactId&gt;mcpack&lt;/artifactId&gt;
+        &lt;version&gt;1.0.9&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.thrift&lt;/groupId&gt;
+        &lt;artifactId&gt;libthrift&lt;/artifactId&gt;
+        &lt;version&gt;0.9.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.google.code.gson&lt;/groupId&gt;
+        &lt;artifactId&gt;gson&lt;/artifactId&gt;
+        &lt;version&gt;2.2.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.ezmorph&lt;/groupId&gt;
+        &lt;artifactId&gt;ezmorph&lt;/artifactId&gt;
+        &lt;version&gt;1.0.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+     &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.json-lib&lt;/groupId&gt;
+        &lt;artifactId&gt;json-lib&lt;/artifactId&gt;
+        &lt;version&gt;2.4&lt;/version&gt;
+        &lt;classifier&gt;jdk15&lt;/classifier&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-beanutils&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-beanutils&lt;/artifactId&gt;
+        &lt;version&gt;1.8.0&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpmime&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpcore&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+        &lt;type&gt;jar&lt;/type&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpclient&lt;/artifactId&gt;
+        &lt;version&gt;4.2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-codec&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-codec&lt;/artifactId&gt;
+        &lt;version&gt;1.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-io&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+        &lt;version&gt;1.4&lt;/version&gt;
+    &lt;/dependency&gt; 
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-lang&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang&lt;/artifactId&gt;
+        &lt;version&gt;2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang3&lt;/artifactId&gt;
+        &lt;version&gt;3.1&lt;/version&gt;
+    &lt;/dependency&gt;   
+
+    &lt;!-- Log4j --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;log4j&lt;/groupId&gt;
+        &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+        &lt;version&gt;1.2.17&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;   
+</code></pre>
+
+<p>5.到这一步，你可能会发现如下错误：</p>
+
+<pre><code>Missing artifact com.baidu:mcpack:jar:1.0.0.9
+</code></pre>
+
+<p>这时候，去到下载的BAE SDK下载的dependencies目录下，找到<code>mcpack-1.0.0.9.jar</code></p>
+
+<p>在cmd命令行中使用如下命令（需要配置好maven的环境变量）：</p>
+
+<pre><code>mvn install:install-file -Dfile=下载路径\baev3-sdk-1.0.1\dependencies\mcpack-1.0.0.9.jar -DgroupId=com.baidu -DartifactId=mcpack -Dversion=1.0.9 -Dpackaging=jar
+</code></pre>
+
+<p><img src="/images/bae/install_mcpack.jpg" title="安装mcpack到本地路径" alt="安装mcpack到本地路径" /></p>
+
+<p>然后去本地repo下查看是否存在此依赖包（默认在window用户目录下.m2）去查看本地安装的mcpack包。</p>
+
+<p><img src="/images/bae/repo_mcpack.jpg" title="查看mcpack是否安装成功" alt="查看mcpack是否安装成功" /></p>
+
+<p>6.更新maven 项目，应该就可以了。</p>
+
+<h2>测试分布式日志</h2>
+
+<p>在<code>log4j.properties</code>中加入如下类似配置：</p>
+
+<pre><code>log4j.rootLogger=DEBUG,BAE
+##################分布式日志###############
+log4j.appender.BAE=com.baidu.bae.api.log.BaeLogAppender
+log4j.appender.BAE.ak=BAE的API KEY
+log4j.appender.BAE.sk=BAE的的Secrete Key
+log4j.appender.BAE.Threshold = DEBUG
+log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
+</code></pre>
+
+<p>maven install 并发布。在扩展服务中测试分布式日志</p>
+
+<p><img src="/images/bae/BAE_distrubuted_logs.jpg" alt="测试分布式日志" /></p>
+
+<p>如果能看到日志打印成功，则证明BAE的SDK配置成功了</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/">Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-23T23:10:43+08:00'><span class='date'>2014-11-23 Sun</span> <span class='time'>11:10 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候git push 会报类似的错误，如在BAE上push一个项目较大的时候，可能就会报此错误。由于遇到很多次，今天记录下解决方法：</p>
+
+<p>默认情况下，Git设置了HTTP操作的最大值为一MB，所以当你push代码的时候如果超过这个值，则可能发生错误。</p>
+
+<p>解决方法如下：</p>
+
+<ol>
+<li>进入git 目录</li>
+<li><p>扩大允许的最大值：</p>
+
+<pre><code> git config http.postBuffer *bytes*
+</code></pre></li>
+</ol>
+
+
+<p>如：扩大到500MB:</p>
+
+<pre><code>    git config http.postBuffer 524288000
+</code></pre>
+
+<p>再次push，问题应该就解决了。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/10/stateful-vs-stateless/">Stateless的web架构</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-10T21:26:13+08:00'><span class='date'>2014-11-10 Mon</span> <span class='time'>9:26 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>分布式架构中用户状态的问题</h2>
+
+<p>传统的web架构中，我们通常会用使用session保存用户的当前状态用以标记一个用户，例如用户在不同的请求中都能找到他的购物车中的物品。</p>
+
+<p>但随着用户量的增长，无法避免的，我们需要使用使用分布式的系统。而在分布式场景，问题将会变得复杂起来。</p>
+
+<p>例如，现在有三台应用服务器A,B,C。第一次用户的请求被负载均衡器路由到了A服务器，相关的状态被保存了起来，那么下次一个请求过来的时候，假如负载均衡器把他的请求路由到了B上，所有的已有状态都将丢失。就好像你刚刚在购物车上抢到了一台小米手机，准备付款的时候发现购物车居然是空的！这是我们需要急切避免的问题！</p>
+
+<h2>Sticky Session</h2>
+
+<p>要解决这种场景，如果我们使用原来的架构，就必须更改负载均衡器的策略，可使用一个sticky session 的策略。</p>
+
+<p>即同一个用户的请求都转发到同一台的服务器，这样，session就不用丢失。服务器依旧可以在session中找到用户的相关信息。负载均衡器可以在查看HTTP头中的Cookies（我们设置用户的标识到其中）去判断应该路由到哪台具体的服务器上，以便获取到local session。</p>
+
+<p>用sticky session解决这类问题有两个较为明显的<strong>好处</strong>：</p>
+
+<ol>
+<li>所有的应用代码都不需要修改，本来单机使用session的，分布式环境依旧可以使用。</li>
+<li>有利于命中本机的RAM缓存，例如可以有效的存储某些用户的静态信息在本机，下次有效的使用缓存增加响应速度</li>
+</ol>
+
+
+<p>但是，sticky session 有如下<strong>坏处</strong>：</p>
+
+<ol>
+<li>如果一台服务器宕机，该服务器上的session就会丢失（这是local session的通病）。这对于状态敏感的应用，如购物车，是极大的问题。</li>
+<li>由于负载均衡器使用了sticky,这可能导致负载很不均衡。</li>
+<li>如果负载过重，希望横向扩展，不能即时的收到效果。因为原来的用户的所有存有session的请求都会路由到原来的服务器。</li>
+</ol>
+
+
+<h2>Stateless Archetecture</h2>
+
+<p>可见，sticky session 很难解决用户状态不丢失的问题，那么要避免sticky session缺点而又解决这类的用户状态的问题，现在流行的架构是无状态的（stateless），也就是说，不使用session，server端不保留用户的任何状态。</p>
+
+<p>一旦我们把应用做成无状态的，有很多好处</p>
+
+<p>1 . 最明显的就是易于横向扩展！服务器不需要维护用户的状态，所以每一台服务器去处理用户的请求，都是一样的。负载均衡器可以使用最简单最优的策略，如随机/轮询等策略负载到具体的应用服务器上。</p>
+
+<p>2 . 即便应用服务器宕机，也不会丢失用户状态，因为状态没有保存在该机上。而当需要增加机器已处理大量用户请求，由于无状态，可以让新的机器快速的拥有一定负载(load)。</p>
+
+<p>严格意义上说，无状态的架构应该是指整个server不保存客户端操作的状态（client state），也叫应用状态（application state），这不包括资源的状态（resource state），资源状态是必须保存的，例如用户曾经购买过的商品等等这些需要持久化的状态。</p>
+
+<p>但实际上，用户操作的过程必然是有状态的，例如你浏览微博的时候，浏览到第二页，那么下一页就是第三页，这个浏览到的当前页面，就是用户的操作状态，我们希望的这个状态不由server去保存，而把状态转移出去。</p>
+
+<p>应用服务器前接客户端，后接数据库。所以我们可以把状态转移到这两者之一。</p>
+
+<p>1 .转移到client</p>
+
+<p>这是真正的无状态，整个server保存任何客户操作状态，而是由客户端自己维持，这也是REST的约束之一。例如，用户在第二页的时候，下一页对应的请求和在第三页的时候的下一页请求是不一样的，这由客户端自己处理并发送请求，服务端只需要接受参数就足够知道要做什么样的操作，不需要访问任何服务端保存的用户状态。例如我们可以把用户的相关状态通过cookie设置在HTTP Response，这样应用服务器获取状态的责任就转移到客户端本身。例如标识一个用户ID（加密的hash串）之类的，可以设置到cookie中，但这仅限于某些不敏感的状态。而且，cookie中能设置的数据大小也很有限。</p>
+
+<p>2 .转移到数据库（分布式缓存）中。</p>
+
+<p>另外一个更为可取的方法是使用数据库或者分布式缓存（如memcache）存储用户的状态，需要注意的这不算是无状态的架构，而顶多只能算web server的无状态，这样无状态的服务器依旧可以使用可靠的方式获取到用户的状态而做出合理的逻辑处理，并且session不依赖于单一机器，所以即便出现机器宕机，也不会丢失用户状态。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'>2014-11-06 Thu</span> <span class='time'>3:18 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
+
+<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
+
+<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
+
+<h2>语法部分</h2>
+
+<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
+
+<p>我们直接上一个例子，这样上手最快。</p>
+
+<p>先简单浏览下写搜索引擎插件的语法：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
+  &lt;Description&gt;engineDescription&lt;/Description&gt;
+  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
+  &lt;Url type="text/html" method="method" template="searchURL"&gt;
+    &lt;Param name="paramName1" value="paramValue1"/&gt;
+    ...
+    &lt;Param name="paramNameN" value="paramValueN"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
+  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
+
+<p>解释一下其中某些标签的作用：</p>
+
+<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
+
+<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
+
+<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
+
+<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
+
+<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
+
+<h2>例子——豆瓣</h2>
+
+<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
+
+<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
+
+<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
+  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
+  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
+  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
+     &lt;Param name="source" value="suggest"/&gt;
+     &lt;Param name="q" value="{searchTerms}"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
+
+<p>而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
+
+<p><strong>关于搜索建议</strong></p>
+
+<p>这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。</p>
+
+<pre><code>  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+</code></pre>
+
+<p>假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
+
+<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
+</code></pre>
+
+<p>所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。</p>
+
+<p>最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。</p>
+
+<hr />
+
+<p>注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
+
+<pre><code>user_pref("browser.search.selectedEngine", "engine_name");
+</code></pre>
+
+<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">adding a custom search engine tofirefox</a></p>
+
+<p>注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
+
+<h2>发布分享</h2>
+
+<p>写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a> 提交这个xml文件就可以供大家使用了。</p>
+
+<p>大家可以在<a href="https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach">https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach</a> 找到我豆瓣的这个例子</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-31T17:44:25+08:00'><span class='date'>2014-10-31 Fri</span> <span class='time'>5:44 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
+
+<p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>
+
+<h2>CPU</h2>
+
+<p>由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。</p>
+
+<h4>上下文切换</h4>
+
+<p>如果有频繁的上下文切换，则会造成内核占据较多的CPU使用，降低系统性能。典型的例子有是有非常强烈的锁竞争情况。这会导致当前进程频繁的进入阻塞或者休眠状态，使得应用响应下降。</p>
+
+<p>这类型的解决方法有，</p>
+
+<ol>
+<li>减小Thread的数量</li>
+<li>降低锁竞争，如分多把锁。</li>
+</ol>
+
+
+<h4>线程一直处于Running</h4>
+
+<p>还有另外一种情况是线程一直处于Running状态，这会导致该线程消耗大部分的CPU，通常情况是进行循环，或者大批量计算。</p>
+
+<p>例如</p>
+
+<pre><code>while(somevalue!=XXX){//
+   ;//死循环
+}   
+</code></pre>
+
+<p>或者有一个大批量的数据操作，如对集合进行很大数据量的增加操作：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+    list.add(value[i])
+}
+</code></pre>
+
+<p>以上两种例子都会使得线程一直处于running状态而不释放CPU，一个可取的方法是进行部分操作后进行<code>Thread.sleep()</code>,让出CPU。</p>
+
+<p>如上面第二个例子：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+   list.add(value[i])
+   if(i%50==0){//每50个就让出一次CPU 
+        Thread.sleep(1);
+    }
+}
+</code></pre>
+
+<p>当然，对于第一个例子，假如是希望线程中的协作的话，最好使用的是monitor object 的wait()/notify()之类的方法。</p>
+
+<p>如</p>
+
+<pre><code>while(!some_condition){
+    condition.wait();//挂起等待notify
+}
+</code></pre>
+
+<h2>内存</h2>
+
+<p>如果消耗了过多的JVM Heap内存，将会频繁触发GC，将大大影响系统的性能。</p>
+
+<h4>使用对象缓存池</h4>
+
+<p>使用对象池可以一定程度创建对象所花费的CPU和内存</p>
+
+<h4>采用合理的缓存失效算法</h4>
+
+<p>上面讲到了对象池降低内存消耗，但假如放入太多对象到缓存池里面，反而会造成更严重的内存消耗，这是因为池本身对于对象持有引用，从而可能造成频繁的Full GC。所以，需要控制池中对象的数量。</p>
+
+<p>当池中对象达到最大值后，如果需要加入新的对象，则需要采用合理的失效算法清除池中的对象。如FIFO,LRU,LFU。</p>
+
+<h4>中途释放不用的大对象引用</h4>
+
+<p>如：</p>
+
+<pre><code>void foo(){
+  Object bigObject=new Object();
+  bigObject.doSomething();//下面不需要了
+  // 下面有很多其他耗时，耗内存的操作的话，可考虑释放bigObject的引用
+  bigObject=null;
+
+  //some long opertions
+}
+</code></pre>
+
+<h4>合理使用WeakReference 和 SoftReference</h4>
+
+<p>有些对象我们允许在某些情况下即使我们还有引用，也要被GC。这时候可以考虑使用弱引用或者软引用。</p>
+
+<p>当某些对象用作类似缓存对象的时候，内存不足就可以被回收的话，这类对象可以使用软引用。</p>
+
+<p>而当某些对象A如果依附于某个对象B存在，如果B不存在了，A就没有必要存在，并且A的存在与否不应该阻碍B是否存在，那么A引用B的时候可以考虑使用弱引用。</p>
+
+<p>关于两者区别可以参考<a href="http://stackoverflow.com/questions/299659/what-is-the-difference-between-a-soft-reference-and-a-weak-reference-in-java">what is the difference between a soft reference and a weak reference</a></p>
+
+<h2>文件IO</h2>
+
+<p>文件IO严重的主要原因是多个线程在写大量的数据在同一个文件，导致文件变得很大，写入速度越来越慢，并造成线程竞争文件锁激烈。</p>
+
+<p>解决此类问题的方向有：</p>
+
+<h4>异步写文件</h4>
+
+<p>把文件的写入操作改为异步，如写日志的时候使用<code>log4j</code>的<a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/AsyncAppender.html">AsynAppender</a></p>
+
+<h4>批量读写</h4>
+
+<p>如大数据插入数据库改改为批量的插入操作数据库的操作：</p>
+
+<pre><code>  PreparedStatement ps = c.prepareStatement("INSERT INTO employees VALUES (?, ?)");
+
+  ps.setString(1, "John");
+  ps.setString(2,"Doe");
+  ps.addBatch();
+
+  ps.clearParameters();
+  ps.setString(1, "Dave");
+  ps.setString(2,"Smith");
+  ps.addBatch();
+
+  ps.clearParameters();
+  int[] results = ps.executeBatch();
+</code></pre>
+
+<p>具体可参考：<a href="http://viralpatel.net/blogs/batch-insert-in-java-jdbc/">batch insert in java</a></p>
+
+<h4>限制文件大小</h4>
+
+<p>无论数据库表，还是日志文件，我们都应该限制其的大小。</p>
+
+<p>有必要的话，对于数据库表，需要分拆成小表，增加读写速度。</p>
+
+<p>对于文件如日志文件则需要设置一个最大值，超过后生成另外一个新文件。如<code>log4j</code>中使用<code>RollingFileAppender</code>的<code>maxFileSize</code>属性。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/posts/2">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/02/02/javascript_static_method/">JavaScript的静态方法/实例方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Jaskey Lam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

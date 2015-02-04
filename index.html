@@ -98,13 +98,15 @@
 } 
 </code></pre>
 
-<p>和<br/>
-    function a(){
-        function b(){
-            alert(&lsquo;b&rsquo;);
-        }
-            return b();//多一个括号
-    }</p>
+<p>和</p>
+
+<pre><code>function a(){
+    function b(){
+        alert('b');
+    }
+        return b();//多一个括号
+}
+</code></pre>
 
 <p>有何区别呢？ 在Java中，我们是不能返回一个函数的，也不能为一个对象的属性赋值为函数，但这在Javascript中都可以。以上两种的函数都是正确的，但却表达着完全一样的意义。</p>
 

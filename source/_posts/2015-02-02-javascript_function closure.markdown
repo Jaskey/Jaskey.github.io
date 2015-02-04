@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "JavaScript的静态方法/实例方法"
+title: "JavaScript中返回函数"
 date: 2015-02-02 18:20:05 +0800
 comments: true
 categories: JavaScript

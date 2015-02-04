@@ -3,7 +3,7 @@ layout: post
 title: "untrace .gitignore中已经被commit的文件"
 date: 2014-12-03 11:35:01 +0800
 comments: true
-categories:git 
+categories: git 
 ---
 
 

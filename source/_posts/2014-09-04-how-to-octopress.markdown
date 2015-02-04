@@ -37,8 +37,8 @@ categories:
 安装依赖：
 
     cd c:/github/octopress #replace octopress with username.github.io
-    gem install bundler
-    bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port
+    gem install bundler//若出现https连接不上，到home目录下找.gemrc文件，然后在source修改https为http
+    bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port。若https连接不上，到GemFile中的source的https修改为http
 
 安装默认的OctoPress 主题：
     

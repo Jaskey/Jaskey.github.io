@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Javascript | 力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/javascript/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-02-04T12:01:31+08:00</updated>
+  <updated>2015-02-04T13:17:26+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,10 +14,10 @@
 
   
   <entry>
-    <title type="html"><![CDATA[JavaScript的静态方法/实例方法]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/02/02/javascript_static_method/"/>
+    <title type="html"><![CDATA[JavaScript中返回函数]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/02/javascript_function%20closure/"/>
     <updated>2015-02-02T18:20:05+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/02/02/javascript_static_method</id>
+    <id>http://Jaskey.github.io/blog/2015/02/02/javascript_function closure</id>
     <content type="html"><![CDATA[<p>最近学习JavaScript,遇到了函数闭包的相关问题，由于这是Java没有的概念，认知上容易糊涂。到底</p>
 
 <pre><code>function a(){

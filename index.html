@@ -9,8 +9,9 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="jQuery BlockUI Plugin(下载链接) 能做到方便得屏蔽整个page或者某些元素。当用于异步请求的时候，尤为有用。 用法也非常简单。以下简单的记录下使用笔记： 使用前，需要先引入jQuery 再引入jQuery blockUI。
-当需要全屏block时候,使用API $. &hellip;">
+  <meta name="description" content="CSS的 display 中有三个不同的值会影响布局，今天把总结下几个的不同特点。 display: inline 不会加入换行符，可以允许后面有HTML元素挨着。
+margin-top/bottommargin-top/bottom 失效.
+padding-top/bottom可以生效, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +67,86 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/02/16/css-display-properties/">CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217;</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-16T16:39:20+08:00'><span class='date'>2015-02-16 Mon</span> <span class='time'>4:39 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
+
+<h2>display: inline</h2>
+
+<ol>
+<li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
+<li>margin-top/bottommargin-top/bottom 失效.</li>
+<li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
+<li><strong>不能</strong>设置width或者height</li>
+</ol>
+
+
+<p>内敛元素的例子:</p>
+
+<p><code>&lt;span&gt;</code></p>
+
+<p><code>&lt;a&gt;</code></p>
+
+<h2>display: block</h2>
+
+<ol>
+<li>在block后强制换行</li>
+<li>可以设置width或者height</li>
+<li>padding,margin表现正常</li>
+</ol>
+
+
+<p>元素例子:
+<code>&lt;p&gt;</code>
+<code>&lt;div&gt;</code>
+<code>&lt;h1&gt;</code></p>
+
+<h2>display: inline-block</h2>
+
+<ol>
+<li>像<code>inline</code>一样,允许元素挨在同一行,</li>
+<li>可以设置width或者height</li>
+<li>像block一样,padding,margin表现正常</li>
+</ol>
+
+
+<h2>例子</h2>
+
+<p>以下几张图展现几个不同的<code>display效果</code>:</p>
+
+<p><img src="/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
+
+<p><img src="/images/css/display-block.png" title="display:block" alt="display:block" /></p>
+
+<p><img src="/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
+
+<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以设置高度和宽度.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -778,143 +859,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'>2014-11-06 Thu</span> <span class='time'>3:18 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
-
-<p><img src="/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
-
-<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
-
-<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
-
-<h2>语法部分</h2>
-
-<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
-
-<p>我们直接上一个例子，这样上手最快。</p>
-
-<p>先简单浏览下写搜索引擎插件的语法：</p>
-
-<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
-&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
-                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
-  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
-  &lt;Description&gt;engineDescription&lt;/Description&gt;
-  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
-  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
-  &lt;Url type="text/html" method="method" template="searchURL"&gt;
-    &lt;Param name="paramName1" value="paramValue1"/&gt;
-    ...
-    &lt;Param name="paramNameN" value="paramValueN"/&gt;
-  &lt;/Url&gt;
-  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
-  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
-&lt;/OpenSearchDescription&gt;
-</code></pre>
-
-<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
-
-<p>解释一下其中某些标签的作用：</p>
-
-<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
-
-<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
-
-<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
-
-<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
-
-<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
-
-<p><img src="/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
-
-<h2>例子——豆瓣</h2>
-
-<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
-
-<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
-
-<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
-
-<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
-&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
-   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
-  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
-  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
-  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
-  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
-  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
-     &lt;Param name="source" value="suggest"/&gt;
-     &lt;Param name="q" value="{searchTerms}"/&gt;
-  &lt;/Url&gt;
-  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
-  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
-&lt;/OpenSearchDescription&gt;
-</code></pre>
-
-<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
-
-<p>而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
-
-<p><strong>关于搜索建议</strong></p>
-
-<p>这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。</p>
-
-<pre><code>  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
-</code></pre>
-
-<p>假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
-
-<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
-</code></pre>
-
-<p>所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。</p>
-
-<p>最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。</p>
-
-<hr />
-
-<p>注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
-
-<pre><code>user_pref("browser.search.selectedEngine", "engine_name");
-</code></pre>
-
-<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">adding a custom search engine tofirefox</a></p>
-
-<p>注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
-
-<h2>发布分享</h2>
-
-<p>写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a> 提交这个xml文件就可以供大家使用了。</p>
-
-<p>大家可以在<a href="https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach">https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach</a> 找到我豆瓣的这个例子</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -930,6 +874,10 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/02/16/css-display-properties/">CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217;</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/02/10/jquery-block-ui/">jQuery BlockUI 的使用</a>
       </li>
     
@@ -943,10 +891,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
     
       <li class="post">
         <a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>
       </li>
     
   </ul>

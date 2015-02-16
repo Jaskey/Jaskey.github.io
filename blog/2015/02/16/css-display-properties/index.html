@@ -5,11 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>从属性文件为变量赋值，Spring - 力学笃行的猪</title>
+  <title>CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217; - 力学笃行的猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。 Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。 配置 1. 新建属性文件 如application.properties 里面的格式为 &hellip;">
+  <meta name="description" content="CSS的 display 中有三个不同的值会影响布局，今天把总结下几个的不同特点。 display: inline 不会加入换行符，可以允许后面有HTML元素挨着。
+margin-top/bottommargin-top/bottom 失效.
+padding-top/bottom可以生效, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +20,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2015/02/16/css-display-properties">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="力学笃行的猪" type="application/atom+xml">
@@ -68,7 +70,7 @@
   
   <header>
     
-      <h1 class="entry-title">从属性文件为变量赋值，Spring</h1>
+      <h1 class="entry-title">CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217;</h1>
     
     
       <p class="meta">
@@ -77,67 +79,65 @@
 
 
 
-<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>3:38 am</span></time>
+<time class='entry-date' datetime='2015-02-16T16:39:20+08:00'><span class='date'>2015-02-16 Mon</span> <span class='time'>4:39 pm</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
+<div class="entry-content"><p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
 
-<p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
+<h2>display: inline</h2>
 
-<h2>配置</h2>
+<ol>
+<li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
+<li>margin-top/bottommargin-top/bottom 失效.</li>
+<li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
+<li><strong>不能</strong>设置width或者height</li>
+</ol>
 
-<p><strong>1. 新建属性文件</strong></p>
 
-<p>如<code>application.properties</code></p>
+<p>内敛元素的例子:</p>
 
-<p>里面的格式为： <code>name=value</code></p>
+<p><code>&lt;span&gt;</code></p>
 
-<p>如：</p>
+<p><code>&lt;a&gt;</code></p>
 
-<pre><code>token=wodinow
-</code></pre>
+<h2>display: block</h2>
 
-<p><strong>2. 配置属性文件路径</strong></p>
+<ol>
+<li>在block后强制换行</li>
+<li>可以设置width或者height</li>
+<li>padding,margin表现正常</li>
+</ol>
 
-<pre><code>&lt;context:property-placeholder location="classpath:application.properties" /&gt;
-</code></pre>
 
-<hr />
+<p>元素例子:
+<code>&lt;p&gt;</code>
+<code>&lt;div&gt;</code>
+<code>&lt;h1&gt;</code></p>
 
-<h2>使用注解注入</h2>
+<h2>display: inline-block</h2>
 
-<p>在一个Bean中， 使用@Value注解使用${name}格式，如在@Controller中</p>
+<ol>
+<li>像<code>inline</code>一样,允许元素挨在同一行,</li>
+<li>可以设置width或者height</li>
+<li>像block一样,padding,margin表现正常</li>
+</ol>
 
-<pre><code>@Controller
-public class CoreController {   
 
-    @Value("${developer_id}")
-    private String developerID;
+<h2>例子</h2>
 
-    }
-</code></pre>
+<p>以下几张图展现几个不同的<code>display效果</code>:</p>
 
-<h2>为静态变量注入</h2>
+<p><img src="/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
 
-<p>Spring不能为静态变量注入属性值，但我们可以配置一个setter完成此项工作，如：</p>
+<p><img src="/images/css/display-block.png" title="display:block" alt="display:block" /></p>
 
-<pre><code>@Component
-public class SignUtil {  
+<p><img src="/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
 
-    //需要从属性文件中读值的静态变量
-    private static  String TOKEN;  
-
-    //配置一个setter, 为该静态变量赋值
-    @Value("${token}")
-    private void setTOKEN(String token) {
-        SignUtil.TOKEN = token;
-    }  
-｝
-</code></pre>
+<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以设置高度和宽度.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
 </div>
 
 
@@ -153,12 +153,12 @@ public class SignUtil {
 
 
 
-<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>3:38 am</span></time>
+<time class='entry-date' datetime='2015-02-16T16:39:20+08:00'><span class='date'>2015-02-16 Mon</span> <span class='time'>4:39 pm</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/spring/'>spring</a>
+    <a class='category' href='/blog/categories/css/'>css</a>
   
 </span>
 
@@ -184,7 +184,7 @@ public class SignUtil {
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2015/02/16/css-display-properties/" data-via="" data-counturl="http://Jaskey.github.io/blog/2015/02/16/css-display-properties/" >Tweet</a>
   
   
   
@@ -219,10 +219,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/" title="Previous Post: 通过VM参数选择本地log4j配置文件">&laquo; 通过VM参数选择本地log4j配置文件</a>
+        <a class="basic-alignment left" href="/blog/2015/02/10/jquery-block-ui/" title="Previous Post: jQuery BlockUI 的使用 ">&laquo; jQuery BlockUI 的使用 </a>
       
-      
-        <a class="basic-alignment right" href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/" title="Next Post: untrace .gitignore中已经被commit的文件">untrace .gitignore中已经被commit的文件 &raquo;</a>
       
     </p>
   </footer>

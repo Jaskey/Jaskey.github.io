@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Css | 力学笃行的猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/css/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2015-02-16T17:36:36+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
+    <updated>2015-02-16T16:39:20+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
+    <content type="html"><![CDATA[<p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
+
+<h2>display: inline</h2>
+
+<ol>
+<li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
+<li>margin-top/bottommargin-top/bottom 失效.</li>
+<li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
+<li><strong>不能</strong>设置width或者height</li>
+</ol>
+
+
+<p>内敛元素的例子:</p>
+
+<p><code>&lt;span&gt;</code></p>
+
+<p><code>&lt;a&gt;</code></p>
+
+<h2>display: block</h2>
+
+<ol>
+<li>在block后强制换行</li>
+<li>可以设置width或者height</li>
+<li>padding,margin表现正常</li>
+</ol>
+
+
+<p>元素例子:
+<code>&lt;p&gt;</code>
+<code>&lt;div&gt;</code>
+<code>&lt;h1&gt;</code></p>
+
+<h2>display: inline-block</h2>
+
+<ol>
+<li>像<code>inline</code>一样,允许元素挨在同一行,</li>
+<li>可以设置width或者height</li>
+<li>像block一样,padding,margin表现正常</li>
+</ol>
+
+
+<h2>例子</h2>
+
+<p>以下几张图展现几个不同的<code>display效果</code>:</p>
+
+<p><img src="/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
+
+<p><img src="/images/css/display-block.png" title="display:block" alt="display:block" /></p>
+
+<p><img src="/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
+
+<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以设置高度和宽度.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
+]]></content>
+  </entry>
+  
+</feed>

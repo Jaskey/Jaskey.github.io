@@ -4,7 +4,7 @@
   <title><![CDATA[力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-02-16T18:05:39+08:00</updated>
+  <updated>2015-02-16T18:08:01+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -42,7 +42,7 @@
 </ol>
 
 
-<p>我们可以改成</p>
+<p>我们可以改成:</p>
 
 <pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
     time_format: "%H:%M"     # 24 hour time

@@ -16,6 +16,7 @@ categories: JavaScript
 	} 
 
 和  
+
 	function a(){
 		function b(){
 			alert('b');

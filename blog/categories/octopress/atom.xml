@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Octopress | 力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/octopress/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-02-16T17:48:08+08:00</updated>
+  <updated>2015-02-16T18:05:39+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,50 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[修改octopress的时间格式]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
+    <updated>2015-02-16T17:59:19+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
+    <content type="html"><![CDATA[<p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
+
+<p><code>date_format: "%F %a"       #2012-01-01</code></p>
+
+<p>后来在StackOverflow上提了一个问题找到了答案：</p>
+
+<ol>
+<li><p>安装Octopress Date format：</p>
+
+<pre><code> gem install octopress-date-format
+</code></pre></li>
+<li><p>在<code>_config.yml</code>中加入：</p>
+
+<pre><code> gems:
+     - octopress-date-format
+</code></pre></li>
+<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
+
+<pre><code> date_format: 'ordinal' # July 3rd, 2014
+ time_format: '%-I:%M %P'   # 2:08 pm
+</code></pre></li>
+</ol>
+
+
+<p>我们可以改成</p>
+
+<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
+    time_format: "%H:%M"     # 24 hour time
+</code></pre>
+
+<p>最后生成页面，大功告成：</p>
+
+<pre><code>    rake generate
+</code></pre>
+
+<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[如何在两台机器上使用octopress]]></title>

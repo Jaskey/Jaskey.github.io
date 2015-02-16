@@ -4,7 +4,7 @@
   <title><![CDATA[力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-02-16T17:48:08+08:00</updated>
+  <updated>2015-02-16T18:05:39+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,50 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[修改octopress的时间格式]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
+    <updated>2015-02-16T17:59:19+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
+    <content type="html"><![CDATA[<p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
+
+<p><code>date_format: "%F %a"       #2012-01-01</code></p>
+
+<p>后来在StackOverflow上提了一个问题找到了答案：</p>
+
+<ol>
+<li><p>安装Octopress Date format：</p>
+
+<pre><code> gem install octopress-date-format
+</code></pre></li>
+<li><p>在<code>_config.yml</code>中加入：</p>
+
+<pre><code> gems:
+     - octopress-date-format
+</code></pre></li>
+<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
+
+<pre><code> date_format: 'ordinal' # July 3rd, 2014
+ time_format: '%-I:%M %P'   # 2:08 pm
+</code></pre></li>
+</ol>
+
+
+<p>我们可以改成</p>
+
+<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
+    time_format: "%H:%M"     # 24 hour time
+</code></pre>
+
+<p>最后生成页面，大功告成：</p>
+
+<pre><code>    rake generate
+</code></pre>
+
+<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>
@@ -1607,82 +1651,6 @@ public int getNextI(){
 <p>更多文档可参考：</p>
 
 <p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[初探SOA]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/11/understanding-soa/"/>
-    <updated>2014-10-11T10:41:33+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/11/understanding-soa</id>
-    <content type="html"><![CDATA[<p>有些系统或者产品当发展得越来越大后，就会有很多子模块，子产品。但这些模块中却有着很多相同的需要解决的问题，即有许多共有的业务逻辑。例如，可能豆瓣系统下面的豆瓣读书，豆瓣电影，豆瓣小组等等的每个模块虽然都有着独特的功能，但都有对于用户信息的读写，或者用户评价的相关逻辑。</p>
-
-<p>这时候，假如每个系统都要独自的单独维护着这些逻辑，会出现很多重复性的代码和逻辑，这就会导致这一部分共有的逻辑需要修改的时候，每个模块下的对应逻辑都要作相应的更改，会导致系统的维护成本大大上升。</p>
-
-<p>为了解决的这一类问题，可采用提取公共逻辑去划分不同的系统的方法来提高系统的可重用性和可维护性。</p>
-
-<p>还有另外一个问题是，随着系统的访问量逐步上升，由于单一系统需要处理所有的逻辑，必然会导致当访问量、数据量上升到一定程度后出现性能问题。这时候，我们可以把系统进行分解，以让独立的子系统分工处理其中某些具体的任务。</p>
-
-<p>无论哪种问题，在我们把系统分解成了几个子系统之后，都要有一个最明显的问题需要解决：系统之间如何进行通信/交互。</p>
-
-<p>显而易见的，系统可以通过网络进行通信：如基于HTTP，TCP+NIO，RMI或者WebService等等进行通信。同时，具体应该是同步还是异步通信，这也是一个需要考虑的问题。</p>
-
-<p>那么问题就来了，当子系统越来越多，由于系统间的通信没有统一的标准，这将导致开发人员每需要访问一个子系统时，都可能需要使用/学习不同的交互方式，这大大增加了维护成本。</p>
-
-<p>这时候，SOA就出现了，它是为了解决统一交互方式这一问题出出现的。</p>
-
-<p>SOA(Service-oriented architecture)，强调的是系统之间使用一个统一标准的服务方式进行交互，各个系统可以采用不同的语言，不同的框架实现，而交互则全部通过服务的方式进行。</p>
-
-<p>SOA所带来的挑战如下：</p>
-
-<ul>
-<li><strong>服务多级调用所带来的延时。</strong></li>
-</ul>
-
-
-<p>任何一个分布式的应用由于需要通过网络进行调用，除了成功和失败之外，都会多出一种状态：超时。而这在服务多级调用的时候会带来不少挑战：例如：A&mdash;>B&mdash;->C的过程中，可能会带啦大幅度的延时。为了解决高性能交互，需要完善调用的过程，例如当B服务执行的时如果已经超时，就没有必要调用C服务了，而应该直接抛出超时异常给A。</p>
-
-<ul>
-<li><strong>调试/跟踪困难</strong></li>
-</ul>
-
-
-<p>如 A&ndash;>B&ndash;>C的过程，假如B报错了，调用者可能会认为B服务的问题，而B服务的开发人员则可能认为C的问题。而C则又可能认为这是网络的问题。这就导致了出现问题时候调试/跟踪困难</p>
-
-<ul>
-<li><strong>更高的安全/检测要求</strong></li>
-</ul>
-
-
-<p>未拆分系统时候，安全和检测只需要在一个系统出现，而拆分后，每个系统都需要相应的安全控制和监测。</p>
-
-<ul>
-<li><strong>现有应用移植</strong></li>
-</ul>
-
-
-<p>这是推广SOA的大挑战。应用越多，难度和时间越大</p>
-
-<ul>
-<li><strong>QoS(Quality of Service)的支持</strong></li>
-</ul>
-
-
-<p>每个服务提供者能支撑的访问量是有限的，因此设定服务的QoS非常重要，并且应该尽可能利用流量控制、机器资源分配等保障QoS</p>
-
-<ul>
-<li><strong>高可用和高可伸缩的挑战</strong></li>
-</ul>
-
-
-<p>这是互联网应用必须做到的，而SOA由于承担了所有服务的交互，因此其在这两个指标上影响重大</p>
-
-<ul>
-<li><strong>多版本和依赖管理</strong></li>
-</ul>
-
-
-<p>由于服务多起来后，需要对服务的依赖关系进行管理，以便升级时做相应的安排。</p>
 ]]></content>
   </entry>
   

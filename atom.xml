@@ -4,7 +4,7 @@
   <title><![CDATA[力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-02-16T17:36:36+08:00</updated>
+  <updated>2015-02-16T17:48:08+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -26,36 +26,33 @@
 <li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
 <li>margin-top/bottommargin-top/bottom 失效.</li>
 <li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
-<li><strong>不能</strong>设置width或者height</li>
+<li><strong>不能</strong>设置<code>width</code>或者<code>height</code></li>
 </ol>
 
 
-<p>内敛元素的例子:</p>
+<p>inline的元素有:</p>
 
-<p><code>&lt;span&gt;</code></p>
-
-<p><code>&lt;a&gt;</code></p>
+<p><code>&lt;span&gt;``&lt;a&gt;</code></p>
 
 <h2>display: block</h2>
 
 <ol>
 <li>在block后强制换行</li>
-<li>可以设置width或者height</li>
+<li>可以设置<code>width</code>或者<code>height</code></li>
 <li>padding,margin表现正常</li>
 </ol>
 
 
-<p>元素例子:
-<code>&lt;p&gt;</code>
-<code>&lt;div&gt;</code>
-<code>&lt;h1&gt;</code></p>
+<p>block的元素有:</p>
+
+<p><code>&lt;p&gt;``&lt;div&gt;``&lt;h1&gt;</code></p>
 
 <h2>display: inline-block</h2>
 
 <ol>
 <li>像<code>inline</code>一样,允许元素挨在同一行,</li>
-<li>可以设置width或者height</li>
-<li>像block一样,padding,margin表现正常</li>
+<li>可以设置<code>width</code>或者<code>height</code></li>
+<li>像<code>block</code>一样,padding,margin表现正常</li>
 </ol>
 
 
@@ -63,13 +60,23 @@
 
 <p>以下几张图展现几个不同的<code>display效果</code>:</p>
 
+<p>假如我们在div的一大串文字中,嵌入了一个<code>&lt;span&gt;</code>的文字, 通过设置span的不同<code>display</code>,将有以下效果:</p>
+
+<p><strong>diplay:inline</strong></p>
+
 <p><img src="http://Jaskey.github.io/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
+
+<p><strong>display:block</strong></p>
 
 <p><img src="http://Jaskey.github.io/images/css/display-block.png" title="display:block" alt="display:block" /></p>
 
+<p><strong>display:inline-block</strong></p>
+
 <p><img src="http://Jaskey.github.io/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
 
-<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以设置高度和宽度.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
+<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以正常的设置高度和宽度等属性.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
+
+<p><a href="http://jsfiddle.net/Mta2b/" title="demo链接">demo链接</a></p>
 ]]></content>
   </entry>
   

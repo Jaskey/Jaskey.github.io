@@ -9,7 +9,10 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="有些系统或者产品当发展得越来越大后，就会有很多子模块，子产品。但这些模块中却有着很多相同的需要解决的问题，即有许多共有的业务逻辑。例如，可能豆瓣系统下面的豆瓣读书，豆瓣电影，豆瓣小组等等的每个模块虽然都有着独特的功能，但都有对于用户信息的读写，或者用户评价的相关逻辑。 这时候， &hellip;">
+  <meta name="description" content="在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
+今天简单谈谈Java的同步机制。 我们以一个十分简单的例子讲起。 int i=0
+public int getNextI(){ return ++i;
+} 这是一个极为简单的方法 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +68,89 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/13/java-synchronization/">谈谈Java同步机制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'>2014-10-13 Mon</span> <span class='time'>21:11</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
+今天简单谈谈Java的同步机制。</p>
+
+<p>我们以一个十分简单的例子讲起。</p>
+
+<pre><code>int i=0
+public int getNextI(){
+    return ++i;
+}
+</code></pre>
+
+<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
+
+<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
+
+<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
+
+<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
+
+<h2>volatile</h2>
+
+<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
+
+<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
+
+<h2>synchronized</h2>
+
+<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
+
+<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
+
+<p>我们可以改成</p>
+
+<pre><code>public synchronized int getNextI(){
+    return i++;
+}
+</code></pre>
+
+<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
+
+<p>注：
+如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
+
+<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
+
+<pre><code>public  int getNextI(){
+    synchronized(this){
+        return i++;
+    }
+}
+</code></pre>
+
+<p>更多文档可参考：</p>
+
+<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -863,6 +949,10 @@ git push origin source
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/03/04/js-private-methods/">JavaScript实现私有方法</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/02/16/octopress-modify-date-format/">修改octopress的时间格式</a>
       </li>
     
@@ -876,10 +966,6 @@ git push origin source
     
       <li class="post">
         <a href="/blog/2015/02/02/javascript_function%20closure/">JavaScript中返回函数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a>
       </li>
     
   </ul>

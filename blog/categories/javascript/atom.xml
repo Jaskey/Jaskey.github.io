@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Javascript | 力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/javascript/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-03-05T19:02:44+08:00</updated>
+  <updated>2015-04-07T20:13:00+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -149,7 +149,7 @@ p.toStr();//"undefined is not a function"
     _:function(fun){
         var that = this;//保存当前对象作用域
         return function(){//返回一个函数，该函数会调用目标函数，但this绑定到that作用域
-            fun.apply(that,arguments);
+            return fun.apply(that,arguments);//记得return
         }
     }
 </code></pre>
@@ -197,7 +197,7 @@ return {//返回一个原型对象
     _:function(fun){
         var that = this;
         return function(){
-            fun.apply(that,arguments);
+            return fun.apply(that,arguments);//注意return
         }
     }
 }

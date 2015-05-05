@@ -138,7 +138,7 @@ JavaScript的所有成员（属性+方法）都是公有的，但是我们有方
         _:function(fun){
             var that = this;//保存当前对象作用域
             return function(){//返回一个函数，该函数会调用目标函数，但this绑定到that作用域
-                fun.apply(that,arguments);
+                return fun.apply(that,arguments);//记得return
             }
         }
 
@@ -186,7 +186,7 @@ JavaScript的所有成员（属性+方法）都是公有的，但是我们有方
     	_:function(fun){
     		var that = this;
     		return function(){
-    			fun.apply(that,arguments);
+    			return fun.apply(that,arguments);//注意return
     		}
     	}
     }

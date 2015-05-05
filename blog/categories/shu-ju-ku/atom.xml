@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 数据库 | 力学笃行的猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/shu-ju-ku/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-04-07T20:13:00+08:00</updated>
+  <updated>2015-05-05T19:04:51+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,22 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Insert or Update操作，MySQL]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/"/>
+    <updated>2015-05-05T16:46:59+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql</id>
+    <content type="html"><![CDATA[<p>如果需要执行操作如：“插入一行记录，若存在，则更新”的操作，在MySQL中，不需要使用Exists也不需要分两次语句执行，可以直接使用如下语句：</p>
+
+<pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
+</code></pre>
+
+<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键冲突，则更新权限值为1。</p>
+
+<p>注：这语法不是标准SQL语法，所以仅适用于MySQL</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[SQL优化的一些技巧]]></title>

@@ -9,10 +9,8 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
-今天简单谈谈Java的同步机制。 我们以一个十分简单的例子讲起。 int i=0
-public int getNextI(){ return ++i;
-} 这是一个极为简单的方法 &hellip;">
+  <meta name="description" content="在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress. 准备工作： 和 之前写的“如何开始使用octopress”一样，要先安装相应的软件 安装Git
+安装ruby, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +66,108 @@ public int getNextI(){ return ++i;
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
+
+<h2>准备工作：</h2>
+
+<p>和  <a href="http://jaskey.github.io/blog/2014/09/04/how-to-octopress/">之前写的“如何开始使用octopress”</a>一样，要先安装相应的软件</p>
+
+<ol>
+<li><a href="http://git-scm.com/">安装Git</a></li>
+<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
+<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
+<li>建立一个文件夹，例如在C：/github</li>
+</ol>
+
+
+<h1>克隆项目</h1>
+
+<p>接下来我们需要把已经建好的博客项目clone下来。</p>
+
+<h2>克隆source分支</h2>
+
+<pre><code>$ git clone -b source git@github.com:username/username.github.com.git octopress ##octopress 为你的项目文件夹
+</code></pre>
+
+<h2>克隆master分支</h2>
+
+<pre><code>$ cd octopress ##进入项目
+$ git clone git@github.com:username/username.github.com.git _deploy ##克隆master分支到_deploy 
+</code></pre>
+
+<h1>配置环境</h1>
+
+<pre><code>$ gem install bundler
+$ rbenv rehash    # If you use rbenv, rehash to be able to run the bundle command
+$ bundle install
+$ rake setup_github_pages
+</code></pre>
+
+<p>然后它会询问你的项目仓库的URL:</p>
+
+<blockquote><p>Enter the read/write url for your repository
+(For example, &lsquo;git@github.com:your_username/your_username.github.com)</p></blockquote>
+
+<p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
+
+<h1>更新变化（重要）</h1>
+
+<p>每次使用前，先确保拿到最新的文件</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+
+<h1>提交</h1>
+
+<p>提交的时候，由于需要多台机器协作，需要把source分支push到origin中，这样另外一台机器才能拿到最新的源文件。</p>
+
+<pre><code>$ rake generate
+$ git add .
+$ git commit -am "提交评论" 
+$ git push origin source  # 更新远程 source branch 
+$ rake deploy             # 更新远程 master branch，并部署博文
+</code></pre>
+
+<h1>另外的机器更新变化</h1>
+
+<p>在另外的机器上，就可以获取到相应的变化。</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -804,137 +904,9 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/09/04/how-to-octopress/">Windows7上配置和使用Octopress</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-04T17:26:00+08:00'><span class='date'>2014-09-04 Thu</span> <span class='time'>17:26</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>本文翻译自：
-<a href="http://www.techelex.org/setup-octopress-on-windows7/">setup octopress on windows 7</a></p>
-
-<hr />
-
-<h2>准备工作：</h2>
-
-<ol>
-<li><a href="http://git-scm.com/">安装Git</a></li>
-<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
-<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 use <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
-<li>建立一个文件夹，例如在C：/github</li>
-</ol>
-
-
-<p>配置Octopress:</p>
-
-<pre><code>cd c:/github
-git clone git://github.com/imathis/octopress.git octopress #clone一个仓库，此处替换 octopress 成为 username.github.io
-cd octopress #进入clone出来的项目
-ruby --version # 应该会报出ruby 版本如 Ruby 1.9.3
-</code></pre>
-
-<p>然后进行相关初始化：</p>
-
-<pre><code>cd C:/RubyDevKit
-ruby dk.rb init
-ruby dk.rb install
-</code></pre>
-
-<p>安装依赖：</p>
-
-<pre><code>cd c:/github/octopress #replace octopress with username.github.io
-gem install bundler//若出现https连接不上，到home目录下找.gemrc文件，然后在source修改https为http
-bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port。若https连接不上，到GemFile中的source的https修改为http
-</code></pre>
-
-<p>安装默认的OctoPress 主题：</p>
-
-<pre><code>rake install
-</code></pre>
-
-<hr />
-
-<h2>建立Github的仓库</h2>
-
-<p>命名为：你的名字.github.io</p>
-
-<h2>部署</h2>
-
-<pre><code>rake setup_github_pages
-</code></pre>
-
-<p>这样做的结果是：</p>
-
-<ol>
-<li>询问你的Github Pages 的仓库URL。</li>
-<li>从origin重命名指向imathis/octopress 的remote 到octopress</li>
-<li>增加你的Github pages 的仓库为默认的 origin remote</li>
-<li>当前branch 从master 转换到source</li>
-<li>配置你的博客url</li>
-<li>在_deploy文件下下配置一个master 分支用于开发</li>
-</ol>
-
-
-<hr />
-
-<h2>发布：</h2>
-
-<pre><code>rake generate
-rake deploy
-</code></pre>
-
-<hr />
-
-<p>这样就会生成你的博客，复制生成的文件到_deploy/下，并增加到git，commit 和push到master分支。</p>
-
-<p>最后，commit源文件</p>
-
-<pre><code>git add .
-git commit -m '提交信息'
-git push origin source
-</code></pre>
-
-<p>现在，访问你的用户名.github.io就可以访问你的博客了。（第一次可能会延迟十几分钟）</p>
-
-<hr />
-
-<h2>新增博文</h2>
-
-<pre><code>rake new_post["title"]
-</code></pre>
-
-<p>这里会生成一个markdown文件到source/_posts下</p>
-
-<p>修改此markdown文件，再次发布，即可看到新的博文。</p>
-
-<hr />
-
-<p>有关markdown的语法和使用请参看<a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a></p>
-
-<p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/posts/4">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -947,6 +919,10 @@ git push origin source
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/05/05/insert-or-update-mysql/">Insert or Update操作，MySQL</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015/03/04/js-private-methods/">JavaScript实现私有方法</a>
@@ -962,10 +938,6 @@ git push origin source
     
       <li class="post">
         <a href="/blog/2015/02/10/jquery-block-ui/">jQuery BlockUI 的使用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/02/02/javascript_function%20closure/">JavaScript中返回函数</a>
       </li>
     
   </ul>
@@ -1014,36 +986,6 @@ git push origin source
 
 
 
-
-
-<section>
-  <h1>知乎主页</h1>
-  <ul id="zhihu_profile">
-    <li class="loading">更新中&#8230;</li>
-  </ul>
-  
-  <a href="https://github.com/">@</a> on GitHub
-  
-  <script type="text/javascript">
-    $(document).ready(function(){
-        if (!window.jXHR){
-            var jxhr = document.createElement('script');
-            jxhr.type = 'text/javascript';
-            jxhr.src = '/javascripts/libs/jXHR.js';
-            var s = document.getElementsByTagName('script')[0];
-            s.parentNode.insertBefore(jxhr, s);
-        }
-
-        zhihu.showProfile({
-/*            user: '',
-            count: 0,
-            skip_forks: true,*/
-            target: '#zhihu_profile'
-        });
-    });
-  </script>
-  <script src="/javascripts/zhihu.js" type="text/javascript"> </script>
-</section>
 
 
   

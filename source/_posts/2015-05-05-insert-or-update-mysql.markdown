@@ -11,7 +11,7 @@ categories: 数据库
 
      INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
 
-上面的语句达到的效果是往table1里面插入一条记录，给`user1` `1`的权限，若这条记录已经存在，则更新权限值为1。
+上面的语句达到的效果是往table1里面插入一条记录，给`user1` `1`的权限，若存在主键冲突，则更新权限值为1。
 
 注：这语法不是标准SQL语法，所以仅适用于MySQL
 

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Python | 力学笃行的猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/python/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2015-05-07T16:50:02+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Python中用dictionary操作SQL Select, Insert]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
+    <updated>2015-05-07T16:19:49+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
+    <content type="html"><![CDATA[<p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
+
+<p>首先，连接数据库</p>
+
+<pre><code>conn = MySQLdb.connect(host=host,
+                       user=user,
+                       passwd=passwd,
+                       db=db,
+                       charset=charset)
+</code></pre>
+
+<h1>SELECT:</h1>
+
+<p>在获取cursor的时候，传入<code>MySQLdb.cursors.DictCursor</code>即可</p>
+
+<pre><code>cursor = conn.cursor(MySQLdb.cursors.DictCursor)  ##结果集成为dictionary
+cursor.execute(select_sql )  # query
+
+for row in cursor:
+    print type(row),row
+    name = row["name"]  # 直接使用key获取
+    id = row["id"]      # 直接使用key获取
+</code></pre>
+
+<p>会发现,row的类型已经是一个dict, 其中每一列都可以使用key值获取
+    <type 'dict'> {id:123L,&lsquo;name&rsquo;:u&#8217;abc&#8217; }</p>
+
+<h1>INSERT</h1>
+
+<p>如果需要把一个准备好的dict插入到数据库，不想一个个对应的赋值，可以考虑使用如下方式:</p>
+
+<pre><code>myDict = {'name':'abc','age':16L}
+insert_table = 'mytable'
+placeholders = ', '.join(['%s']* len(mydict))  ##按照dict长度返回如：%s, %s 的占位符
+columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
+insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
+
+cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
+</code></pre>
+]]></content>
+  </entry>
+  
+</feed>

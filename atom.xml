@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-05-07T16:59:55+08:00</updated>
+  <updated>2015-05-07T18:20:20+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,29 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[修改IntelliJ的快捷键中的CTRL+Y为Redo操作]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut/"/>
+    <updated>2015-05-07T18:02:57+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut</id>
+    <content type="html"><![CDATA[<p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
+
+<p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
+
+<ol>
+<li>进入Settings（快捷键：<kbd>CTRL</kbd>+<kbd>ALT</kbd>+<kbd>S</kbd>，或者<kbd>SHITT</kbd>*2出<code>Search Everywhere</code>中搜索settings进入）</li>
+<li>左边菜单选择KeyMap（可搜索）</li>
+<li>选择默认的keymaps（IntelliJ的）,然后选择copy出一份新的，在新的keymaps里面修改</li>
+<li>在新的keymaps里面的<code>Main Menu--&gt;Edit--&gt;Redo</code> 右键选择 <code>Add Keyboard Shortcut</code></li>
+<li>键盘按<kbd>CTRL</kbd>+<kbd>Y</kbd> (修改的快捷键)</li>
+<li>OK</li>
+<li>选择 &ldquo;Remove&rdquo; ，当窗口提示： &ldquo;the shortcut is already assigned to other actions. Do you want to remove other assignments?&rdquo;</li>
+<li>Apply</li>
+</ol>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Python中用dictionary操作SQL Select, Insert]]></title>
@@ -1691,24 +1714,6 @@ city from memcached: shenzhen
 <p>Fair enough! 十分公平。也许你的工作并不比卖烧饼的轻松（不过很多的确比烧饼轻松得多），而且我们的前期投入也肯定比小贩们投入得多得多（无论教育费用，时间），但这就是市场给予我们的回应。一个人的收入，与他创造财富的能力相匹配，这是我能想到的最为公平且合理的资源配置方式。当然，除了创造财富外，还有另外一种获得财富的手段，那就是偷窃。这不包括真真意义上的偷，而还包括贪污、资源垄断，他们和偷窃都拥有一样的特点——没有创造财富而获取创造出来的财富，这在中国还十分的严重，但对比历史已经好得多得多。至少，以前的首富都是达官贵人，现在我们的首富却是马云。</p>
 
 <p>那么，自己能拿多少钱？应该问的，不是自己付出了多少，自己的学历，自己的身份，而是问自己到底能创造多少财富，<strong>在市场化的社会里，最简单、最公平的获取财富的手段，就是创造财富了。</strong></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[如何在eclipse中修改源目录路径]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse/"/>
-    <updated>2014-10-18T19:37:41+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse</id>
-    <content type="html"><![CDATA[<p>在我们使用<code>Maven</code>或者<code>Gradle</code>的时候，源码目录要求是：src/main/java。</p>
-
-<p>但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。</p>
-
-<p>要解决这个问题，我们需要先让eclipse不要把src视为源目录(source folder)。方法：</p>
-
-<p>右键src目录&mdash;>build path &mdash;> remove from build path.</p>
-
-<p>这样以后，我们就可以建立我们的main和java文件夹在src下。
-然后右键java文件夹&mdash;>select build path &ndash;> use as source folder， 这样就可以把源目录指向src/main/java了</p>
 ]]></content>
   </entry>
   

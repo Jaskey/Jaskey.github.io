@@ -9,8 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码： 定义一个用户环境变量%HOME%， value=%USERPROFILE%。（windows会把路径自动替换为用户路径）
-在%HOME% &hellip;">
+  <meta name="description" content="有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。 在项目的参数中加入： -Dlog4j.configuration=file:log4j配置文件路径 注：路径需要以file:开头，如： -Dlog4j. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +65,47 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-30T02:32:58+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>02:32</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
+
+<p>在项目的参数中加入：</p>
+
+<pre><code>-Dlog4j.configuration=file:log4j配置文件路径
+</code></pre>
+
+<p>注：路径需要以file:开头，如：</p>
+
+<pre><code>-Dlog4j.configuration=file:E:\Programming\debug_log4j.properties
+</code></pre>
+
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1328,44 +1368,6 @@ city from memcached: shenzhen
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'>2014-10-18 Sat</span> <span class='time'>19:37</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>在我们使用<code>Maven</code>或者<code>Gradle</code>的时候，源码目录要求是：src/main/java。</p>
-
-<p>但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。</p>
-
-<p>要解决这个问题，我们需要先让eclipse不要把src视为源目录(source folder)。方法：</p>
-
-<p>右键src目录&mdash;>build path &mdash;> remove from build path.</p>
-
-<p>这样以后，我们就可以建立我们的main和java文件夹在src下。
-然后右键java文件夹&mdash;>select build path &ndash;> use as source folder， 这样就可以把源目录指向src/main/java了</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -1383,6 +1385,10 @@ city from memcached: shenzhen
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/05/07/change-intelij-short-cut/">修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/05/07/insert-sql-with-dictionary-python/">Python中用dictionary操作SQL Select, Insert</a>
       </li>
     
@@ -1396,10 +1402,6 @@ city from memcached: shenzhen
     
       <li class="post">
         <a href="/blog/2015/02/16/octopress-modify-date-format/">修改octopress的时间格式</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/02/16/css-display-properties/">CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217;</a>
       </li>
     
   </ul>

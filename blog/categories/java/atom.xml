@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-05-07T18:20:20+08:00</updated>
+  <updated>2015-05-27T10:34:45+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,84 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Jackson 操作JSON]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <updated>2015-05-13T21:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
+
+<pre><code>  &lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;codehaus&lt;/id&gt;
+        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+        &lt;version&gt;1.8.5&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+
+<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
+    ObjectMapper mapper = new ObjectMapper();</p>
+
+<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+
+<h2>Java object to JSON</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+</code></pre>
+
+<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+
+<pre><code>StringWriter sw =new StringWriter();
+ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(sw, user);//写到StringWriter
+String JSON = sw.toString();
+sw.close();
+</code></pre>
+
+<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+</code></pre>
+
+<h2>JSON to Java object</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+</code></pre>
+
+<h1>集合操作</h1>
+
+<h2>Map/List to JSON</h2>
+
+<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
+
+<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
+objectMapper.writeValue(new File(jsonFilePath), listObject);
+</code></pre>
+
+<h2>JSON to Map/List</h2>
+
+<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+
+
+
+     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+</code></pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[谈谈性能瓶颈及简单调优]]></title>
@@ -329,86 +407,6 @@ public int getNextI(){
 <li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
 </ul>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[为什么java8引进了Lambda表达式]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
-    <updated>2014-09-24T18:58:45+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
-    <content type="html"><![CDATA[<p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
-
-<p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>
-
-<p>我们假如需要输出一个人的信息，我们可能有以下的类</p>
-
-<pre><code>public static void printPersons(
-    List&lt;Person&gt; roster, CheckPerson tester) {
-    for (Person p : roster) {
-        if (tester.test(p)) {
-            p.printPerson();
-        }
-    }
-} 
-
-
-
-interface CheckPerson {//接口，用于对于Person对象的验证
-    boolean test(Person p);
-}
-
-
-
-class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的CheckPerson实现 
-    public boolean test(Person p) {
-        return p.gender == Person.Sex.MALE &amp;&amp;
-            p.getAge() &gt;= 18 &amp;&amp;
-            p.getAge() &lt;= 25;
-    }
-}
-</code></pre>
-
-<p>然后当我们调用的时候，我们会写：</p>
-
-<pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
-</code></pre>
-
-<p>显然，<code>Person</code>的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
-
-<p>那假如封装的只是一个函数，然后我们可以简单的传递这样一个函数就能做到这些的话，是不是就很好了呢？这样的话，我们就不需要又创建一个实现类，又自己说动新建一个对象来仅仅只是调用一个函数了。</p>
-
-<p>这时候，我们就需要Lambda了。</p>
-
-<pre><code>printPersons(
-    roster,
-    (Person p) -&gt; p.getGender() == Person.Sex.MALE
-        &amp;&amp; p.getAge() &gt;= 18
-        &amp;&amp; p.getAge() &lt;= 25
-);
-</code></pre>
-
-<p>这样的代码极为的简洁而且具有可读性。而且，我们不需要手动去新建一个<code>CheckPersonEligibleForSelectiveService</code>实现类，而且也不需要手动去新建这样的对象，lambda都帮我们做好了。</p>
-
-<p>当然，我们原本也可以使用匿名类去解决这个问题</p>
-
-<pre><code>printPersons(
-    roster,
-    new CheckPerson() {
-        public boolean test(Person p) {
-            return p.getGender() == Person.Sex.MALE
-                &amp;&amp; p.getAge() &gt;= 18
-                &amp;&amp; p.getAge() &lt;= 25;
-        }
-    }
-);
-</code></pre>
-
-<p>但，我们问问自己，我们真的有必要创建一个对象就仅仅为了去做Person验证吗？这样非常的反直觉。</p>
-
-<p>如果我们需要的仅仅是一个函数而不是一整个对象，那么我们就应该关注在这个函数本身，而不是为了这个函数而衍生出一个类，一个对象。</p>
-
-<p>更多本问题讨论请参考：<a href="http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8">http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8</a></p>
 ]]></content>
   </entry>
   

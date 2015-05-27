@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-05-07T18:20:20+08:00</updated>
+  <updated>2015-05-27T10:34:45+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,84 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Jackson 操作JSON]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <updated>2015-05-13T21:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
+
+<pre><code>  &lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;codehaus&lt;/id&gt;
+        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+        &lt;version&gt;1.8.5&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+
+<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
+    ObjectMapper mapper = new ObjectMapper();</p>
+
+<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+
+<h2>Java object to JSON</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+</code></pre>
+
+<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+
+<pre><code>StringWriter sw =new StringWriter();
+ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(sw, user);//写到StringWriter
+String JSON = sw.toString();
+sw.close();
+</code></pre>
+
+<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+</code></pre>
+
+<h2>JSON to Java object</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+</code></pre>
+
+<h1>集合操作</h1>
+
+<h2>Map/List to JSON</h2>
+
+<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
+
+<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
+objectMapper.writeValue(new File(jsonFilePath), listObject);
+</code></pre>
+
+<h2>JSON to Map/List</h2>
+
+<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+
+
+
+     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+</code></pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[修改IntelliJ的快捷键中的CTRL+Y为Redo操作]]></title>
@@ -1657,63 +1735,6 @@ city from memcached: shenzhen
 <p>这样证明一份数据只被保存了一遍，然而对于客户端而言，具体保存在哪里却是完全透明的，因为spymemcahced把这个数据映射的工作做了。</p>
 
 <p>这样我们就好像操作一份很大内存空间的缓存一样，而实际上，我们是对分布在不同memcached 服务的内存空间在进行操作。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[大学生与烧饼小贩]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/21/about-wealth/"/>
-    <updated>2014-10-21T19:34:50+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/21/about-wealth</id>
-    <content type="html"><![CDATA[<p>最近写技术的东西比较多，刚好也在看《黑客与画家》，里面讲到的关于如何创造财富这一论点引起了我极大的共鸣和思考，觉得既然博客折腾起来了，就简单整理下，写下点东西。刚好最近大学生校园招聘的季节，就从这个话题切入扯点东西吧。</p>
-
-<p>在当今社会，什么东西都离不开钱，似乎没有钱，就生存不下去了（似乎的确是这样子）。然后，我们从出生那天起，就被安排着如何成为一个会赚钱的人。</p>
-
-<p>上一个好的小学，报读各种英语培训班、奥数班，目的是为了考上好的中学。在中学和无数人死磕排名，好像排后了一名就世界末日一般的前景，每个人都被用成绩贴上了各种标签，无他，为了高考考个好成绩。</p>
-
-<p>高考罢，要挑一个好的学校，读一门好的专业。好的学校就是就业率高，好的专业就是毕业容易找到好的工作，好的工作就是钱多活少又稳定。呵呵。没有一个人会问学校的学术氛围，也没有几个人会考虑孩子/自己到底喜欢的是什么，毕竟学生已经被训练为不会思考的机器，一辈子都在同一条起跑线上竞争，不需要思考，只需要永远的跑，跟着前面跑，跟着大家跑。所以，突然有了选择的时候，反而迷茫了，下意识的也只会跟着大众走。于是，金融、计算机、工程这些专业变得炙手可热。随之而来的，随便一所不沾边的学校都乱开一通专业。</p>
-
-<p>在这个时候，你会发现，家长、学校变化都十分巨大。学校不再有很多的竞争逼着你走，虽然学生会丑陋的政治斗争依旧十分激烈，但我们可以不参加。而家长似乎也对你的成绩不那么过问了。无他，因为这么多年来，似乎已经到了收割的季节——到了毕业那一年，任务就完成了——孩子成为了一个大学生，理应是一个会赚钱的人咯！</p>
-
-<p>在这个时候，才发现，就业竞争是如此的激烈。几万人应聘那零丁的几个职位，挤破头来最后拿个3 4千的工作。所有人都不知道这一辈是对呢？还是错？反正都这样干，那就都这样吧。毕业了也就那样了，无无聊聊朝九晚五，挤着公交地铁，天天看着房价涨、工资甚至还赶不上物价。眼看着街边一个卖烧饼的收入都一万多了，才可能回想，这一辈子到底得到了什么？</p>
-
-<p>其实这也难怪，一个毕业后只能对着电脑打打字、写几份文件的，比不上一个卖烧饼的，又有什么出奇的？</p>
-
-<p><strong>但肯定很多人出来骂娘了，这TM不公平啊！凭啥！</strong></p>
-
-<p>问题就在这里，很多大学生总觉得这不公平、家长们也觉得无奈：农民工兄弟做的是体力活，我做的好歹他们不会做，说得自己做的东西像战斗机一样是什么高科技。坦白说，即便是如我们这种码农一样的职业，也就用着美国人的电脑，在美国人的系统上用美国人的语言模仿着美国人的代码，也不见得多么高端。</p>
-
-<p>这里似乎有一个误区，我们总潜意识的想着用付出去衡量收获，这可能和读书时代我们宣扬“一分耕耘，一分收获”有关。这完全是一个错误的观点。在市场经济下，能交换收获的，只有输出。</p>
-
-<p>这本来是一个很原始的道理，但随着历史的发展，被慢慢淡化了，所以有必要从头谈谈。</p>
-
-<p>在古时候，没有货币出现的时候，人们会使用物品交换的方式去获得自己所需的东西。如果我需要鸡蛋，但我没有鸡去生蛋，那么我可能用羊去换。找到一家需要羊的，又拥有鸡蛋可换的人，跟他们去交换。然后假如我需要另外的东西，就再找合适的人交换。</p>
-
-<p>这样发展到后面，人们的需求越来越多，在局限的一个地方要找到双方都刚好互补需求的另外一个人，十分不容易。于是，一般等价物便出现了，这类东西的一个最重要的属性是稀有，一般说来是稀有金属，如金、银。人们可以用自己生产的物品交换这一等价物品（卖），然后用这个等价物去购买另外的商品。</p>
-
-<p>再到后来，携带金属交换并不便利，而且计算也没那么灵活。便出现了货币，直至纸币。人们去工作去赚钱，赚到了钱就可以买自己需要的东西。</p>
-
-<p>在这里，一个概念容易被模糊——钱似乎就是财富。但这并不正确。钱只是换取、衡量财富的一种物品，它本身并不具备价值。假如突然有一天，银行印了一大堆钞票满天飞，那么你手上的钱瞬间就沦为废纸。</p>
-
-<p>人类发明了一般等价物和后来的货币，为的不是创造财富，而是为了交换财富。所以，真正的财富，是我们用钱交换（买/卖）的东西，这里面说的很可能是一种物质的商品，也有可能是一种服务。</p>
-
-<p>那么，理清楚这点之后，对于我们理解大学生就业、自己拿多少工资这种问题有什么作用呢？作用十分明显，乃至答案呼之欲出。我们去打工，不是卖自己的时间，自由、劳动力去交换钱（这些是表面的），深沉次的是，我们在出售“生产力”（并不是劳动力）。简单说，就是企业买了我们的某段时间、自由，并用我们的某些技能去为他们服务。而至于他们给多少钱，这并不取决于我们的服务时间、服务态度，而是取决于我们这段时间的“生产力”——能创造多少财富。</p>
-
-<p>对，财富是可以创造出来的，这似乎每个人都懂，但似乎又不是。如果我们把钱=财富的话，这个命题就是假命题。因为钱的多少是由银行决定的，而银行把钱印到全世界都是，这并不增加社会的财富，反而让所有人都变穷了。明显，钱不是财富。那么什么是财富？</p>
-
-<p>举一个例子，有一天，马浓再也敲不动代码了，然后被老板炒了。身上没有钱，穷得只剩下有一台破单车，还要不能跑的。然后他把它修了一下，能跑起来了，于是拿去卖了，获得了100块，够吃一个月的满头了！这一个过程中，马浓就创造了财富，他本来不拥有任何可以交换钱的物品（至少换不了100块），现在有了，因为他创造了一量价值100块（准确地说，价值1个月的馒头）的单车，这个世界因为马浓这一个行为，财富得到了上升。</p>
-
-<p><strong>所以，财富不是一定的，而是不断的变化的（人类历史就是不断创造财富的过程），这并不是一个零和游戏！</strong>马云他成功成为了中国首富，但没有从社会剥夺过一分一毫。相反，他让整个中国的财富迅速上升——很多店主依靠淘宝赚了一桶金，很多老百姓因为淘宝买到了更为便宜的衣服。</p>
-
-<p>但这样一看，似乎只有生产，或者说只有物质生产才是创造财富的过程？也不对！再举个例子，淘宝卖的衣服，衣服本身是财富，但是他一开始并不能成为社会的财富，假如他生产出来的衣服一直都摆在库存没人穿，他们从其量也就一堆布料。</p>
-
-<p>然后这时候，马浓去应聘做了一个物流人员，做起了把衣服从浙江发往广东的工作，使得广东的老百姓能买到浙江的衣服了。在这个过程中，假如没有马浓的输送，衣服无法成为你和我的财富。也就是说，服务也是一个创造财富的过程，由于物流人员的服务，我能够买到衣服，而卖家能卖到钱。这繁荣了整个淘宝，使得大家继续不断地创造更多的财富。而马浓也因此赚到了每月近万元的收入。</p>
-
-<p>扯得有点远，我们回到大学生就业和卖烧饼的例子。大学生工作获得的工资，其实就是帮助企业去创造财富的过程，虽然这一过程似乎都被模糊为帮企业赚钱了。一个企业用4000块请你工作，是因为他觉得你能创造多余4000块的财富（假如一个月后人民币没有贬/升值）。这和市场买卖是一个意思，你值4000块，自然有人用4000买，如果你3000肯卖，肯定很多人愿意买。如果你希望自己能卖个10000块，最后肯定的结果就是没人肯买你（即便买了也会立刻退货），最后经过市场的催化，会逐渐趋向于你最终的“市值”。而没有任何一个人逼你去卖一家烧饼小摊的烧饼，然总有很多人愿意去买，因为他创造了烧饼这一财富，而你认为他卖得并不贵（坦白说，是挺贵的，但市场告诉你，他值这个价），最后他赚得了10000多的收入。</p>
-
-<p>Fair enough! 十分公平。也许你的工作并不比卖烧饼的轻松（不过很多的确比烧饼轻松得多），而且我们的前期投入也肯定比小贩们投入得多得多（无论教育费用，时间），但这就是市场给予我们的回应。一个人的收入，与他创造财富的能力相匹配，这是我能想到的最为公平且合理的资源配置方式。当然，除了创造财富外，还有另外一种获得财富的手段，那就是偷窃。这不包括真真意义上的偷，而还包括贪污、资源垄断，他们和偷窃都拥有一样的特点——没有创造财富而获取创造出来的财富，这在中国还十分的严重，但对比历史已经好得多得多。至少，以前的首富都是达官贵人，现在我们的首富却是马云。</p>
-
-<p>那么，自己能拿多少钱？应该问的，不是自己付出了多少，自己的学历，自己的身份，而是问自己到底能创造多少财富，<strong>在市场化的社会里，最简单、最公平的获取财富的手段，就是创造财富了。</strong></p>
 ]]></content>
   </entry>
   

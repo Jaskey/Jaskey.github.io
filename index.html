@@ -147,7 +147,7 @@ User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有ge
 objectMapper.writeValue(new File(jsonFilePath), listObject);
 </code></pre>
 
-<h2>JSON to Map/List</h2>
+<h2>JSON to Map/List/数组</h2>
 
 <pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
                 new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
@@ -156,6 +156,10 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
      List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
                 new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+
+
+     String[] array = mapper.readValue(new File('c:\\user.json'),
+                String[].class);//使用class对象
 </code></pre>
 </div>
   

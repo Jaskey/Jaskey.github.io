@@ -11,9 +11,22 @@ categories: 数据库
 
      INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
 
-上面的语句达到的效果是往table1里面插入一条记录，给`user1` `1`的权限，若存在主键冲突，则更新权限值为1。
+上面的语句达到的效果是往table1里面插入一条记录，给`user1` `1`的权限，若存在主键或者唯一索引冲突，则更新权限值为1。
 
-注：这语法不是标准SQL语法，所以仅适用于MySQL
+注：这语法不是标准SQL语法，所以仅适用于MySQL ，详情参看：https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html
+
+若用于JDBC, 而替换的数据不是像上面一个常数值，而是由变量决定，SQL可以如下：
+
+	INSERT INTO mytable VALUES (?, ?, ?, ?)
+	ON DUPLICATE KEY UPDATE `col1`=values(col1), 
+							`col2`=values(col2), 
+							`col3`=values(col3), 
+							`col4`=values(col4);
+
+
+
+
+
 
 
 

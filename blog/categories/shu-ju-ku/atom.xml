@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 数据库 | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/shu-ju-ku/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-05-29T19:19:27+08:00</updated>
+  <updated>2015-06-19T10:58:00+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -23,9 +23,18 @@
 <pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
 </code></pre>
 
-<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键冲突，则更新权限值为1。</p>
+<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键或者唯一索引冲突，则更新权限值为1。</p>
 
-<p>注：这语法不是标准SQL语法，所以仅适用于MySQL</p>
+<p>注：这语法不是标准SQL语法，所以仅适用于MySQL ，详情参看：<a href="https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html">https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html</a></p>
+
+<p>若用于JDBC, 而替换的数据不是像上面一个常数值，而是由变量决定，SQL可以如下：</p>
+
+<pre><code>INSERT INTO mytable VALUES (?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE `col1`=values(col1), 
+                        `col2`=values(col2), 
+                        `col3`=values(col3), 
+                        `col4`=values(col4);
+</code></pre>
 ]]></content>
   </entry>
   

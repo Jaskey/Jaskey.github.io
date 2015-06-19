@@ -58,6 +58,7 @@
 <ul class="main-navigation">
   <li><a href="/">Blog</a></li>
   <li><a href="/blog/archives">Archives</a></li>
+    <li><a href="/about">about</a></li>
 </ul>
 
 </nav>
@@ -84,7 +85,23 @@
   </header>
 
 
-<div class="entry-content"><h2>Maven 支持：</h2>
+<div class="entry-content"><script type="text/javascript" src="/path/to/file.js"></script>
+
+
+<div id="myelement"></div>
+
+
+
+
+<script>
+    $('div#myelement').text("hello world");
+    $('div#myelement').on('click',function(e){
+        alert($(this).text());
+    })
+</script>
+
+
+<h2>Maven 支持：</h2>
 
 <pre><code>  &lt;repositories&gt;
     &lt;repository&gt;
@@ -330,7 +347,7 @@ var jiathis_config = {data_track_clickback:'true'};
   </div>
   <footer role="contentinfo"><p>
   Copyright &copy; 2015 - Jaskey Lam -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 
 </footer>

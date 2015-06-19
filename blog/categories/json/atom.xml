@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Json | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/json/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-05-29T19:19:27+08:00</updated>
+  <updated>2015-06-19T10:58:00+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -18,7 +18,19 @@
     <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
     <updated>2015-05-13T21:18:28+08:00</updated>
     <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
-    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
+    <content type="html"><![CDATA[<script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"></script>
+
+
+<p><div id="myelement"></div>
+
+<script>
+	$('div#myelement').text("hello world");
+	$('div#myelement').on('click',function(e){
+		alert($(this).text());
+	})
+</script></p>
+
+<h2>Maven 支持：</h2>
 
 <pre><code>  &lt;repositories&gt;
     &lt;repository&gt;

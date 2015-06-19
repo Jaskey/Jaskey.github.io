@@ -58,6 +58,7 @@
 <ul class="main-navigation">
   <li><a href="/">Blog</a></li>
   <li><a href="/blog/archives">Archives</a></li>
+    <li><a href="/about">about</a></li>
 </ul>
 
 </nav>
@@ -89,9 +90,18 @@
 <pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
 </code></pre>
 
-<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键冲突，则更新权限值为1。</p>
+<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键或者唯一索引冲突，则更新权限值为1。</p>
 
-<p>注：这语法不是标准SQL语法，所以仅适用于MySQL</p>
+<p>注：这语法不是标准SQL语法，所以仅适用于MySQL ，详情参看：<a href="https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html">https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html</a></p>
+
+<p>若用于JDBC, 而替换的数据不是像上面一个常数值，而是由变量决定，SQL可以如下：</p>
+
+<pre><code>INSERT INTO mytable VALUES (?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE `col1`=values(col1), 
+                        `col2`=values(col2), 
+                        `col3`=values(col3), 
+                        `col4`=values(col4);
+</code></pre>
 </div>
 
 
@@ -266,7 +276,7 @@ var jiathis_config = {data_track_clickback:'true'};
   </div>
   <footer role="contentinfo"><p>
   Copyright &copy; 2015 - Jaskey Lam -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 
 </footer>

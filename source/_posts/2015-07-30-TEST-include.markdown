@@ -6,6 +6,9 @@ comments: true
 categories: JSON Java
 ---
 
+`.markdown`文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。
+
+以下是具体方法，并带一个例子
 
 
 ##引入Javascript##
@@ -35,17 +38,22 @@ categories: JSON Java
 ## `include_HTML_demo.html` 代码 ##
 
 	<div id="myelement">
-		Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
-	
-		Try Clicking me.
-	
+		<p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
+		<p id="clickme">Try clicking me.</p>
 	</div>
 	
 	<script>
+	
+		$('p#clickme').hover(function(){
+			$(this).css("color","blue");
+		},function(){
+			$(this).css("color","black");
+		});
+	
 		$('div#myelement').on('click',function(e){
 			alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-		})
-	</script>
+		});
+</script>
 
 
 注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.

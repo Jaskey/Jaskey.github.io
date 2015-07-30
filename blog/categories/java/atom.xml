@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-07-30T12:59:51+08:00</updated>
+  <updated>2015-07-30T13:28:00+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -18,7 +18,11 @@
     <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
     <updated>2015-07-30T12:18:28+08:00</updated>
     <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
-    <content type="html"><![CDATA[<h2>引入Javascript</h2>
+    <content type="html"><![CDATA[<p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
+
+<p>以下是具体方法，并带一个例子</p>
+
+<h2>引入Javascript</h2>
 
 <p>语法：</p>
 
@@ -37,49 +41,65 @@
 <p>语法：</p>
 
 <pre><code><div id="myelement">
-	Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
-
-	Try Clicking me.
-
+	<p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
+	<p id="clickme">Try clicking me.</p>
 </div>
 
 <script>
+
+	$('p#clickme').hover(function(){
+		$(this).css("color","blue");
+	},function(){
+		$(this).css("color","black");
+	});
+
 	$('div#myelement').on('click',function(e){
 		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-	})
+	});
 </script>
 </code></pre>
 
 <p>以下为引入后的样本实例：</p>
 
 <p><div id="myelement">
-	Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
-
-	Try Clicking me.
-
+	<p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
+	<p id="clickme">Try clicking me.</p>
 </div>
 
 <script>
+
+	$('p#clickme').hover(function(){
+		$(this).css("color","blue");
+	},function(){
+		$(this).css("color","black");
+	});
+
 	$('div#myelement').on('click',function(e){
 		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-	})
+	});
 </script></p>
 
 <h2><code>include_HTML_demo.html</code> 代码</h2>
 
 <pre><code>&lt;div id="myelement"&gt;
-    Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
-
-    Try Clicking me.
-
+    &lt;p&gt;Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.&lt;/p&gt;
+    &lt;p id="clickme"&gt;Try clicking me.&lt;/p&gt;
 &lt;/div&gt;
 
 &lt;script&gt;
+
+    $('p#clickme').hover(function(){
+        $(this).css("color","blue");
+    },function(){
+        $(this).css("color","black");
+    });
+
     $('div#myelement').on('click',function(e){
         alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-    })
-&lt;/script&gt;
+    });
 </code></pre>
+
+<p></script></p>
 
 <p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
 ]]></content>

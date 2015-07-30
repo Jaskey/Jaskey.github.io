@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-06-19T10:58:00+08:00</updated>
+  <updated>2015-07-30T12:59:51+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,23 +14,83 @@
 
   
   <entry>
+    <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
+    <updated>2015-07-30T12:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
+    <content type="html"><![CDATA[<h2>引入Javascript</h2>
+
+<p>语法：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>例如： 在 source 中的404.markdown 中 加入：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
+</code></pre>
+
+<p>即可在404页面中跳转到腾讯的公益页面</p>
+
+<h2>引入HTML文件</h2>
+
+<p>语法：</p>
+
+<pre><code><div id="myelement">
+	Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
+
+	Try Clicking me.
+
+</div>
+
+<script>
+	$('div#myelement').on('click',function(e){
+		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+	})
+</script>
+</code></pre>
+
+<p>以下为引入后的样本实例：</p>
+
+<p><div id="myelement">
+	Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
+
+	Try Clicking me.
+
+</div>
+
+<script>
+	$('div#myelement').on('click',function(e){
+		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+	})
+</script></p>
+
+<h2><code>include_HTML_demo.html</code> 代码</h2>
+
+<pre><code>&lt;div id="myelement"&gt;
+    Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
+
+    Try Clicking me.
+
+&lt;/div&gt;
+
+&lt;script&gt;
+    $('div#myelement').on('click',function(e){
+        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+    })
+&lt;/script&gt;
+</code></pre>
+
+<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[Jackson 操作JSON]]></title>
     <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
     <updated>2015-05-13T21:18:28+08:00</updated>
     <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
-    <content type="html"><![CDATA[<script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"></script>
-
-
-<p><div id="myelement"></div>
-
-<script>
-	$('div#myelement').text("hello world");
-	$('div#myelement').on('click',function(e){
-		alert($(this).text());
-	})
-</script></p>
-
-<h2>Maven 支持：</h2>
+    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
 
 <pre><code>  &lt;repositories&gt;
     &lt;repository&gt;
@@ -395,34 +455,6 @@ public int getNextI(){
 <h2>总结：</h2>
 
 <p>一个对象新创建的时候进入到新生代，然后垃圾回收几次后，该对象依然存活，于是就放入老年代。所以，新生代适合使用复制算法（大多是垃圾对象，复制开销小），老年代多用标记-压缩算法（大多是存活对象，回收对象少）。然后整个垃圾回收器的工作线程是用增量算法，时间轮转片执行。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
-    <updated>2014-09-24T20:26:02+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
-    <content type="html"><![CDATA[<p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
-
-<ol>
-<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
-<li>不希望被gc回收又不想自己去处理实例。</li>
-<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
-</ol>
-
-
-<p>注：</p>
-
-<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
-
-<p>stackoverflow相关讨论：</p>
-
-<ul>
-<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
-<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
-</ul>
-
 ]]></content>
   </entry>
   

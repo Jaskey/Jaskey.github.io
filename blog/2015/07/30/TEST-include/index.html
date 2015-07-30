@@ -5,12 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>如何在两台机器上使用octopress - 薛定谔的风口猪</title>
+  <title>Octopress 博文中引入javascript文件/HTML文件 - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress. 准备工作： 和 之前写的“如何开始使用octopress”一样，要先安装相应的软件 安装Git
-安装ruby, &hellip;">
+  <meta name="description" content="引入Javascript 语法： &lt;script type="text/javascript" src="/path/to/file.js"&gt;&lt;/script&gt; 例如： 在 source 中的404.markdown 中 加入： &lt;script type="text/ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2015/07/30/TEST-include">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -70,7 +69,7 @@
   
   <header>
     
-      <h1 class="entry-title">如何在两台机器上使用octopress</h1>
+      <h1 class="entry-title">Octopress 博文中引入javascript文件/HTML文件</h1>
     
     
       <p class="meta">
@@ -79,87 +78,82 @@
 
 
 
-<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
+<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'>2015-07-30 Thu</span> <span class='time'>12:18</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
+<div class="entry-content"><h2>引入Javascript</h2>
 
-<h2>准备工作：</h2>
+<p>语法：</p>
 
-<p>和  <a href="http://jaskey.github.io/blog/2014/09/04/how-to-octopress/">之前写的“如何开始使用octopress”</a>一样，要先安装相应的软件</p>
-
-<ol>
-<li><a href="http://git-scm.com/">安装Git</a></li>
-<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
-<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
-<li>建立一个文件夹，例如在C：/github</li>
-</ol>
-
-
-<h1>克隆项目</h1>
-
-<p>接下来我们需要把已经建好的博客项目clone下来。</p>
-
-<h2>克隆source分支</h2>
-
-<pre><code>$ git clone -b source git@github.com:username/username.github.com.git octopress ##octopress 为你的项目文件夹
+<pre><code>&lt;script type="text/javascript" src="/path/to/file.js"&gt;&lt;/script&gt;
 </code></pre>
 
-<h2>克隆master分支</h2>
+<p>例如： 在 source 中的404.markdown 中 加入：</p>
 
-<pre><code>$ cd octopress ##进入项目
-$ git clone git@github.com:username/username.github.com.git _deploy ##克隆master分支到_deploy 
+<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
 </code></pre>
 
-<h1>配置环境</h1>
+<p>即可在404页面中跳转到腾讯的公益页面</p>
 
-<pre><code>$ gem install bundler
-$ rbenv rehash    # If you use rbenv, rehash to be able to run the bundle command
-$ bundle install
-$ rake setup_github_pages
+<h2>引入HTML文件</h2>
+
+<p>语法：</p>
+
+<pre><code>&lt;div id="myelement"&gt;
+Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
+
+Try Clicking me.
 </code></pre>
 
-<p>然后它会询问你的项目仓库的URL:</p>
+<p></div></p>
 
-<blockquote><p>Enter the read/write url for your repository
-(For example, &lsquo;git@github.com:your_username/your_username.github.com)</p></blockquote>
+<script>
+    $('div#myelement').on('click',function(e){
+        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+    })
+</script>
 
-<p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
 
-<h1>更新变化（重要）</h1>
+<p>以下为引入后的样本实例：</p>
 
-<p>每次使用前，先确保拿到最新的文件</p>
+<div id="myelement">
+    Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
 
-<pre><code>$ cd octopress  #进入项目目录
-$ git pull origin source  # 更新本地source branch
-$ cd ./_deploy  #进入_deploy目录
-$ git pull origin master  # 更新本地master branch
+    Try Clicking me.
+
+</div>
+
+
+
+
+<script>
+    $('div#myelement').on('click',function(e){
+        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+    })
+</script>
+
+
+<h2><code>include_HTML_demo.html</code> 代码</h2>
+
+<pre><code>&lt;div id="myelement"&gt;
+    Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.
+
+    Try Clicking me.
+
+&lt;/div&gt;
+
+&lt;script&gt;
+    $('div#myelement').on('click',function(e){
+        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+    })
+&lt;/script&gt;
 </code></pre>
 
-<h1>提交</h1>
-
-<p>提交的时候，由于需要多台机器协作，需要把source分支push到origin中，这样另外一台机器才能拿到最新的源文件。</p>
-
-<pre><code>$ rake generate
-$ git add .
-$ git commit -am "提交评论" 
-$ git push origin source  # 更新远程 source branch 
-$ rake deploy             # 更新远程 master branch，并部署博文
-</code></pre>
-
-<h1>另外的机器更新变化</h1>
-
-<p>在另外的机器上，就可以获取到相应的变化。</p>
-
-<pre><code>$ cd octopress  #进入项目目录
-$ git pull origin source  # 更新本地source branch
-$ cd ./_deploy  #进入_deploy目录
-$ git pull origin master  # 更新本地master branch
-</code></pre>
+<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
 </div>
 
 
@@ -175,12 +169,12 @@ $ git pull origin master  # 更新本地master branch
 
 
 
-<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
+<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'>2015-07-30 Thu</span> <span class='time'>12:18</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/octopress/'>octopress</a>
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/json/'>json</a>
   
 </span>
 
@@ -206,7 +200,7 @@ $ git pull origin master  # 更新本地master branch
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2015/07/30/TEST-include/" data-via="" data-counturl="http://Jaskey.github.io/blog/2015/07/30/TEST-include/" >Tweet</a>
   
   
   
@@ -241,10 +235,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/10/13/java-synchronization/" title="Previous Post: 谈谈Java同步机制">&laquo; 谈谈Java同步机制</a>
+        <a class="basic-alignment left" href="/blog/2015/05/13/jackson-json/" title="Previous Post: Jackson 操作JSON">&laquo; Jackson 操作JSON</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2014/10/17/performance/" title="Next Post: 浅谈网站性能优化">浅谈网站性能优化 &raquo;</a>
       
     </p>
   </footer>

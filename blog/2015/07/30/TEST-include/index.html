@@ -106,34 +106,14 @@
 
 <h2>引入HTML文件</h2>
 
-<p>语法：</p>
-
-<p>&ldquo;<div id="myelement">
-    <p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
-    <p id="clickme">Try clicking me.</p>
-</div></p>
-
-<script>
-
-    $('p#clickme').hover(function(){
-        $(this).css("color","blue");
-    },function(){
-        $(this).css("color","black");
-    });
-
-    $('div#myelement').on('click',function(e){
-        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-    });
-</script>
-
-
-<p>&#8220;</p>
-
 <p>以下为引入后的样本实例：</p>
 
 <div id="myelement">
-    <p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
-    <p id="clickme">Try clicking me.</p>
+    .markdown文件中，在需要引入HTML文件的地方写上：
+    <p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
+    <p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
+    <p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
+    <p id="clickme">点我试试看</p>
 </div>
 
 
@@ -141,39 +121,21 @@
 
 <script>
 
-    $('p#clickme').hover(function(){
+    $(function(){
+        $('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
+        $('p#clickme').hover(function(){
         $(this).css("color","blue");
-    },function(){
+        },function(){
         $(this).css("color","black");
-    });
+        });
 
-    $('div#myelement').on('click',function(e){
+        $('div#myelement').on('click',function(e){
         alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-    });
+        });
+    })
+
 </script>
 
-
-<h2><code>include_HTML_demo.html</code> 代码</h2>
-
-<pre><code>&lt;div id="myelement"&gt;
-    &lt;p&gt;Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.&lt;/p&gt;
-    &lt;p id="clickme"&gt;Try clicking me.&lt;/p&gt;
-&lt;/div&gt;
-
-&lt;script&gt;
-
-    $('p#clickme').hover(function(){
-        $(this).css("color","blue");
-    },function(){
-        $(this).css("color","black");
-    });
-
-    $('div#myelement').on('click',function(e){
-        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-    });
-</code></pre>
-
-<p></script></p>
 
 <p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
 </div>

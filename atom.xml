@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-08-03T21:10:56+08:00</updated>
+  <updated>2015-08-03T21:37:33+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -40,12 +40,10 @@
 
 <p>语法：</p>
 
-<pre><code>&lt;div id="myelement"&gt;
-&lt;p&gt;Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.&lt;/p&gt;
-&lt;p id="clickme"&gt;Try clicking me.&lt;/p&gt;
-</code></pre>
-
-<p></div></p>
+<p>&ldquo;<div id="myelement">
+    <p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
+    <p id="clickme">Try clicking me.</p>
+</div></p>
 
 <script>
 
@@ -60,6 +58,8 @@
     });
 </script>
 
+
+<p>&#8220;</p>
 
 <p>以下为引入后的样本实例：</p>
 

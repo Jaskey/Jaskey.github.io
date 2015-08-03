@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Json | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/json/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-08-03T21:10:56+08:00</updated>
+  <updated>2015-08-03T21:44:03+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -38,52 +38,17 @@
 
 <h2>引入HTML文件</h2>
 
-<p>语法：</p>
-
-<pre><code><div id="myelement">
-	<p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
-	<p id="clickme">Try clicking me.</p>
-</div>
-
-<script>
-
-	$('p#clickme').hover(function(){
-		$(this).css("color","blue");
-	},function(){
-		$(this).css("color","black");
-	});
-
-	$('div#myelement').on('click',function(e){
-		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-	});
-</script>
-</code></pre>
-
 <p>以下为引入后的样本实例：</p>
 
-<p><div id="myelement">
-	<p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
-	<p id="clickme">Try clicking me.</p>
-</div>
-
-<script>
-
-	$('p#clickme').hover(function(){
-		$(this).css("color","blue");
-	},function(){
-		$(this).css("color","black");
-	});
-
-	$('div#myelement').on('click',function(e){
-		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-	});
-</script></p>
+<p>{% include demo/include_HTML_demo.html %}</p>
 
 <h2><code>include_HTML_demo.html</code> 代码</h2>
 
 <pre><code>&lt;div id="myelement"&gt;
-    &lt;p&gt;Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.&lt;/p&gt;
-    &lt;p id="clickme"&gt;Try clicking me.&lt;/p&gt;
+    .markdown文件中，在需要引入HTML文件的地方写上：{% include demo/include_HTML_demo.html %}
+    &lt;p&gt;HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。&lt;/p&gt;
+    &lt;p&gt;这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.&lt;/p&gt;
+    &lt;p id="clickme"&gt;点我试试看&lt;/p&gt;
 &lt;/div&gt;
 
 &lt;script&gt;
@@ -97,9 +62,8 @@
     $('div#myelement').on('click',function(e){
         alert("你刚刚点击了#myelement区域，onClick事件触发了。");
     });
+&lt;/script&gt;
 </code></pre>
-
-<p></script></p>
 
 <p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
 ]]></content>

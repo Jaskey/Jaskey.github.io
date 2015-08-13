@@ -9,7 +9,9 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content=".markdown文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。 以下是具体方法，并带一个例子 引入Javascript 语法： &lt;script type="text/javascript" src="/path/to/ &hellip;">
+  <meta name="description" content="CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下： 1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行： parentElement{ position:relative;
+}
+childElement{ position: absolute; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +69,61 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/08/04/css-vertical-align/">三行CSS实现垂直居中</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'>2015-08-04 Tue</span> <span class='time'>16:49</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
+
+<p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
+
+<pre><code>parentElement{
+    position:relative;
+}
+childElement{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+</code></pre>
+
+<p>2.若只有父容器下只有一个元素，且父元素设置了高度，则只需要使用相对定位即可</p>
+
+<pre><code>parentElement{
+    height:xxx;
+}
+.childElement {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+</code></pre>
+
+<p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -832,107 +889,6 @@ p.publicMethod();
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/02/02/javascript_function%20closure/">JavaScript中返回函数</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-02-02T18:20:05+08:00'><span class='date'>2015-02-02 Mon</span> <span class='time'>18:20</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近学习JavaScript,遇到了函数闭包的相关问题，由于这是Java没有的概念，认知上容易糊涂。到底</p>
-
-<pre><code>function a(){
-    function b(){
-        alert('b');
-      } 
-        return b;//没有括号
-} 
-</code></pre>
-
-<p>和</p>
-
-<pre><code>function a(){
-    function b(){
-        alert('b');
-    }
-        return b();//多一个括号
-}
-</code></pre>
-
-<p>有何区别呢？ 在Java中，我们是不能返回一个函数的，也不能为一个对象的属性赋值为函数，但这在Javascript中都可以。以上两种的函数都是正确的，但却表达着完全一样的意义。</p>
-
-<p>第一种方式返回时候不带括号，return函数的名称时，<strong>返回的其实是一个函数b的引用</strong>，即<code>function a</code> 返回的结果是<code>function b</code>的引用。</p>
-
-<p>而第二种方式带着括号，其实是返回b的执行结果。而b本身不返回东西，所以<code>return undefined</code>。</p>
-
-<p>请观察以下几个demo：</p>
-
-<pre><code>function a() {
-    alert('A');
-}
-//alerts 'A', returns undefined
-
-function b() {
-    alert('B');
-    return a;
-}
-//alerts 'B', returns function a
-
-function c() {
-    alert('C');
-    return a();
-}
-//alerts 'C', alerts 'A', returns undefined
-
-alert("Function 'a' returns " + a());
-alert("Function 'b' returns " + b());//特别留意这里，b()返回的是整一个函数。
-alert("Function 'c' returns " + c());//这里是返回a()的结果，所以会先alert('A'),再返回underfined
-</code></pre>
-
-<p>加上参数以便更加理解这一例子：</p>
-
-<pre><code>function a(who) {
-    alert('a say hello to '+ who);
-}
-//alerts 'A', returns undefined
-
-function b(who) {
-    alert('b say hello to '+ who);
-    return a;
-}
-//alerts 'B', returns function a
-
-function c(who) {
-    alert('c say hello to '+ who);
-    return a(who);
-}
-//alerts 'C', alerts 'A', returns undefined
-
-alert("Function 'a' returns " + a("junjie"));//return undefined
-alert("Function 'b' returns " + b("junjie"));//返回整个函数a的定义
-alert("Function 'c' returns " + c('junjie'));//先调用了a(who)，所以alert 了"a say hello to junjie"，再返回undefined，因为a本身不返回值
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -948,6 +904,10 @@ alert("Function 'c' returns " + c('junjie'));//先调用了a(who)，所以alert 
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">三行CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
       </li>
     
@@ -961,10 +921,6 @@ alert("Function 'c' returns " + c('junjie'));//先调用了a(who)，所以alert 
     
       <li class="post">
         <a href="/blog/2015/05/07/insert-sql-with-dictionary-python/">Python中用dictionary操作SQL Select, Insert</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/05/05/insert-or-update-mysql/">Insert or Update操作，MySQL</a>
       </li>
     
   </ul>

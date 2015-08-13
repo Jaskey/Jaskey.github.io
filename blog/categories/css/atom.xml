@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Css | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/css/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-08-03T22:25:30+08:00</updated>
+  <updated>2015-08-13T17:40:36+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,41 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[三行CSS实现垂直居中]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
+    <updated>2015-08-04T16:49:40+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
+    <content type="html"><![CDATA[<p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
+
+<p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
+
+<pre><code>parentElement{
+    position:relative;
+}
+childElement{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+</code></pre>
+
+<p>2.若只有父容器下只有一个元素，且父元素设置了高度，则只需要使用相对定位即可</p>
+
+<pre><code>parentElement{
+    height:xxx;
+}
+.childElement {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+</code></pre>
+
+<p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>

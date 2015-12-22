@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Git | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/git/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-08-13T17:40:36+08:00</updated>
+  <updated>2015-12-22T16:39:47+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,51 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Git Merge 部分commit]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
+    <updated>2015-12-22T16:12:38+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
+    <content type="html"><![CDATA[<h2>cherry-pick</h2>
+
+<p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
+
+<pre><code>git cherry-pick &lt;commit 号&gt;
+</code></pre>
+
+<p>如：</p>
+
+<pre><code>git cherry-pick e43a6fd3e94888d76779ad79fb568ed180e5fcdf
+</code></pre>
+
+<p>这样就只会把这个<code>e43a6fd3e94888d76779ad79fb568ed180e5fcdf</code> commit的内容pull到当前的分支，不过你会得到一个新的commit。
+这样就可以按需merge需要的commit,而不需要的就可以直接废弃咯。</p>
+
+<h3>多个commit:</h3>
+
+<p>可以用空格指定多个commit:</p>
+
+<pre><code>git cherry-pick A B C D E F
+</code></pre>
+
+<h2>范围merge:</h2>
+
+<p><code>cherry-pick</code>可以范围merge ,使用 两次版本间使用<code>..</code>连起来：</p>
+
+<pre><code>cherry-pick A..B
+</code></pre>
+
+<p>这样会把从从版本A（不包含）到B（包含）即（A，B]的版本pull到当前分支</p>
+
+<p>甚至，可以使用多段，同样使用空格隔开：</p>
+
+<pre><code>git cherry-pick A..B C..D E..F
+</code></pre>
+
+<p>注：中间需要自己解决冲突，若出现冲突，可以尝试使用 <code>git mergetool</code> 使用GUI工具解决</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Untrace .gitignore中已经被commit的文件]]></title>

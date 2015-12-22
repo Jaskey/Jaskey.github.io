@@ -24,36 +24,12 @@ categories: JSON Java
 即可在404页面中跳转到腾讯的公益页面
 
 ##引入HTML文件
-语法：
-
-	{% include demo/include_HTML_demo.html %}
-
 
 以下为引入后的样本实例：
 
 {% include demo/include_HTML_demo.html %}
 
 
-
-## `include_HTML_demo.html` 代码 ##
-
-	<div id="myelement">
-		<p>Here is a demo, to demostrate how to include a custom HTML into an octopress blog page.</p>
-		<p id="clickme">Try clicking me.</p>
-	</div>
-	
-	<script>
-	
-		$('p#clickme').hover(function(){
-			$(this).css("color","blue");
-		},function(){
-			$(this).css("color","black");
-		});
-	
-		$('div#myelement').on('click',function(e){
-			alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-		});
-</script>
 
 
 注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.

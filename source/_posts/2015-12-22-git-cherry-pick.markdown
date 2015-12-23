@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Git merge 部分commit"
+title: "git中只merge部分commit"
 date: 2015-12-22 16:12:38 +0800
 comments: true
 categories: git 
+description: git中只merge部分commit
+keywords: git , merge, commit, cherry-pick
 ---
 
 ##cherry-pick##

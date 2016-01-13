@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Css | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/css/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2015-12-24T10:26:46+08:00</updated>
+  <updated>2016-01-13T11:14:36+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[三行CSS实现垂直居中]]></title>
+    <title type="html"><![CDATA[CSS实现垂直居中]]></title>
     <link href="http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
     <updated>2015-08-04T16:49:40+08:00</updated>
     <id>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
@@ -45,6 +45,26 @@ childElement{
 </code></pre>
 
 <p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
+
+<h2>Flex布局</h2>
+
+<p>如果你不需要兼容老式浏览器，使用Flex布局可以非常轻松实现</p>
+
+<p>浏览器支持如下：
+<img src="/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
+
+<p>样式：</p>
+
+<pre><code>parentElement{
+    display:flex;/*Flex布局*/
+    display: -webkit-flex; /* Safari */
+    align-items:center;/*指定垂直居中*/
+}
+</code></pre>
+
+<p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
+
+<p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
 ]]></content>
   </entry>
   

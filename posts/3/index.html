@@ -1254,9 +1254,7 @@ public int getNextI(){
 </ul>
 
 
-<p><img src="../images/gc/copying.jpg" alt="复制" /></p>
-
-<p><img src="http://jaskey.github.io/images/gc/copying.jpg" alt="复制算法" /></p>
+<p><img src="/images/gc/copying.jpg" title="复制算法" alt="复制算法" /></p>
 
 <p>好处：仅需扫描一次所有存活的对象，当存活对象较少时（垃圾对象多），比较高效。适合于新生代区</p>
 
@@ -1269,7 +1267,7 @@ public int getNextI(){
 
 <p>采用从根集合开始扫描，对能到达的对象（存活）进行标记，标记完成后，再扫描整个空间中未标记的对象，并进行回收。</p>
 
-<p><img src="http://jaskey.github.io/images/gc/mark-sweep.jpg" title="标记-清除法" alt="标记-清除" /></p>
+<p><img src="/images/gc/mark-sweep.jpg" title="标记-清除法" alt="标记-清除" /></p>
 
 <p>好处：仅需扫描一次所有存活的对象，不需要移动对象，仅需要对不可达对象（垃圾对象）进行处理。适合于垃圾对象比较少的情况。</p>
 
@@ -1282,7 +1280,7 @@ public int getNextI(){
 
 <p>和标记-清除一样对可达对象（存活对象）进行标记，但是回收垃圾对象的后，会对其他存活的对象往左端空闲空间进行移动，并更新引用对象的指针。适合老年代。如下图：</p>
 
-<p><img src="http://jaskey.github.io/images/gc/mark-compact.jpg" title="标记-压缩法" alt="标记-压缩" /></p>
+<p><img src="/images/gc/mark-compact.jpg" title="标记-压缩法" alt="标记-压缩" /></p>
 
 <p>好处：对比标记-清除，避免了内存碎片</p>
 
@@ -1332,7 +1330,7 @@ public int getNextI(){
       </li>
     
       <li class="post">
-        <a href="/blog/2015/08/04/css-vertical-align/">三行CSS实现垂直居中</a>
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
       </li>
     
       <li class="post">
@@ -1401,7 +1399,7 @@ public int getNextI(){
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2015 - Jaskey Lam -
+  Copyright &copy; 2016 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

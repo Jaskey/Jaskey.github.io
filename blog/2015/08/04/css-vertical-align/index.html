@@ -5,14 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>三行CSS实现垂直居中 - 薛定谔的风口猪</title>
+  <title>CSS实现垂直居中 - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下： 1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行： parentElement{ position:relative;
-}
-childElement{ position: absolute; &hellip;">
-  
+  <meta name="description" content="CSS实现垂直居中">
+  <meta name="keywords" content="css , position, flex, 绝对定位">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -72,7 +70,7 @@ childElement{ position: absolute; &hellip;">
   
   <header>
     
-      <h1 class="entry-title">三行CSS实现垂直居中</h1>
+      <h1 class="entry-title">CSS实现垂直居中</h1>
     
     
       <p class="meta">
@@ -115,6 +113,26 @@ childElement{
 </code></pre>
 
 <p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
+
+<h2>Flex布局</h2>
+
+<p>如果你不需要兼容老式浏览器，使用Flex布局可以非常轻松实现</p>
+
+<p>浏览器支持如下：
+<img src="/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
+
+<p>样式：</p>
+
+<pre><code>parentElement{
+    display:flex;/*Flex布局*/
+    display: -webkit-flex; /* Safari */
+    align-items:center;/*指定垂直居中*/
+}
+</code></pre>
+
+<p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
+
+<p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
 </div>
 
 
@@ -218,7 +236,7 @@ var jiathis_config = {data_track_clickback:'true'};
       </li>
     
       <li class="post">
-        <a href="/blog/2015/08/04/css-vertical-align/">三行CSS实现垂直居中</a>
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
       </li>
     
       <li class="post">
@@ -288,7 +306,7 @@ var jiathis_config = {data_track_clickback:'true'};
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2015 - Jaskey Lam -
+  Copyright &copy; 2016 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

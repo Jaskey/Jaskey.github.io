@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2016-01-13T11:14:36+08:00</updated>
+  <updated>2016-01-14T10:16:16+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -91,9 +91,11 @@ childElement{
 
 <p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
 
+<hr />
+
 <h2>Flex布局</h2>
 
-<p>如果你不需要兼容老式浏览器，使用Flex布局可以非常轻松实现</p>
+<p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
 
 <p>浏览器支持如下：
 <img src="http://Jaskey.github.io/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
@@ -103,13 +105,17 @@ childElement{
 <pre><code>parentElement{
     display:flex;/*Flex布局*/
     display: -webkit-flex; /* Safari */
-    align-items:center;/*指定垂直居中*/
+    align-items:center;/*交叉轴居中，这里由于flex-direction默认是row,即垂直居中*/
 }
 </code></pre>
 
 <p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
 
 <p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
+
+<hr />
+
+<p>Flex教程可参考<a href="http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html">这里</a></p>
 ]]></content>
   </entry>
   

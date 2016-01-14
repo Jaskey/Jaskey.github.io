@@ -27,6 +27,8 @@ keywords: git , merge, commit, cherry-pick
 	git cherry-pick A B C D E F
 
 
+<!--more-->
+
 ##范围merge:##
 
 `cherry-pick`可以范围merge ,使用 两次版本间使用`..`连起来：

@@ -1,14 +1,14 @@
 ﻿		var Resume = React.createClass({
-			getDefaultProps (){
-				console.log('getDefaultProps 	');
+			getDefaultProps:function (){
+				console.log('[Resume]getDefaultProps');
 				return {
 					json:{}
 				}
 			},
 			
 
-			getInitialState(){
-				console.log('getInitialState');
+			getInitialState:function(){
+				console.log('[Resume]getInitialState');
 				return {
 					
 				}

@@ -9,7 +9,7 @@
     <div id="container">
     </div>
 	
-	<script src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+	<script src="http://lib.sinaapp.com/js/jquery/1.9.1/jquery-1.9.1.min.js"></script>
 
     <script src="react.js"></script>
     <script src="JSXTransformer.js"></script>	
@@ -23,14 +23,9 @@
 		
 		
 		$.getJSON("resume.json",[],function(data){
-			console.log(data);
+			console.log('[resume.json read successfully]',data);
 			var json = data;
-					React.render(<div>
-						<Resume  json={json}/>
-					</div>			
-					
-					,document.getElementById('container')
-					);
+			React.render(<div><Resume  json={json}/></div>,document.getElementById('container'));
 			
 		});
 		

@@ -1,175 +1,349 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/</loc>
+    
     <lastmod>2015-12-22T16:12:38+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/</loc>
+    
     <lastmod>2015-08-04T16:49:40+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/07/30/TEST-include/</loc>
+    
     <lastmod>2015-07-30T12:18:28+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/05/13/jackson-json/</loc>
+    
     <lastmod>2015-05-13T21:18:28+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut/</loc>
+    
     <lastmod>2015-05-07T18:02:57+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/</loc>
+    
     <lastmod>2015-05-07T16:19:49+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/</loc>
+    
     <lastmod>2015-05-05T16:46:59+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/03/04/js-private-methods/</loc>
+    
     <lastmod>2015-03-04T15:06:11+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/</loc>
+    
     <lastmod>2015-02-16T17:59:19+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/02/16/css-display-properties/</loc>
+    
     <lastmod>2015-02-16T16:39:20+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui/</loc>
+    
     <lastmod>2015-02-10T12:05:30+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2015/02/02/javascript_function%20closure/</loc>
+    
     <lastmod>2015-02-02T18:20:05+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed/</loc>
+    
     <lastmod>2014-12-03T11:35:01+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/</loc>
+    
     <lastmod>2014-11-30T03:38:56+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/</loc>
+    
     <lastmod>2014-11-30T02:32:58+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/</loc>
+    
     <lastmod>2014-11-28T16:58:21+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/25/bae-maven-setup/</loc>
+    
     <lastmod>2014-11-25T23:38:51+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/</loc>
+    
     <lastmod>2014-11-23T23:10:43+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/10/stateful-vs-stateless/</loc>
+    
     <lastmod>2014-11-10T21:26:13+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/11/06/firefox-search-engine-plugin/</loc>
+    
     <lastmod>2014-11-06T15:18:03+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/31/program-tunning/</loc>
+    
     <lastmod>2014-10-31T17:44:25+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/26/sql-optimization/</loc>
+    
     <lastmod>2014-10-26T21:19:25+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/26/get-started-with-memcached/</loc>
+    
     <lastmod>2014-10-26T00:41:53+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/21/about-wealth/</loc>
+    
     <lastmod>2014-10-21T19:34:50+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/18/change-source-folder-in-eclipse/</loc>
+    
     <lastmod>2014-10-18T19:37:41+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/17/performance/</loc>
+    
     <lastmod>2014-10-17T18:41:50+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/</loc>
+    
     <lastmod>2014-10-17T00:55:09+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/13/java-synchronization/</loc>
+    
     <lastmod>2014-10-13T21:11:20+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/11/understanding-soa/</loc>
+    
     <lastmod>2014-10-11T10:41:33+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/</loc>
+    
     <lastmod>2014-10-10T17:09:51+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/03/adb-problem/</loc>
+    
     <lastmod>2014-10-03T23:40:05+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/10/02/database-isolation-level/</loc>
+    
     <lastmod>2014-10-02T21:58:06+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/</loc>
+    
     <lastmod>2014-09-27T18:02:48+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/</loc>
+    
     <lastmod>2014-09-24T20:26:02+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/</loc>
+    
     <lastmod>2014-09-24T18:58:45+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/</loc>
+    
     <lastmod>2014-09-24T18:20:05+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/2014/09/04/how-to-octopress/</loc>
+    
     <lastmod>2014-09-04T17:26:00+08:00</lastmod>
+    
+    <priority>0.8</priority>
   </url>
+  
+  
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2016-01-14T15:02:57+08:00</lastmod>
+    <lastmod>2016-01-16T17:32:20+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2016-01-14T15:02:57+08:00</lastmod>
+    <lastmod>2016-01-16T17:32:20+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2016-01-14T15:02:57+08:00</lastmod>
+    <lastmod>2016-01-16T17:32:20+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
+  
+  
+  
   <url>
     <loc>http://Jaskey.github.io/about/index.html</loc>
-    <lastmod>2015-07-30T12:55:18+08:00</lastmod>
+    <lastmod>2016-01-16T17:00:01Z</lastmod>
+    <priority>0.6</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/baidu_verify_fEOrou9JEs.html</loc>
-    <lastmod>2015-02-02T13:12:14+08:00</lastmod>
+    <lastmod>2016-01-16T17:00:01Z</lastmod>
+    <priority>0.6</priority>
   </url>
+  
   <url>
     <loc>http://Jaskey.github.io/googlea1a65451bbdcb195.html</loc>
-    <lastmod>2015-02-02T13:12:14+08:00</lastmod>
+    <lastmod>2016-01-16T17:00:01Z</lastmod>
+    <priority>0.6</priority>
   </url>
+  
+  <url>
+    <loc>http://Jaskey.github.io/resume/resume.html</loc>
+    <lastmod>2016-01-16T17:15:02Z</lastmod>
+    <priority>0.6</priority>
+  </url>
+  
 </urlset>

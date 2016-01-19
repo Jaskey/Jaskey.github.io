@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2016-01-16T23:48:27+08:00</updated>
+  <updated>2016-01-19T21:02:41+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,82 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[避免写出不走索引的SQL, MySQL]]></title>
+    <link href="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
+    <updated>2016-01-19T20:24:16+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
+    <content type="html"><![CDATA[<p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
+
+<p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
+
+<h3>索引列参与计算</h3>
+
+<p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
+
+<pre><code>SELECT `sname` FROM `t_stu` WHERE `age`=20;-- 会使用索引
+SELECT `sname` FROM `t_stu` WHERE `age`+10=30;-- 不会使用索引！！因为所有索引列参与了计算
+SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
+</code></pre>
+
+<p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
+
+<h3>索引列使用了函数</h3>
+
+<p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
+
+<pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
+SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
+</code></pre>
+
+<h3>索引列使用了Like %XXX</h3>
+
+<pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
+SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
+</code></pre>
+
+<p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>
+
+<pre><code>SELECT * FROM `table` WHERE `reverse_email` LIKE REVERSE('%.com'); -- 走索引
+</code></pre>
+
+<p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
+
+<p>同样的，索引列上使用正则表达式也不会走索引。</p>
+
+<h3>字符串列与数字直接比较</h3>
+
+<p>这是一个坑，假设有一张表,里面的a列是一个<strong>字符char类型</strong>,且a上建立了索引,你用它与数字类型做比较判断的话：</p>
+
+<pre><code> CREATE TABLE `t1` (`a` char(10));
+
+ SELECT * FROM `t1` WHERE `a`='1' -- 走索引
+ SELECT * FROM `t2` WHERE `a`=1 -- 字符串和数字比较，不走索引！
+</code></pre>
+
+<p>但是如果那个表那个列是一个数字类型，拿来和字符类型的做比较，则不会影响到使用索引</p>
+
+<pre><code> CREATE TABLE `t2` (`b` int);
+
+ SELECT * FROM `t2` WHERE `b`='1' -- 虽然b是数字类型，和'1'比较依然走索引
+</code></pre>
+
+<p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
+
+<h3>尽量避免 OR 操作</h3>
+
+<pre><code>select * from dept where dname='jaskey' or loc='bj' or deptno=45 --如果条件中有or,即使其中有条件带索引也不会使用。换言之,就是要求使用的所有字段,都必须建立索引
+</code></pre>
+
+<p>所以除非每个列都建立了索引，否则不建议使用OR，在多列OR中，可以考虑用UNION 替换</p>
+
+<pre><code>select * from dept where dname='jaskey' union
+select * from dept where loc='bj' union
+select * from dept where deptno=45
+</code></pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Git中只merge部分commit]]></title>
@@ -1198,123 +1274,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
 <p>2 .转移到数据库（分布式缓存）中。</p>
 
 <p>另外一个更为可取的方法是使用数据库或者分布式缓存（如memcache）存储用户的状态，需要注意的这不算是无状态的架构，而顶多只能算web server的无状态，这样无状态的服务器依旧可以使用可靠的方式获取到用户的状态而做出合理的逻辑处理，并且session不依赖于单一机器，所以即便出现机器宕机，也不会丢失用户状态。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[5分钟速写自定义搜索引擎插件]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/11/06/firefox-search-engine-plugin/"/>
-    <updated>2014-11-06T15:18:03+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/11/06/firefox-search-engine-plugin</id>
-    <content type="html"><![CDATA[<p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
-
-<p><img src="http://Jaskey.github.io/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
-
-<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
-
-<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
-
-<h2>语法部分</h2>
-
-<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
-
-<p>我们直接上一个例子，这样上手最快。</p>
-
-<p>先简单浏览下写搜索引擎插件的语法：</p>
-
-<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
-&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
-                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
-  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
-  &lt;Description&gt;engineDescription&lt;/Description&gt;
-  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
-  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
-  &lt;Url type="text/html" method="method" template="searchURL"&gt;
-    &lt;Param name="paramName1" value="paramValue1"/&gt;
-    ...
-    &lt;Param name="paramNameN" value="paramValueN"/&gt;
-  &lt;/Url&gt;
-  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
-  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
-&lt;/OpenSearchDescription&gt;
-</code></pre>
-
-<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
-
-<p>解释一下其中某些标签的作用：</p>
-
-<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
-
-<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
-
-<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
-
-<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
-
-<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
-
-<p><img src="http://Jaskey.github.io/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
-
-<h2>例子——豆瓣</h2>
-
-<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
-
-<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
-
-<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
-
-<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
-&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
-   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
-  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
-  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
-  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
-  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
-  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
-     &lt;Param name="source" value="suggest"/&gt;
-     &lt;Param name="q" value="{searchTerms}"/&gt;
-  &lt;/Url&gt;
-  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
-  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
-&lt;/OpenSearchDescription&gt;
-</code></pre>
-
-<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
-
-<p>而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
-
-<p><strong>关于搜索建议</strong></p>
-
-<p>这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。</p>
-
-<pre><code>  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
-</code></pre>
-
-<p>假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
-
-<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
-</code></pre>
-
-<p>所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。</p>
-
-<p>最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。</p>
-
-<hr />
-
-<p>注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
-
-<pre><code>user_pref("browser.search.selectedEngine", "engine_name");
-</code></pre>
-
-<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">adding a custom search engine tofirefox</a></p>
-
-<p>注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
-
-<h2>发布分享</h2>
-
-<p>写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a> 提交这个xml文件就可以供大家使用了。</p>
-
-<p>大家可以在<a href="https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach">https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach</a> 找到我豆瓣的这个例子</p>
 ]]></content>
   </entry>
   

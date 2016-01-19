@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Jackson 操作JSON - 薛定谔的风口猪</title>
+  <title>避免写出不走索引的SQL, MySQL - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Maven 支持： &lt;repositories&gt; &lt;repository&gt; &lt;id&gt;codehaus&lt;/id&gt; &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt; & &hellip;">
-  
+  <meta name="description" content="MySQL中哪些SQL不走索引">
+  <meta name="keywords" content="MySQL , SQL, 索引, innodb, SQL优化, 数据库优化, 数据库">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2015/05/13/jackson-json">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -70,7 +70,7 @@
   
   <header>
     
-      <h1 class="entry-title">Jackson 操作JSON</h1>
+      <h1 class="entry-title">避免写出不走索引的SQL, MySQL</h1>
     
     
       <p class="meta">
@@ -79,86 +79,80 @@
 
 
 
-<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'>2015-05-13 Wed</span> <span class='time'>21:18</span></time>
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><h2>Maven 支持：</h2>
+<div class="entry-content"><p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
 
-<pre><code>  &lt;repositories&gt;
-    &lt;repository&gt;
-        &lt;id&gt;codehaus&lt;/id&gt;
-        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
-    &lt;/repository&gt;
-  &lt;/repositories&gt;
+<p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
 
-  &lt;dependencies&gt;
-    &lt;dependency&gt;
-        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
-        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
-        &lt;version&gt;1.8.5&lt;/version&gt;
-    &lt;/dependency&gt;
-  &lt;/dependencies&gt;
+<h3>索引列参与计算</h3>
+
+<p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
+
+<pre><code>SELECT `sname` FROM `t_stu` WHERE `age`=20;-- 会使用索引
+SELECT `sname` FROM `t_stu` WHERE `age`+10=30;-- 不会使用索引！！因为所有索引列参与了计算
+SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
 </code></pre>
 
-<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
-    ObjectMapper mapper = new ObjectMapper();</p>
+<p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
 
-<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+<h3>索引列使用了函数</h3>
 
-<h2>Java object to JSON</h2>
+<p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
 
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+<pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
+SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
 </code></pre>
 
-<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+<h3>索引列使用了Like %XXX</h3>
 
-<pre><code>StringWriter sw =new StringWriter();
-ObjectMapper mapper = new ObjectMapper();
-mapper.writeValue(sw, user);//写到StringWriter
-String JSON = sw.toString();
-sw.close();
+<pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
+SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
 </code></pre>
 
-<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+<p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>
 
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+<pre><code>SELECT * FROM `table` WHERE `reverse_email` LIKE REVERSE('%.com'); -- 走索引
 </code></pre>
 
-<h2>JSON to Java object</h2>
+<p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
 
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+<p>同样的，索引列上使用正则表达式也不会走索引。</p>
+
+<h3>字符串列与数字直接比较</h3>
+
+<p>这是一个坑，假设有一张表,里面的a列是一个<strong>字符char类型</strong>,且a上建立了索引,你用它与数字类型做比较判断的话：</p>
+
+<pre><code> CREATE TABLE `t1` (`a` char(10));
+
+ SELECT * FROM `t1` WHERE `a`='1' -- 走索引
+ SELECT * FROM `t2` WHERE `a`=1 -- 字符串和数字比较，不走索引！
 </code></pre>
 
-<h1>集合操作</h1>
+<p>但是如果那个表那个列是一个数字类型，拿来和字符类型的做比较，则不会影响到使用索引</p>
 
-<h2>Map/List to JSON</h2>
+<pre><code> CREATE TABLE `t2` (`b` int);
 
-<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
-
-<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
-objectMapper.writeValue(new File(jsonFilePath), listObject);
+ SELECT * FROM `t2` WHERE `b`='1' -- 虽然b是数字类型，和'1'比较依然走索引
 </code></pre>
 
-<h2>JSON to Map/List/数组</h2>
+<p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
 
-<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
-                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+<h3>尽量避免 OR 操作</h3>
 
+<pre><code>select * from dept where dname='jaskey' or loc='bj' or deptno=45 --如果条件中有or,即使其中有条件带索引也不会使用。换言之,就是要求使用的所有字段,都必须建立索引
+</code></pre>
 
+<p>所以除非每个列都建立了索引，否则不建议使用OR，在多列OR中，可以考虑用UNION 替换</p>
 
-     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
-                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
-
-
-     String[] array = mapper.readValue(new File('c:\\user.json'),
-                String[].class);//使用class对象
+<pre><code>select * from dept where dname='jaskey' union
+select * from dept where loc='bj' union
+select * from dept where deptno=45
 </code></pre>
 </div>
 
@@ -175,12 +169,12 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
 
 
-<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'>2015-05-13 Wed</span> <span class='time'>21:18</span></time>
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/json/'>json</a>
+    <a class='category' href='/blog/categories/mysql/'>mysql</a>, <a class='category' href='/blog/categories/sql/'>sql</a>
   
 </span>
 
@@ -206,7 +200,7 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2015/05/13/jackson-json/" data-via="" data-counturl="http://Jaskey.github.io/blog/2015/05/13/jackson-json/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/" >Tweet</a>
   
   
   
@@ -241,10 +235,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2015/05/07/change-intelij-short-cut/" title="Previous Post: 修改IntelliJ的快捷键中的CTRL+Y为Redo操作">&laquo; 修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a>
+        <a class="basic-alignment left" href="/blog/2015/12/22/git-cherry-pick/" title="Previous Post: git中只merge部分commit">&laquo; git中只merge部分commit</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2015/07/30/TEST-include/" title="Next Post: Octopress 博文中引入javascript文件/HTML文件">Octopress 博文中引入javascript文件/HTML文件 &raquo;</a>
       
     </p>
   </footer>

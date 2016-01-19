@@ -93,8 +93,6 @@
 
 <p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
 
-<hr />
-
 <h3>索引列参与计算</h3>
 
 <p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
@@ -106,8 +104,6 @@ SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
 
 <p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
 
-<hr />
-
 <h3>索引列使用了函数</h3>
 
 <p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
@@ -115,8 +111,6 @@ SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
 <pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
 SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
 </code></pre>
-
-<hr />
 
 <h3>索引列使用了Like %XXX</h3>
 
@@ -132,8 +126,6 @@ SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索
 <p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
 
 <p>同样的，索引列上使用正则表达式也不会走索引。</p>
-
-<hr />
 
 <h3>字符串列与数字直接比较</h3>
 
@@ -153,8 +145,6 @@ SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索
 </code></pre>
 
 <p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
-
-<hr />
 
 <h3>尽量避免 OR 操作</h3>
 

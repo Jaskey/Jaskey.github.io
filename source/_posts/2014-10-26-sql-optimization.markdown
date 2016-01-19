@@ -4,6 +4,8 @@ title: "SQL优化的一些技巧"
 date: 2014-10-26 21:19:25 +0800
 comments: true
 categories: SQL 数据库
+keywords: MySQL , SQL, 索引, innodb, SQL优化, 数据库优化, 数据库
+description: MySQL中SQL优化的一些技巧
 ---
 
 

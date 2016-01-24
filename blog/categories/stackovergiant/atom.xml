@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Stackovergiant | 薛定谔的风口猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/stackovergiant/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2016-01-19T21:07:57+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
+    <updated>2014-09-24T20:26:02+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
+    <content type="html"><![CDATA[<p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
+
+<ol>
+<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
+<li>不希望被gc回收又不想自己去处理实例。</li>
+<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
+</ol>
+
+
+<p>注：</p>
+
+<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
+
+<p>stackoverflow相关讨论：</p>
+
+<ul>
+<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
+<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[为什么java8引进了Lambda表达式]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
+    <updated>2014-09-24T18:58:45+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
+    <content type="html"><![CDATA[<p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
+
+<p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>
+
+<p>我们假如需要输出一个人的信息，我们可能有以下的类</p>
+
+<pre><code>public static void printPersons(
+    List&lt;Person&gt; roster, CheckPerson tester) {
+    for (Person p : roster) {
+        if (tester.test(p)) {
+            p.printPerson();
+        }
+    }
+} 
+
+
+
+interface CheckPerson {//接口，用于对于Person对象的验证
+    boolean test(Person p);
+}
+
+
+
+class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的CheckPerson实现 
+    public boolean test(Person p) {
+        return p.gender == Person.Sex.MALE &amp;&amp;
+            p.getAge() &gt;= 18 &amp;&amp;
+            p.getAge() &lt;= 25;
+    }
+}
+</code></pre>
+
+<p>然后当我们调用的时候，我们会写：</p>
+
+<pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
+</code></pre>
+
+<p>显然，<code>Person</code>的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
+
+<p>那假如封装的只是一个函数，然后我们可以简单的传递这样一个函数就能做到这些的话，是不是就很好了呢？这样的话，我们就不需要又创建一个实现类，又自己说动新建一个对象来仅仅只是调用一个函数了。</p>
+
+<p>这时候，我们就需要Lambda了。</p>
+
+<pre><code>printPersons(
+    roster,
+    (Person p) -&gt; p.getGender() == Person.Sex.MALE
+        &amp;&amp; p.getAge() &gt;= 18
+        &amp;&amp; p.getAge() &lt;= 25
+);
+</code></pre>
+
+<p>这样的代码极为的简洁而且具有可读性。而且，我们不需要手动去新建一个<code>CheckPersonEligibleForSelectiveService</code>实现类，而且也不需要手动去新建这样的对象，lambda都帮我们做好了。</p>
+
+<p>当然，我们原本也可以使用匿名类去解决这个问题</p>
+
+<pre><code>printPersons(
+    roster,
+    new CheckPerson() {
+        public boolean test(Person p) {
+            return p.getGender() == Person.Sex.MALE
+                &amp;&amp; p.getAge() &gt;= 18
+                &amp;&amp; p.getAge() &lt;= 25;
+        }
+    }
+);
+</code></pre>
+
+<p>但，我们问问自己，我们真的有必要创建一个对象就仅仅为了去做Person验证吗？这样非常的反直觉。</p>
+
+<p>如果我们需要的仅仅是一个函数而不是一整个对象，那么我们就应该关注在这个函数本身，而不是为了这个函数而衍生出一个类，一个对象。</p>
+
+<p>更多本问题讨论请参考：<a href="http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8">http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Cookie 与 Session的区别]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/"/>
+    <updated>2014-09-24T18:20:05+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions</id>
+    <content type="html"><![CDATA[<p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
+
+<p>其实不是。</p>
+
+<p><code>session</code>是服务端的文件用于存储用户信息，而<code>cookie</code>是存储用户信息的客户端文件。</p>
+
+<p><code>cookie</code>是一个短的字符串，用于在客户端和服务端来回发送。我们可以保存类似于name=bob&amp;password=asdf在cookie然后在两端来回发送。
+这样做就像，去银行办业务，而银行的业务员极为健忘，然后他需要我们每次进行交易的时候都出示身份。当然，如果我们用cookie取存储这种敏感的信息的话是极为不安全的，而且cookie本身也有大小的限制。</p>
+
+<p>那么，如果这个业务员意识到了自己的健忘病，他可以在纸上记下你的相关信息然后递给你一个号码，然后以后你再办业务的时候你就可以简单的说
+“我是12号客户”，这样就不需要每次都出示身份证啊，银行个人账号去标识自己了。</p>
+
+<p>对应着在Web服务器，服务器会记录相关的信息在一个<code>session</code>对象，然后创建一个<code>session ID</code>然后发送给客户端保存在<code>cookie</code>中。当客户端发送这个cookie回来的时候，服务端就能简单的用<code>session ID</code>去查找<code>session</code>对象。</p>
+
+<p>所以，如果我们删除了<code>cookie</code>(如在浏览器中清空历史记录)，这个<code>session</code>就丢失了。</p>
+
+<p>还有一种方法是，用URL来交换<code>session id</code>，例如有一个link www.myserver.com/myApp.jsp, 然后我们可以重写每一个url让他成为类似于www.myserver.com/myApp.jsp?sessionID=asdf 甚至even www.myserver.com/asdf/myApp.jsp 用于标识<code>session id</code>。</p>
+
+<p>更多解析，可参考stackoverflow:
+<a href="http://stackoverflow.com/questions/359434/differences-between-cookies-and-sessions">Differences between cookies and sessions?</a></p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Json | 薛定谔的风口猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/json/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2016-01-19T21:07:57+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
+    <updated>2015-07-30T12:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
+    <content type="html"><![CDATA[<p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
+
+<p>以下是具体方法，并带一个例子</p>
+
+<h2>引入Javascript</h2>
+
+<p>语法：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>例如： 在 source 中的404.markdown 中 加入：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
+</code></pre>
+
+<p>即可在404页面中跳转到腾讯的公益页面</p>
+
+<h2>引入HTML文件</h2>
+
+<p>以下为引入后的样本实例：</p>
+
+<p><div id="myelement">
+	.markdown文件中，在需要引入HTML文件的地方写上：
+	<p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
+	<p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
+	<p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
+	<p id="clickme">点我试试看</p>
+</div>
+
+<script>
+
+	$(function(){
+		$('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
+		$('p#clickme').hover(function(){
+		$(this).css("color","blue");
+		},function(){
+		$(this).css("color","black");
+		});
+
+		$('div#myelement').on('click',function(e){
+		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+		});
+	})
+
+</script></p>
+
+<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Jackson 操作JSON]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <updated>2015-05-13T21:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
+
+<pre><code>  &lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;codehaus&lt;/id&gt;
+        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+        &lt;version&gt;1.8.5&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+
+<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
+    ObjectMapper mapper = new ObjectMapper();</p>
+
+<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+
+<h2>Java object to JSON</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+</code></pre>
+
+<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+
+<pre><code>StringWriter sw =new StringWriter();
+ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(sw, user);//写到StringWriter
+String JSON = sw.toString();
+sw.close();
+</code></pre>
+
+<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+</code></pre>
+
+<h2>JSON to Java object</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+</code></pre>
+
+<h1>集合操作</h1>
+
+<h2>Map/List to JSON</h2>
+
+<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
+
+<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
+objectMapper.writeValue(new File(jsonFilePath), listObject);
+</code></pre>
+
+<h2>JSON to Map/List/数组</h2>
+
+<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+
+
+
+     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+
+
+     String[] array = mapper.readValue(new File('c:\\user.json'),
+                String[].class);//使用class对象
+</code></pre>
+]]></content>
+  </entry>
+  
+</feed>

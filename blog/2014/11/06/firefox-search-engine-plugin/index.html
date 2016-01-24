@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>5分钟速写自定义搜索引擎插件 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件： 对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。 今天把写的过程分享一下，5分钟便可自己写上一个了。 语法部分 详细的官网文档是：https://developer.mozilla. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/11/06/firefox-search-engine-plugin">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">5分钟速写自定义搜索引擎插件</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'>2014-11-06 Thu</span> <span class='time'>15:18</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
+
+<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
+
+<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
+
+<h2>语法部分</h2>
+
+<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
+
+<p>我们直接上一个例子，这样上手最快。</p>
+
+<p>先简单浏览下写搜索引擎插件的语法：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
+  &lt;Description&gt;engineDescription&lt;/Description&gt;
+  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
+  &lt;Url type="text/html" method="method" template="searchURL"&gt;
+    &lt;Param name="paramName1" value="paramValue1"/&gt;
+    ...
+    &lt;Param name="paramNameN" value="paramValueN"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
+  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
+
+<p>解释一下其中某些标签的作用：</p>
+
+<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
+
+<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
+
+<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
+
+<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
+
+<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
+
+<h2>例子——豆瓣</h2>
+
+<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
+
+<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
+
+<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
+  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
+  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
+  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
+     &lt;Param name="source" value="suggest"/&gt;
+     &lt;Param name="q" value="{searchTerms}"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
+
+<p>而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
+
+<p><strong>关于搜索建议</strong></p>
+
+<p>这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。</p>
+
+<pre><code>  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+</code></pre>
+
+<p>假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
+
+<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
+</code></pre>
+
+<p>所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。</p>
+
+<p>最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。</p>
+
+<hr />
+
+<p>注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
+
+<pre><code>user_pref("browser.search.selectedEngine", "engine_name");
+</code></pre>
+
+<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">adding a custom search engine tofirefox</a></p>
+
+<p>注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
+
+<h2>发布分享</h2>
+
+<p>写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a> 提交这个xml文件就可以供大家使用了。</p>
+
+<p>大家可以在<a href="https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach">https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach</a> 找到我豆瓣的这个例子</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'>2014-11-06 Thu</span> <span class='time'>15:18</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/firefox/'>firefox</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/11/06/firefox-search-engine-plugin/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/11/06/firefox-search-engine-plugin/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/10/31/program-tunning/" title="Previous Post: 谈谈性能瓶颈及简单调优">&laquo; 谈谈性能瓶颈及简单调优</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/11/10/stateful-vs-stateless/" title="Next Post: stateless的web架构">stateless的web架构 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

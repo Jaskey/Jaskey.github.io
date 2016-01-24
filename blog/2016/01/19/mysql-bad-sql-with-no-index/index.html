@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>避免写出不走索引的SQL, MySQL - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="MySQL中哪些SQL不走索引">
+  <meta name="keywords" content="MySQL , SQL, 索引, innodb, SQL优化, 数据库优化, 数据库">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">避免写出不走索引的SQL, MySQL</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
+
+<p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
+
+<h3>索引列参与计算</h3>
+
+<p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
+
+<pre><code>SELECT `sname` FROM `t_stu` WHERE `age`=20;-- 会使用索引
+SELECT `sname` FROM `t_stu` WHERE `age`+10=30;-- 不会使用索引！！因为所有索引列参与了计算
+SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
+</code></pre>
+
+<p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
+
+<h3>索引列使用了函数</h3>
+
+<p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
+
+<pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
+SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
+</code></pre>
+
+<h3>索引列使用了Like %XXX</h3>
+
+<pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
+SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
+</code></pre>
+
+<p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>
+
+<pre><code>SELECT * FROM `table` WHERE `reverse_email` LIKE REVERSE('%.com'); -- 走索引
+</code></pre>
+
+<p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
+
+<p>同样的，索引列上使用正则表达式也不会走索引。</p>
+
+<h3>字符串列与数字直接比较</h3>
+
+<p>这是一个坑，假设有一张表,里面的a列是一个<strong>字符char类型</strong>,且a上建立了索引,你用它与数字类型做比较判断的话：</p>
+
+<pre><code> CREATE TABLE `t1` (`a` char(10));
+
+ SELECT * FROM `t1` WHERE `a`='1' -- 走索引
+ SELECT * FROM `t2` WHERE `a`=1 -- 字符串和数字比较，不走索引！
+</code></pre>
+
+<p>但是如果那个表那个列是一个数字类型，拿来和字符类型的做比较，则不会影响到使用索引</p>
+
+<pre><code> CREATE TABLE `t2` (`b` int);
+
+ SELECT * FROM `t2` WHERE `b`='1' -- 虽然b是数字类型，和'1'比较依然走索引
+</code></pre>
+
+<p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
+
+<h3>尽量避免 OR 操作</h3>
+
+<pre><code>select * from dept where dname='jaskey' or loc='bj' or deptno=45 --如果条件中有or,即使其中有条件带索引也不会使用。换言之,就是要求使用的所有字段,都必须建立索引
+</code></pre>
+
+<p>所以除非每个列都建立了索引，否则不建议使用OR，在多列OR中，可以考虑用UNION 替换</p>
+
+<pre><code>select * from dept where dname='jaskey' union
+select * from dept where loc='bj' union
+select * from dept where deptno=45
+</code></pre>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/mysql/'>mysql</a>, <a class='category' href='/blog/categories/sql/'>sql</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/12/22/git-cherry-pick/" title="Previous Post: git中只merge部分commit">&laquo; git中只merge部分commit</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

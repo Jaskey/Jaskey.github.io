@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Java | 薛定谔的风口猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2016-01-19T21:07:57+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
+    <updated>2015-07-30T12:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
+    <content type="html"><![CDATA[<p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
+
+<p>以下是具体方法，并带一个例子</p>
+
+<h2>引入Javascript</h2>
+
+<p>语法：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>例如： 在 source 中的404.markdown 中 加入：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
+</code></pre>
+
+<p>即可在404页面中跳转到腾讯的公益页面</p>
+
+<h2>引入HTML文件</h2>
+
+<p>以下为引入后的样本实例：</p>
+
+<p><div id="myelement">
+	.markdown文件中，在需要引入HTML文件的地方写上：
+	<p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
+	<p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
+	<p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
+	<p id="clickme">点我试试看</p>
+</div>
+
+<script>
+
+	$(function(){
+		$('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
+		$('p#clickme').hover(function(){
+		$(this).css("color","blue");
+		},function(){
+		$(this).css("color","black");
+		});
+
+		$('div#myelement').on('click',function(e){
+		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+		});
+	})
+
+</script></p>
+
+<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Jackson 操作JSON]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <updated>2015-05-13T21:18:28+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
+
+<pre><code>  &lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;codehaus&lt;/id&gt;
+        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+        &lt;version&gt;1.8.5&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+
+<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
+    ObjectMapper mapper = new ObjectMapper();</p>
+
+<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+
+<h2>Java object to JSON</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+</code></pre>
+
+<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+
+<pre><code>StringWriter sw =new StringWriter();
+ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(sw, user);//写到StringWriter
+String JSON = sw.toString();
+sw.close();
+</code></pre>
+
+<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+</code></pre>
+
+<h2>JSON to Java object</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+</code></pre>
+
+<h1>集合操作</h1>
+
+<h2>Map/List to JSON</h2>
+
+<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
+
+<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
+objectMapper.writeValue(new File(jsonFilePath), listObject);
+</code></pre>
+
+<h2>JSON to Map/List/数组</h2>
+
+<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+
+
+
+     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+
+
+     String[] array = mapper.readValue(new File('c:\\user.json'),
+                String[].class);//使用class对象
+</code></pre>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[谈谈性能瓶颈及简单调优]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/31/program-tunning/"/>
+    <updated>2014-10-31T17:44:25+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/31/program-tunning</id>
+    <content type="html"><![CDATA[<p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
+
+<p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>
+
+<h2>CPU</h2>
+
+<p>由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。</p>
+
+<h4>上下文切换</h4>
+
+<p>如果有频繁的上下文切换，则会造成内核占据较多的CPU使用，降低系统性能。典型的例子有是有非常强烈的锁竞争情况。这会导致当前进程频繁的进入阻塞或者休眠状态，使得应用响应下降。</p>
+
+<p>这类型的解决方法有，</p>
+
+<ol>
+<li>减小Thread的数量</li>
+<li>降低锁竞争，如分多把锁。</li>
+</ol>
+
+
+<h4>线程一直处于Running</h4>
+
+<p>还有另外一种情况是线程一直处于Running状态，这会导致该线程消耗大部分的CPU，通常情况是进行循环，或者大批量计算。</p>
+
+<p>例如</p>
+
+<pre><code>while(somevalue!=XXX){//
+   ;//死循环
+}   
+</code></pre>
+
+<p>或者有一个大批量的数据操作，如对集合进行很大数据量的增加操作：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+    list.add(value[i])
+}
+</code></pre>
+
+<p>以上两种例子都会使得线程一直处于running状态而不释放CPU，一个可取的方法是进行部分操作后进行<code>Thread.sleep()</code>,让出CPU。</p>
+
+<p>如上面第二个例子：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+   list.add(value[i])
+   if(i%50==0){//每50个就让出一次CPU 
+        Thread.sleep(1);
+    }
+}
+</code></pre>
+
+<p>当然，对于第一个例子，假如是希望线程中的协作的话，最好使用的是monitor object 的wait()/notify()之类的方法。</p>
+
+<p>如</p>
+
+<pre><code>while(!some_condition){
+    condition.wait();//挂起等待notify
+}
+</code></pre>
+
+<h2>内存</h2>
+
+<p>如果消耗了过多的JVM Heap内存，将会频繁触发GC，将大大影响系统的性能。</p>
+
+<h4>使用对象缓存池</h4>
+
+<p>使用对象池可以一定程度创建对象所花费的CPU和内存</p>
+
+<h4>采用合理的缓存失效算法</h4>
+
+<p>上面讲到了对象池降低内存消耗，但假如放入太多对象到缓存池里面，反而会造成更严重的内存消耗，这是因为池本身对于对象持有引用，从而可能造成频繁的Full GC。所以，需要控制池中对象的数量。</p>
+
+<p>当池中对象达到最大值后，如果需要加入新的对象，则需要采用合理的失效算法清除池中的对象。如FIFO,LRU,LFU。</p>
+
+<h4>中途释放不用的大对象引用</h4>
+
+<p>如：</p>
+
+<pre><code>void foo(){
+  Object bigObject=new Object();
+  bigObject.doSomething();//下面不需要了
+  // 下面有很多其他耗时，耗内存的操作的话，可考虑释放bigObject的引用
+  bigObject=null;
+
+  //some long opertions
+}
+</code></pre>
+
+<h4>合理使用WeakReference 和 SoftReference</h4>
+
+<p>有些对象我们允许在某些情况下即使我们还有引用，也要被GC。这时候可以考虑使用弱引用或者软引用。</p>
+
+<p>当某些对象用作类似缓存对象的时候，内存不足就可以被回收的话，这类对象可以使用软引用。</p>
+
+<p>而当某些对象A如果依附于某个对象B存在，如果B不存在了，A就没有必要存在，并且A的存在与否不应该阻碍B是否存在，那么A引用B的时候可以考虑使用弱引用。</p>
+
+<p>关于两者区别可以参考<a href="http://stackoverflow.com/questions/299659/what-is-the-difference-between-a-soft-reference-and-a-weak-reference-in-java">what is the difference between a soft reference and a weak reference</a></p>
+
+<h2>文件IO</h2>
+
+<p>文件IO严重的主要原因是多个线程在写大量的数据在同一个文件，导致文件变得很大，写入速度越来越慢，并造成线程竞争文件锁激烈。</p>
+
+<p>解决此类问题的方向有：</p>
+
+<h4>异步写文件</h4>
+
+<p>把文件的写入操作改为异步，如写日志的时候使用<code>log4j</code>的<a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/AsyncAppender.html">AsynAppender</a></p>
+
+<h4>批量读写</h4>
+
+<p>如大数据插入数据库改改为批量的插入操作数据库的操作：</p>
+
+<pre><code>  PreparedStatement ps = c.prepareStatement("INSERT INTO employees VALUES (?, ?)");
+
+  ps.setString(1, "John");
+  ps.setString(2,"Doe");
+  ps.addBatch();
+
+  ps.clearParameters();
+  ps.setString(1, "Dave");
+  ps.setString(2,"Smith");
+  ps.addBatch();
+
+  ps.clearParameters();
+  int[] results = ps.executeBatch();
+</code></pre>
+
+<p>具体可参考：<a href="http://viralpatel.net/blogs/batch-insert-in-java-jdbc/">batch insert in java</a></p>
+
+<h4>限制文件大小</h4>
+
+<p>无论数据库表，还是日志文件，我们都应该限制其的大小。</p>
+
+<p>有必要的话，对于数据库表，需要分拆成小表，增加读写速度。</p>
+
+<p>对于文件如日志文件则需要设置一个最大值，超过后生成另外一个新文件。如<code>log4j</code>中使用<code>RollingFileAppender</code>的<code>maxFileSize</code>属性。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[谈谈Java同步机制]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/13/java-synchronization/"/>
+    <updated>2014-10-13T21:11:20+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/13/java-synchronization</id>
+    <content type="html"><![CDATA[<p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
+今天简单谈谈Java的同步机制。</p>
+
+<p>我们以一个十分简单的例子讲起。</p>
+
+<pre><code>int i=0
+public int getNextI(){
+    return ++i;
+}
+</code></pre>
+
+<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
+
+<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
+
+<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
+
+<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
+
+<h2>volatile</h2>
+
+<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
+
+<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
+
+<h2>synchronized</h2>
+
+<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
+
+<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
+
+<p>我们可以改成</p>
+
+<pre><code>public synchronized int getNextI(){
+    return i++;
+}
+</code></pre>
+
+<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
+
+<p>注：
+如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
+
+<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
+
+<pre><code>public  int getNextI(){
+    synchronized(this){
+        return i++;
+    }
+}
+</code></pre>
+
+<p>更多文档可参考：</p>
+
+<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[JVM垃圾回收算法]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/"/>
+    <updated>2014-10-10T17:09:51+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm</id>
+    <content type="html"><![CDATA[<p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
+
+<ul>
+<li><strong>引用计数收集器</strong></li>
+</ul>
+
+
+<hr />
+
+<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
+
+<p><img src="http://jaskey.github.io/images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
+
+<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
+
+<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
+
+<h2>- <strong>跟踪收集器</strong></h2>
+
+<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
+
+<!--more-->
+
+
+<ul>
+<li><strong>复制（Copying）</strong>
+复制收集器从根集合开始扫描所有存活的对象，把能达到的所有对象（存活对象）复制到一块新的未被使用的空间中，没有到达的对象则证明没有被引用，可以回收。这样就解决了循环引用不可回收的问题，如下图所示：</li>
+</ul>
+
+
+<p><img src="/images/gc/copying.jpg" title="复制算法" alt="复制算法" /></p>
+
+<p>好处：仅需扫描一次所有存活的对象，当存活对象较少时（垃圾对象多），比较高效。适合于新生代区</p>
+
+<p>坏处：需要额外的内存空间，不适合老年代（大部分是存活对象）</p>
+
+<ul>
+<li><strong>标记-清除(Mark-Sweep)</strong></li>
+</ul>
+
+
+<p>采用从根集合开始扫描，对能到达的对象（存活）进行标记，标记完成后，再扫描整个空间中未标记的对象，并进行回收。</p>
+
+<p><img src="/images/gc/mark-sweep.jpg" title="标记-清除法" alt="标记-清除" /></p>
+
+<p>好处：仅需扫描一次所有存活的对象，不需要移动对象，仅需要对不可达对象（垃圾对象）进行处理。适合于垃圾对象比较少的情况。</p>
+
+<p>坏处：容易造成内存碎片</p>
+
+<ul>
+<li><strong>标记-压缩(Mark-Compact)</strong></li>
+</ul>
+
+
+<p>和标记-清除一样对可达对象（存活对象）进行标记，但是回收垃圾对象的后，会对其他存活的对象往左端空闲空间进行移动，并更新引用对象的指针。适合老年代。如下图：</p>
+
+<p><img src="/images/gc/mark-compact.jpg" title="标记-压缩法" alt="标记-压缩" /></p>
+
+<p>好处：对比标记-清除，避免了内存碎片</p>
+
+<p>坏处：增加了移动对象的成本。</p>
+
+<hr />
+
+<ul>
+<li><strong>增量算法</strong></li>
+</ul>
+
+
+<p>由于大部分的回收算法在回收时候，只有垃圾回收线程在运行，其他线程都会被挂起，直到垃圾回收结束。</p>
+
+<p>这将导致在垃圾回收很久时候，其他线程一直不工作，而导致系统无响应。例如在Android应用中，如果UI进程5秒不响应就会出现ANR(Application Not Responding)错误。所以一个可行的方法是让垃圾进程与其他线程交替执行，每次垃圾回收仅进行部分内存的回收，减小系统的停顿时间。但由于线程的来回切换，提高了垃圾回收的开销。</p>
+
+<hr />
+
+<h2>总结：</h2>
+
+<p>一个对象新创建的时候进入到新生代，然后垃圾回收几次后，该对象依然存活，于是就放入老年代。所以，新生代适合使用复制算法（大多是垃圾对象，复制开销小），老年代多用标记-压缩算法（大多是存活对象，回收对象少）。然后整个垃圾回收器的工作线程是用增量算法，时间轮转片执行。</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Jquery | 薛定谔的风口猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/jquery/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2016-01-19T21:07:57+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[jQuery BlockUI 的使用]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui/"/>
+    <updated>2015-02-10T12:05:30+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui</id>
+    <content type="html"><![CDATA[<p>jQuery BlockUI Plugin<a href="http://malsup.github.io/jquery.blockUI.js" title="下载链接">(下载链接)</a>  能做到方便得屏蔽整个page或者某些元素。当用于异步请求的时候，尤为有用。</p>
+
+<p>用法也非常简单。以下简单的记录下使用笔记：</p>
+
+<ol>
+<li>使用前，需要先引入jQuery 再引入jQuery blockUI。</li>
+<li>当需要全屏block时候,使用API <code>$.blockUI()</code>;,unblock使用<code>$.unblockUI()</code></li>
+<li>部分的Element block时，使用 <code>$("选择器").block();</code>unblock使用<code>$(选择器).unblock()</code>即可</li>
+</ol>
+
+
+<p>需要自定义block的消息或者样式，可以传入一个像下面的一个对象：</p>
+
+<pre><code>            {
+                message: '&lt;h1&gt;Processing&lt;/h1&gt;',//显示的消息
+                centerX: false,//当element block时候，注意设置此属性为false,否则位置不生效
+                centerY: false,
+                css: {
+                    top: '5%',
+                    left: '5%'
+                    ....//其他CSS属性
+                }
+            }
+</code></pre>
+
+<p>关于此对象的更多细节，可以查看：<a href="http://malsup.com/jquery/block/#options">http://malsup.com/jquery/block/#options</a></p>
+
+<p>各种demo可以查看：<a href="http://malsup.com/jquery/block/#demos">http://malsup.com/jquery/block/#demos</a></p>
+]]></content>
+  </entry>
+  
+</feed>

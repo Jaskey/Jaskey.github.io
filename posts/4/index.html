@@ -1,0 +1,850 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="Jaskey的个人博客">
+  <meta name="keywords" content="Java, JavaScript, js,git, css#">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/posts/4">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/10/gc-algorithm/">JVM垃圾回收算法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-10T17:09:51+08:00'><span class='date'>2014-10-10 Fri</span> <span class='time'>17:09</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
+
+<ul>
+<li><strong>引用计数收集器</strong></li>
+</ul>
+
+
+<hr />
+
+<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
+
+<p><img src="http://jaskey.github.io/images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
+
+<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
+
+<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
+
+<h2>- <strong>跟踪收集器</strong></h2>
+
+<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/10/10/gc-algorithm/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/03/adb-problem/">ADB Server Didn&#8217;t ACK ,failed to Start Daemon 解决方法(小心风行客户端)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-03T23:40:05+08:00'><span class='date'>2014-10-03 Fri</span> <span class='time'>23:40</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近重新学习Android，但这两天遇到了极为奇怪的问题，突然之间，启动ADT的时候就报出下面的错误：</p>
+
+<pre><code>[2014-10-03 12:15:43 - adb] ADB server didn't ACK
+[2014-10-03 12:15:43 - adb] * failed to start daemon *
+[2014-10-03 12:15:43 - ddms] 'E:\Programming\ADT\adt-bundle-windows-x86_64-20140702\sdk\platform-tools\adb.exe,start-server' failed -- run manually if necessary
+</code></pre>
+
+<p>查了一下stackoverflow， 大多数的解决方案都是：</p>
+
+<ol>
+<li>关掉eclipse</li>
+<li>在任务管理器中把adb.exe关掉</li>
+<li>进入adb所在目录，然后执行adb start-server，成功执行则问题解决</li>
+</ol>
+
+
+<p><strong>问题应该就解决了。但我的问题是， adb start-server 启动不起来！</strong></p>
+
+<p>最后发现了是端口占用的原因导致。</p>
+
+<p>解决方法如下：</p>
+
+<p>1.<code>adb nodaemon server</code></p>
+
+<p>查看不能执行的原因，输出：</p>
+
+<blockquote><p>cannot bind &lsquo;tcp:5037&rsquo;</p></blockquote>
+
+<p>2.定位到了是端口的问题！是5037端口被占用了！</p>
+
+<p>3.<code>netstat -ano | findstr 5037</code></p>
+
+<p>查找谁占用了5037的进程，得到进程pid.</p>
+
+<p>4.杀死该进程。</p>
+
+<p>可以在任务管理器中杀死，或者使用命令：
+    taskkill /pid 端口号 -f</p>
+
+<p>最后发现是tfadb.exe这个程序占用了该端口。查询签名发现这是风行客户端！！</p>
+
+<p>真是无比坑爹啊，安装了风行的同学真的要注意下。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/02/database-isolation-level/">数据库事务的隔离级别与并发控制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-02T21:58:06+08:00'><span class='date'>2014-10-02 Thu</span> <span class='time'>21:58</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>数据库拥有ACID四个基本属性。</p>
+
+<p>其中的I（隔离性）要求并发事务中，事务的中间状态是无法被别的事务查看的。例如A账户转到B账户的事务中，不能让别的事务在B账户扣除了100块前查看到A事务增加了100块这个中间状态。</p>
+
+<p>但出于性能的考虑，许多数据库都允许使用者配置隔离级别牺牲一定的隔离性换取并发性。</p>
+
+<p>SQL定义了四种隔离级别：</p>
+
+<ol>
+<li>Read Uncommitted: 读取未提交的数据，即可读取其他事务修改了但是没有提交的数据。这是最低的隔离级别（会导致脏读）</li>
+<li>Read Committed：只能读取已经提交的数据。解决了脏读的问题但是没有解决“不可重复读”，即一个事务中多次读取的数据的内容可能是不一样的。例如，事务2在事务1开始后修改了A账户为150，而第一次读到A账户有100块，然后事务2提交，第二次读的时候就变成了150块。</li>
+<li>Repeatable Read:保证可以事务多次读取到的数据行的内容是一致的。但还是有可能导致幻读，即同一事务中，第二次读到的数据行中拥有第一次没有读取到的。</li>
+<li>Serializable:最高级别的隔离级别，即事务是可串行执行的，就像一个事务执行的时候没有别的事务执行一样。</li>
+</ol>
+
+
+<hr />
+
+<h1>并发控制</h1>
+
+<p>事务的锁分为读锁和写锁。允许为同一个元素增加多个读锁，但只允许加一个写锁，且写事务会阻塞读事务。</p>
+
+<p>由于互联网的业务属性决定，<strong>读事务远远比写事务多得多</strong>。而加锁一定程度上阻碍了读的性能，对于读性能的优化是一个刚需。</p>
+
+<p>现在有以下两种方法可以大大提高读取的效率而不需要加锁</p>
+
+<h2>写时复制（Copy-On-Write）</h2>
+
+<p>读操作不需要加锁，而当需要写操作的时候，以B+树为例：</p>
+
+<p>1 拷贝：将从叶子到根的所有节点拷贝出来</p>
+
+<p>2 对拷贝的内容进行修改。</p>
+
+<p>3 提交后，原子地切换根节点指向新的节点。</p>
+
+<p>这样读操作并不需要加锁，并不会被写操作所阻塞，但问题是写的时候需要拷贝结点，而且多个写操作是互斥的，一个时刻只能允许一个写操作</p>
+
+<h2>多版本并发控制（Multi-Version Concurrency Control，MVCC）</h2>
+
+<p>对于读操作也不需要加锁，<strong>原理是对于每行的数据维护多个数据版本</strong>。MySQL InnoDB的存储引擎为例，InnoDB对每行数据隐式地维护了两列——“最近被修改的事务号”和“被删除事务号”。</p>
+
+<p><strong>SELECT</strong>:
+需要满足以下两个条件才能返回</p>
+
+<ol>
+<li>行的修改版本号小于当前事务号。（证明事务开始前就被提交了）</li>
+<li>行的删除号不存在，或者大于该事务号。（没有被删除，或者事务开始后才被删除的，保证可重复读）
+在可重复读的隔离级别下，后开始的事务对数据的影响不应该被先前的事务看到，所以应该忽略后面事务的操作。</li>
+</ol>
+
+
+<p><strong>INSERT</strong></p>
+
+<p>直接把修改的事务号改为当前事务号</p>
+
+<p><strong>DELETE</strong></p>
+
+<p>直接把删除的事务号改为当前事务号。而不是真正的删除</p>
+
+<p><strong>UPDATE</strong></p>
+
+<p>更新行的时候，复制一份数据并修改最近修改的事务号为当前事务。</p>
+
+<p>MVCC在读取数据时候不需要加锁，会通过对应的事务号返回需要的记录，大大提高了并发性。但由于维护了多个版本的数据，需要定期清理不再使用的数据。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/09/27/how-to-return-404-in-spring-controller/">怎么在Spring Controller里面返回404</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-27T18:02:48+08:00'><span class='date'>2014-09-27 Sat</span> <span class='time'>18:02</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>由于大多的客户端和服务端是独立的（可能用不同语言编写），客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。</p>
+
+<p>以返回404状态码为例，在Spring 的Controller里面我们可以有以下3种方式处理：</p>
+
+<ol>
+<li><h2>自定义异常+@ResponseStatus注解：</h2>
+
+<pre><code> //定义一个自定义异常，抛出时返回状态码404
+ @ResponseStatus(value = HttpStatus.NOT_FOUND)
+ public class ResourceNotFoundException extends RuntimeException {
+     ...
+ }
+
+ //在Controller里面直接抛出这个异常
+ @Controller
+ public class SomeController {
+     @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
+     public @ResponseBody Video getVidoeById(@PathVariable long id){
+         if (isFound()) {
+             // 做该做的逻辑
+         }
+         else {
+             throw new ResourceNotFoundException();//把这个异常抛出 
+         }
+     }
+ }
+</code></pre></li>
+<li><h2>使用Spring的内置异常</h2>
+
+<p>默认情况下，Spring 的<code>DispatcherServlet</code>注册了<code>DefaultHandlerExceptionResolver</code>,这个resolver会处理标准的Spring MVC异常来表示特定的状态码</p>
+
+<pre><code>  Exception                                   HTTP Status Code
+  ConversionNotSupportedException             500 (Internal Server Error)
+  HttpMediaTypeNotAcceptableException         406 (Not Acceptable)
+  HttpMediaTypeNotSupportedException          415 (Unsupported Media Type)
+  HttpMessageNotReadableException             400 (Bad Request)
+  HttpMessageNotWritableException             500 (Internal Server Error)
+  HttpRequestMethodNotSupportedException      405 (Method Not Allowed)
+  MissingServletRequestParameterException     400 (Bad Request)
+  NoSuchRequestHandlingMethodException        404 (Not Found)
+  TypeMismatchException                       400 (Bad Request)
+</code></pre></li>
+<li><h2>在Controller方法中通过HttpServletResponse参数直接设值</h2>
+
+<pre><code> //任何一个RequestMapping 的函数都可以接受一个HttpServletResponse类型的参数
+ @Controller
+ public class SomeController {
+     @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
+     public @ResponseBody Video getVidoeById(@PathVariable long id ,HttpServletResponse response){
+         if (isFound()) {
+             // 做该做的逻辑
+         }
+         else {
+             response.setStatus(HttpServletResponse.SC_NOT_FOUND);//设置状态码
+         }
+         return ....
+     }
+ }
+</code></pre></li>
+</ol>
+
+
+<p>更多详情：
+<a href="http://docs.spring.io/spring/docs/3.1.x/spring-framework-reference/html/mvc.html#mvc-exceptionhandlers" title="spring doc">Spring MVC 文档</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/09/24/when-to-use-static-class/">什么时候应该使用“静态类”而不使用单例？</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-24T20:26:02+08:00'><span class='date'>2014-09-24 Wed</span> <span class='time'>20:26</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
+
+<ol>
+<li>所有方法都是一些工具类的方法，如<code>Math</code>类</li>
+<li>不希望被gc回收又不想自己去处理实例。</li>
+<li>很确定这个类将来也不会是有状态的（stateful）而且你确定你不需要多个实例。</li>
+</ol>
+
+
+<p>注：</p>
+
+<p>如果我们使用单例模式的话，将来假如我们需要多个实例，将非常轻松的改变，但是使用static方法的类就不行。而且使用单例的话，将很好地利用继承、多态等方法。</p>
+
+<p>stackoverflow相关讨论：</p>
+
+<ul>
+<li><a href="http://stackoverflow.com/questions/839383/advantage-of-static-class-over-use-of-singleton/">&ldquo;Advantage of Static class over use of Singleton&rdquo;</a></li>
+<li><a href="http://stackoverflow.com/questions/3714971/difference-between-singleton-class-and-static-class">&ldquo;Difference between singleton class and static class?&rdquo;</a></li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/09/24/why-java8-introduces-lamda/">为什么java8引进了Lambda表达式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-24T18:58:45+08:00'><span class='date'>2014-09-24 Wed</span> <span class='time'>18:58</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
+
+<p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>
+
+<p>我们假如需要输出一个人的信息，我们可能有以下的类</p>
+
+<pre><code>public static void printPersons(
+    List&lt;Person&gt; roster, CheckPerson tester) {
+    for (Person p : roster) {
+        if (tester.test(p)) {
+            p.printPerson();
+        }
+    }
+} 
+
+
+
+interface CheckPerson {//接口，用于对于Person对象的验证
+    boolean test(Person p);
+}
+
+
+
+class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的CheckPerson实现 
+    public boolean test(Person p) {
+        return p.gender == Person.Sex.MALE &amp;&amp;
+            p.getAge() &gt;= 18 &amp;&amp;
+            p.getAge() &lt;= 25;
+    }
+}
+</code></pre>
+
+<p>然后当我们调用的时候，我们会写：</p>
+
+<pre><code>printPersons(roster, new CheckPersonEligibleForSelectiveService());
+</code></pre>
+
+<p>显然，<code>Person</code>的确是一个重要的对象，但是<code>CheckPerson</code> 和 <code>CheckPersonEligibleForSelectiveService</code>呢？ 是不是一定需要一个新建一个对象来只调用一次他的方法？其实，我们只是需要这样做（面向对象中，必须要有一个类，然后新建他的实例（非静态的话），才能调用他的方法），所以才这样做。</p>
+
+<p>那假如封装的只是一个函数，然后我们可以简单的传递这样一个函数就能做到这些的话，是不是就很好了呢？这样的话，我们就不需要又创建一个实现类，又自己说动新建一个对象来仅仅只是调用一个函数了。</p>
+
+<p>这时候，我们就需要Lambda了。</p>
+
+<pre><code>printPersons(
+    roster,
+    (Person p) -&gt; p.getGender() == Person.Sex.MALE
+        &amp;&amp; p.getAge() &gt;= 18
+        &amp;&amp; p.getAge() &lt;= 25
+);
+</code></pre>
+
+<p>这样的代码极为的简洁而且具有可读性。而且，我们不需要手动去新建一个<code>CheckPersonEligibleForSelectiveService</code>实现类，而且也不需要手动去新建这样的对象，lambda都帮我们做好了。</p>
+
+<p>当然，我们原本也可以使用匿名类去解决这个问题</p>
+
+<pre><code>printPersons(
+    roster,
+    new CheckPerson() {
+        public boolean test(Person p) {
+            return p.getGender() == Person.Sex.MALE
+                &amp;&amp; p.getAge() &gt;= 18
+                &amp;&amp; p.getAge() &lt;= 25;
+        }
+    }
+);
+</code></pre>
+
+<p>但，我们问问自己，我们真的有必要创建一个对象就仅仅为了去做Person验证吗？这样非常的反直觉。</p>
+
+<p>如果我们需要的仅仅是一个函数而不是一整个对象，那么我们就应该关注在这个函数本身，而不是为了这个函数而衍生出一个类，一个对象。</p>
+
+<p>更多本问题讨论请参考：<a href="http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8">http://stackoverflow.com/questions/23097484/why-lamda-expression-are-introduced-in-java8</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/09/24/difference-between-cookies-and-sessions/">Cookie 与 Session的区别</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-24T18:20:05+08:00'><span class='date'>2014-09-24 Wed</span> <span class='time'>18:20</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
+
+<p>其实不是。</p>
+
+<p><code>session</code>是服务端的文件用于存储用户信息，而<code>cookie</code>是存储用户信息的客户端文件。</p>
+
+<p><code>cookie</code>是一个短的字符串，用于在客户端和服务端来回发送。我们可以保存类似于name=bob&amp;password=asdf在cookie然后在两端来回发送。
+这样做就像，去银行办业务，而银行的业务员极为健忘，然后他需要我们每次进行交易的时候都出示身份。当然，如果我们用cookie取存储这种敏感的信息的话是极为不安全的，而且cookie本身也有大小的限制。</p>
+
+<p>那么，如果这个业务员意识到了自己的健忘病，他可以在纸上记下你的相关信息然后递给你一个号码，然后以后你再办业务的时候你就可以简单的说
+“我是12号客户”，这样就不需要每次都出示身份证啊，银行个人账号去标识自己了。</p>
+
+<p>对应着在Web服务器，服务器会记录相关的信息在一个<code>session</code>对象，然后创建一个<code>session ID</code>然后发送给客户端保存在<code>cookie</code>中。当客户端发送这个cookie回来的时候，服务端就能简单的用<code>session ID</code>去查找<code>session</code>对象。</p>
+
+<p>所以，如果我们删除了<code>cookie</code>(如在浏览器中清空历史记录)，这个<code>session</code>就丢失了。</p>
+
+<p>还有一种方法是，用URL来交换<code>session id</code>，例如有一个link www.myserver.com/myApp.jsp, 然后我们可以重写每一个url让他成为类似于www.myserver.com/myApp.jsp?sessionID=asdf 甚至even www.myserver.com/asdf/myApp.jsp 用于标识<code>session id</code>。</p>
+
+<p>更多解析，可参考stackoverflow:
+<a href="http://stackoverflow.com/questions/359434/differences-between-cookies-and-sessions">Differences between cookies and sessions?</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/09/04/how-to-octopress/">Windows7上配置和使用Octopress</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-04T17:26:00+08:00'><span class='date'>2014-09-04 Thu</span> <span class='time'>17:26</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>本文翻译自：
+<a href="http://www.techelex.org/setup-octopress-on-windows7/">setup octopress on windows 7</a></p>
+
+<hr />
+
+<h2>准备工作：</h2>
+
+<ol>
+<li><a href="http://git-scm.com/">安装Git</a></li>
+<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
+<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 use <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
+<li>建立一个文件夹，例如在C：/github</li>
+</ol>
+
+
+<p>配置Octopress:</p>
+
+<pre><code>cd c:/github
+git clone git://github.com/imathis/octopress.git octopress #clone一个仓库，此处替换 octopress 成为 username.github.io
+cd octopress #进入clone出来的项目
+ruby --version # 应该会报出ruby 版本如 Ruby 1.9.3
+</code></pre>
+
+<p>然后进行相关初始化：</p>
+
+<pre><code>cd C:/RubyDevKit
+ruby dk.rb init
+ruby dk.rb install
+</code></pre>
+
+<p>安装依赖：</p>
+
+<pre><code>cd c:/github/octopress #replace octopress with username.github.io
+gem install bundler//若出现https连接不上，到home目录下找.gemrc文件，然后在source修改https为http
+bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port。若https连接不上，到GemFile中的source的https修改为http
+</code></pre>
+
+<p>安装默认的OctoPress 主题：</p>
+
+<pre><code>rake install
+</code></pre>
+
+<hr />
+
+<h2>建立Github的仓库</h2>
+
+<p>命名为：你的名字.github.io</p>
+
+<h2>部署</h2>
+
+<pre><code>rake setup_github_pages
+</code></pre>
+
+<p>这样做的结果是：</p>
+
+<ol>
+<li>询问你的Github Pages 的仓库URL。</li>
+<li>从origin重命名指向imathis/octopress 的remote 到octopress</li>
+<li>增加你的Github pages 的仓库为默认的 origin remote</li>
+<li>当前branch 从master 转换到source</li>
+<li>配置你的博客url</li>
+<li>在_deploy文件下下配置一个master 分支用于开发</li>
+</ol>
+
+
+<hr />
+
+<h2>发布：</h2>
+
+<pre><code>rake generate
+rake deploy
+</code></pre>
+
+<hr />
+
+<p>这样就会生成你的博客，复制生成的文件到_deploy/下，并增加到git，commit 和push到master分支。</p>
+
+<p>最后，commit源文件</p>
+
+<pre><code>git add .
+git commit -m '提交信息'
+git push origin source
+</code></pre>
+
+<p>现在，访问你的用户名.github.io就可以访问你的博客了。（第一次可能会延迟十几分钟）</p>
+
+<hr />
+
+<h2>新增博文</h2>
+
+<pre><code>rake new_post["title"]
+</code></pre>
+
+<p>这里会生成一个markdown文件到source/_posts下</p>
+
+<p>修改此markdown文件，再次发布，即可看到新的博文。</p>
+
+<hr />
+
+<p>有关markdown的语法和使用请参看<a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a></p>
+
+<p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/posts/3">Newer &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

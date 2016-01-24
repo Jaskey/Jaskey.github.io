@@ -1,0 +1,1493 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="Jaskey的个人博客">
+  <meta name="keywords" content="Java, JavaScript, js,git, css#">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/posts/3">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'>2014-11-06 Thu</span> <span class='time'>15:18</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
+
+<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
+
+<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
+
+<h2>语法部分</h2>
+
+<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
+
+<p>我们直接上一个例子，这样上手最快。</p>
+
+<p>先简单浏览下写搜索引擎插件的语法：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
+  &lt;Description&gt;engineDescription&lt;/Description&gt;
+  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
+  &lt;Url type="text/html" method="method" template="searchURL"&gt;
+    &lt;Param name="paramName1" value="paramValue1"/&gt;
+    ...
+    &lt;Param name="paramNameN" value="paramValueN"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
+  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
+
+<p>解释一下其中某些标签的作用：</p>
+
+<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
+
+<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
+
+<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
+
+<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
+
+<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
+
+<h2>例子——豆瓣</h2>
+
+<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
+
+<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
+
+<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
+  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
+  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
+  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
+     &lt;Param name="source" value="suggest"/&gt;
+     &lt;Param name="q" value="{searchTerms}"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
+
+<p>而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
+
+<p><strong>关于搜索建议</strong></p>
+
+<p>这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。</p>
+
+<pre><code>  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+</code></pre>
+
+<p>假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
+
+<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
+</code></pre>
+
+<p>所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。</p>
+
+<p>最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。</p>
+
+<hr />
+
+<p>注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
+
+<pre><code>user_pref("browser.search.selectedEngine", "engine_name");
+</code></pre>
+
+<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">adding a custom search engine tofirefox</a></p>
+
+<p>注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
+
+<h2>发布分享</h2>
+
+<p>写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a> 提交这个xml文件就可以供大家使用了。</p>
+
+<p>大家可以在<a href="https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach">https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach</a> 找到我豆瓣的这个例子</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-31T17:44:25+08:00'><span class='date'>2014-10-31 Fri</span> <span class='time'>17:44</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
+
+<p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>
+
+<h2>CPU</h2>
+
+<p>由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。</p>
+
+<h4>上下文切换</h4>
+
+<p>如果有频繁的上下文切换，则会造成内核占据较多的CPU使用，降低系统性能。典型的例子有是有非常强烈的锁竞争情况。这会导致当前进程频繁的进入阻塞或者休眠状态，使得应用响应下降。</p>
+
+<p>这类型的解决方法有，</p>
+
+<ol>
+<li>减小Thread的数量</li>
+<li>降低锁竞争，如分多把锁。</li>
+</ol>
+
+
+<h4>线程一直处于Running</h4>
+
+<p>还有另外一种情况是线程一直处于Running状态，这会导致该线程消耗大部分的CPU，通常情况是进行循环，或者大批量计算。</p>
+
+<p>例如</p>
+
+<pre><code>while(somevalue!=XXX){//
+   ;//死循环
+}   
+</code></pre>
+
+<p>或者有一个大批量的数据操作，如对集合进行很大数据量的增加操作：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+    list.add(value[i])
+}
+</code></pre>
+
+<p>以上两种例子都会使得线程一直处于running状态而不释放CPU，一个可取的方法是进行部分操作后进行<code>Thread.sleep()</code>,让出CPU。</p>
+
+<p>如上面第二个例子：</p>
+
+<pre><code>for(int i=0;i&lt;10000;i++){
+   list.add(value[i])
+   if(i%50==0){//每50个就让出一次CPU 
+        Thread.sleep(1);
+    }
+}
+</code></pre>
+
+<p>当然，对于第一个例子，假如是希望线程中的协作的话，最好使用的是monitor object 的wait()/notify()之类的方法。</p>
+
+<p>如</p>
+
+<pre><code>while(!some_condition){
+    condition.wait();//挂起等待notify
+}
+</code></pre>
+
+<h2>内存</h2>
+
+<p>如果消耗了过多的JVM Heap内存，将会频繁触发GC，将大大影响系统的性能。</p>
+
+<h4>使用对象缓存池</h4>
+
+<p>使用对象池可以一定程度创建对象所花费的CPU和内存</p>
+
+<h4>采用合理的缓存失效算法</h4>
+
+<p>上面讲到了对象池降低内存消耗，但假如放入太多对象到缓存池里面，反而会造成更严重的内存消耗，这是因为池本身对于对象持有引用，从而可能造成频繁的Full GC。所以，需要控制池中对象的数量。</p>
+
+<p>当池中对象达到最大值后，如果需要加入新的对象，则需要采用合理的失效算法清除池中的对象。如FIFO,LRU,LFU。</p>
+
+<h4>中途释放不用的大对象引用</h4>
+
+<p>如：</p>
+
+<pre><code>void foo(){
+  Object bigObject=new Object();
+  bigObject.doSomething();//下面不需要了
+  // 下面有很多其他耗时，耗内存的操作的话，可考虑释放bigObject的引用
+  bigObject=null;
+
+  //some long opertions
+}
+</code></pre>
+
+<h4>合理使用WeakReference 和 SoftReference</h4>
+
+<p>有些对象我们允许在某些情况下即使我们还有引用，也要被GC。这时候可以考虑使用弱引用或者软引用。</p>
+
+<p>当某些对象用作类似缓存对象的时候，内存不足就可以被回收的话，这类对象可以使用软引用。</p>
+
+<p>而当某些对象A如果依附于某个对象B存在，如果B不存在了，A就没有必要存在，并且A的存在与否不应该阻碍B是否存在，那么A引用B的时候可以考虑使用弱引用。</p>
+
+<p>关于两者区别可以参考<a href="http://stackoverflow.com/questions/299659/what-is-the-difference-between-a-soft-reference-and-a-weak-reference-in-java">what is the difference between a soft reference and a weak reference</a></p>
+
+<h2>文件IO</h2>
+
+<p>文件IO严重的主要原因是多个线程在写大量的数据在同一个文件，导致文件变得很大，写入速度越来越慢，并造成线程竞争文件锁激烈。</p>
+
+<p>解决此类问题的方向有：</p>
+
+<h4>异步写文件</h4>
+
+<p>把文件的写入操作改为异步，如写日志的时候使用<code>log4j</code>的<a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/AsyncAppender.html">AsynAppender</a></p>
+
+<h4>批量读写</h4>
+
+<p>如大数据插入数据库改改为批量的插入操作数据库的操作：</p>
+
+<pre><code>  PreparedStatement ps = c.prepareStatement("INSERT INTO employees VALUES (?, ?)");
+
+  ps.setString(1, "John");
+  ps.setString(2,"Doe");
+  ps.addBatch();
+
+  ps.clearParameters();
+  ps.setString(1, "Dave");
+  ps.setString(2,"Smith");
+  ps.addBatch();
+
+  ps.clearParameters();
+  int[] results = ps.executeBatch();
+</code></pre>
+
+<p>具体可参考：<a href="http://viralpatel.net/blogs/batch-insert-in-java-jdbc/">batch insert in java</a></p>
+
+<h4>限制文件大小</h4>
+
+<p>无论数据库表，还是日志文件，我们都应该限制其的大小。</p>
+
+<p>有必要的话，对于数据库表，需要分拆成小表，增加读写速度。</p>
+
+<p>对于文件如日志文件则需要设置一个最大值，超过后生成另外一个新文件。如<code>log4j</code>中使用<code>RollingFileAppender</code>的<code>maxFileSize</code>属性。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/26/sql-optimization/">SQL优化的一些技巧</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-26T21:19:25+08:00'><span class='date'>2014-10-26 Sun</span> <span class='time'>21:19</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近在学习MySQL的优化，今天整理下一些对于开发人员有必要了解的一些技巧。</p>
+
+<h2>关于索引</h2>
+
+<p>很多SQL优化都和索引有关，所以，在了解SQL优化前，最好先理解什么是索引，索引做的是什么。关于这点，stackoverflow上有很好的一个问题：<a href="http://stackoverflow.com/questions/1108/how-does-database-indexing-work/1130#1130">how does database indexing work</a>。</p>
+
+<p>简单说，索引就是把数据库中的字段进行了一定规则的建立额外的排序，使得SQL查找可以快速找到所需的数据块，避免全表搜索。</p>
+
+<p>关于如何建立索引，以下有一张图可以给出一个较好的指导：</p>
+
+<p><img src="http://jaskey.github.io/images/SQL/Index_SQL_Tunning.png" alt="method 1" /></p>
+
+<h2>索引列相关的SQL优化技巧</h2>
+
+<ul>
+<li><strong>避免在索引列使用通配符%开头</strong></li>
+</ul>
+
+
+<p>如（&#8217;%.com&#8217;），这将会令MySQL无法使用改列索引，而使用%结尾则可以（如&#8217;www.%&lsquo;）使用索引。</p>
+
+<p>如果需要经常基于某索引列作以通配符开头的查询，如查询所有.com结尾的ip     <code>email like '%.com'</code>，可以在数据库中保存改列的反序值(如reverse_email)，然后搜索的时候使用 <code>reverse_email like REVERSE('%.com')</code>，则可以使用到reverse_email的索引了。</p>
+
+<ul>
+<li><strong>避免在索引列使用函数或者计算</strong></li>
+</ul>
+
+
+<p>如 <code>where trunc(create_date)=trunc(:date1)</code>这样的where 条件将无法使用到create_date的索引。</p>
+
+<ul>
+<li><p><strong>避免在索引列上出现数据类型转换</strong></p></li>
+<li><p><strong>避免在索引字段上使用not，&lt;></strong></p></li>
+</ul>
+
+
+<hr />
+
+<h2>其他技巧：</h2>
+
+<ul>
+<li><strong>尽量避免使用相关子查询</strong></li>
+</ul>
+
+
+<p>如：</p>
+
+<pre><code>SELECT c.Name, 
+       c.City,
+       (SELECT CompanyName FROM Company WHERE ID = c.CompanyID) AS CompanyName 
+FROM Customer c
+</code></pre>
+
+<p>其中子查询 <code>SELECT CompanyName....</code>的结果与外层查询结果相关，这样会导致每一个外层查询的结果都会返回到子查询中查询一遍，导致性能下降。这种子查询大多可以改造为表的join：</p>
+
+<pre><code>SELECT c.Name, 
+       c.City, 
+       co.CompanyName 
+FROM Customer c 
+    LEFT JOIN Company co
+        ON c.CompanyID = co.CompanyID
+</code></pre>
+
+<ul>
+<li><strong>避免循环中使用SQL</strong></li>
+</ul>
+
+
+<p>如：</p>
+
+<pre><code>//查询满足
+SELECT a.id,a.author_id,a.title //找出满足某条件的文章的作者 
+FROM article a
+WHERE a.type=2
+AND a.created&gt; '2011-06-01';
+
+
+//For 循环这些记录，然后查询作者信息，
+select id, name,age
+from arthor where id=:author_id 
+</code></pre>
+
+<p>这类问题常被称作N+1问题，即每对应外层的每一行都生成了一条SQL语句，这导致了很多的SQL语句重复执行。</p>
+
+<p>这种SQL通常也可以通过join而被改写为单条SQL语句：</p>
+
+<pre><code>SELECT a.id, a.title,au.author_id,au.author_name,au.age
+FROM artitle a
+INNER JOIN author au on a.author_id = au.id
+WHERE a.type=2
+AND a.created&gt; '2011-06-01';
+</code></pre>
+
+<ul>
+<li><strong>不要使用SELECT *</strong></li>
+</ul>
+
+
+<p>使用<code>SELECT *</code> 有很多的坏处，例如：</p>
+
+<ol>
+<li>选择过多的列导致不必要的开销。有些时候我们只需要两列，但select * 会把所有的列（可能20列）全部返回，这是额外的IO开销。</li>
+<li>SELECT * 不容易针对化的建立索引。由于不知道该 SQL语句中具体需要哪些列，就很难针对化的设计所需的索引。而且，即便按照所有的列都设计了索引，一旦表结构发生了增加列的情况，此索引也会失效，而且后来的人很难发觉。</li>
+<li>MySQL 引擎需要解释*所代表的列，也会带来一定的开销</li>
+</ol>
+
+
+<p>更多相关讨论可以参考：<a href="http://stackoverflow.com/questions/3639861/why-is-select-considered-harmful#answer-3639964">why is select * considered harmful</a></p>
+
+<ul>
+<li><strong>拆分大的INSERT/DELETE语句</strong></li>
+</ul>
+
+
+<p>如果有一个很大批量的INSERT/DELETE（需要锁表）语句需要执行，例如对几十万行的语句执行，可以考虑分量的一批一批执行，每次执行完后放开CPU，这样可以避免阻塞其他线程的操作。如：</p>
+
+<pre><code>    while (1) {
+        //每次只做1000条
+        pst.execute("DELETE FROM logs WHERE log_date &lt;= '2009-11-01' LIMIT 1000");
+        if row return 0 {
+            // 没得可删了，退出！
+            break;
+        }
+        // 每次都要sleep一段时间让出CPU
+        sleep(50000);
+    }
+</code></pre>
+
+<ul>
+<li><strong>当只需要一行数据的时候，使用LIMIT 1</strong></li>
+</ul>
+
+
+<p>当你查询表的有些时候，如果我们知道只会有一条结果，加上 LIMIT 1 可以增加性能。这样一样，MySQL数据库引擎会在找到一条数据后停止搜索，而不是继续往后查少下一条符合记录的数据。
+    请看下面伪代码：</p>
+
+<pre><code>    // 没有效率的：
+    result_set= ps.execute_query("SELECT user_name FROM user WHERE country = 'China'");
+    if (result_set.hasNext()) {
+        // ...
+    }
+
+    //更好效率的：
+    result_set= ps.execute_query("SELECT user_name FROM user WHERE country = 'China' LIMIT 1");
+    if (result_set.hasNext()) {
+        // ...
+    }
+</code></pre>
+
+<ul>
+<li><strong>避免在WHERE子句中使用in，not  in</strong></li>
+</ul>
+
+
+<p>可以使用 exist 和not exist代替 in和not in。</p>
+
+<pre><code>//低效
+SELECT order_id,order_num,customer_name  FROM ORDERS WHERE CUSTOMER_NAME NOT IN 
+(SELECT CUSTOMER_NAME FROM CUSTOMER)
+
+//高效    
+SELECT order_id,order_num,customer_name FROM ORDERS WHERE not exist 
+(SELECT CUSTOMER_NAME FROM CUSTOMER where CUSTOMER.customer_name = ORDERS.customer_name)
+</code></pre>
+
+<h2>关于缓存</h2>
+
+<ul>
+<li><p><strong>在MySQL中使用缓存把查询结果保留能有效减小SQL查询时间</strong></p></li>
+<li><p><strong>在应用程序中使用缓存</strong></p></li>
+</ul>
+
+
+<p>如：</p>
+
+<pre><code>IF CACHE NOT EMPTY
+SELECT FROM CACHE
+
+IF CACHE EMPTY
+    SELECT TABLE 
+    PUT INTO CACHE
+</code></pre>
+
+<p>但需要注意一旦表发生了改变，需要移除CACHE的相关数据。</p>
+
+<p>注：
+可用流行的<code>memcached</code>框架缓存查询结果，减小数据库压力。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/26/get-started-with-memcached/">快速入门Memcached</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-26T00:41:53+08:00'><span class='date'>2014-10-26 Sun</span> <span class='time'>00:41</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近学习Memcahced,使用了一天时间搭建了memcached的集群，并使用memcached的客户端<code>spymemcached</code>成功访问到集群。今天整理下学习的笔记。</p>
+
+<h2>Linux下安装Memcached</h2>
+
+<p>以<code>Ubuntu</code>为例。</p>
+
+<p>1.更新本地仓库</p>
+
+<pre><code>sudo apt-get update
+</code></pre>
+
+<p>2.安装<code>memcached Service</code></p>
+
+<pre><code>sudo apt-get install memcached
+</code></pre>
+
+<p>3.安装成功后，使用<code>ps aux | grep memcached</code>可检查<code>memcached</code>服务是否已启动。你可能会看到类似下面的信息，证明memcached服务已经启动。</p>
+
+<pre><code>memcache  1027  0.0  0.1  46336  1080 ?        Sl   00:38   0:00 /usr/bin/memcached -m 64 -p 11211 -u memcache -l 0.0.0.0
+jaskey    2477  0.0  0.0   4372   832 pts/1    S+   00:49   0:00 grep --color=auto memcached
+</code></pre>
+
+<p>注：默认情况下，memcached的服务进程只在默认的localhost监听。所以如果我们需要从其他机器访问该服务，需要修改监听的ip</p>
+
+<h2>修改memcached服务监听地址</h2>
+
+<p>打开配置文件：<code>memcached.conf</code>(在/etc下)</p>
+
+<pre><code># Specify which IP address to listen on. The default is to listen on all IP addresses
+# This parameter is one of the only security measures that memcached has, so make sure
+# it's listening on a firewalled interface.
+-l 127.0.0.1
+</code></pre>
+
+<p>找到相关-l 的配置，修改为<code>0.0.0.0</code>即可</p>
+
+<p>其余重要还有-m(内存大小)，-p(默认端口号)</p>
+
+<pre><code># Start with a cap of 64 megs of memory. It's reasonable, and the daemon default
+# Note that the daemon will grow to this size, but does not start out holding this much
+# memory
+-m 64
+
+# Default connection port is 11211
+-p 11211
+</code></pre>
+
+<h2>使用telnet与memcached通信</h2>
+
+<p>1.首先，安装telnet客户端</p>
+
+<pre><code>sudo apt-get install telnet
+</code></pre>
+
+<p>2.使用telnet访问</p>
+
+<pre><code>telnet localhost 11211
+</code></pre>
+
+<p>其中11211为memcached默认端口。</p>
+
+<p>如果你能看到类似以下的输出，则证明访问成功。</p>
+
+<pre><code>Trying 127.0.0.1...Connected to localhost.Escape character is '^]'.
+</code></pre>
+
+<p>我们可以使用<code>stats</code>命令获得memcached的基本信息</p>
+
+<pre><code>Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+stats
+STAT pid 1027
+STAT uptime 1487
+STAT time 1414256583
+STAT version 1.4.13
+STAT libevent 2.0.16-stable
+STAT pointer_size 32
+STAT rusage_user 0.040002
+STAT rusage_system 0.252015
+STAT curr_connections 5
+STAT total_connections 6
+STAT connection_structures 6
+STAT reserved_fds 20
+STAT cmd_get 0
+STAT cmd_set 0
+STAT cmd_flush 0
+STAT cmd_touch 0
+STAT get_hits 0
+STAT get_misses 0
+STAT delete_misses 0
+STAT delete_hits 0
+STAT incr_misses 0
+STAT incr_hits 0
+STAT decr_misses 0
+STAT decr_hits 0
+STAT cas_misses 0
+STAT cas_hits 0
+STAT cas_badval 0
+STAT touch_hits 0
+STAT touch_misses 0
+STAT auth_cmds 0
+STAT auth_errors 0
+STAT bytes_read 7
+STAT bytes_written 0
+STAT limit_maxbytes 67108864
+STAT accepting_conns 1
+STAT listen_disabled_num 0
+STAT threads 4
+STAT conn_yields 0
+STAT hash_power_level 16
+STAT hash_bytes 262144
+STAT hash_is_expanding 0
+STAT expired_unfetched 0
+STAT evicted_unfetched 0
+STAT bytes 0
+STAT curr_items 0
+STAT total_items 0
+STAT evictions 0
+STAT reclaimed 0
+END
+</code></pre>
+
+<h2>往memcached存储/获取值</h2>
+
+<p>使用<code>add</code>命令</p>
+
+<pre><code>add newkey 0 60 5
+abcde
+</code></pre>
+
+<p>如果现实STORED则为存储成功:</p>
+
+<p>然后就可以使用<code>get newkey</code>获取到这个存储的值了。</p>
+
+<pre><code>get newkey
+VALUE newkey 0 5
+abcde
+END
+</code></pre>
+
+<p><strong>命令解析</strong>：</p>
+
+<pre><code>&lt;command name&gt; &lt;key&gt; &lt;flags&gt; &lt;exptime&gt; &lt;bytes&gt;
+</code></pre>
+
+<p>常用command name 有 <code>add</code> , <code>set</code>,  <code>replace</code>, <code>append</code>。</p>
+
+<p><code>flags</code></p>
+
+<p>是一个16为无符号整形，memcached server会把这个flags和key一起存储起来，并且访问该key的时候，也会返回这个<code>flags</code>。我们可以根据需要设置这个key的格外信息。</p>
+
+<p><code>exptime</code></p>
+
+<p>值超时的时间，单位为秒。如果设置为0，则不会超时。</p>
+
+<p><code>bytes</code></p>
+
+<p>存储的值的大小，在我们这个例子，由于我们需要存储abcde,所以我们设置改参数为5。</p>
+
+<hr />
+
+<h2>建立分布式memcached集群</h2>
+
+<p>到此为止，我们已经可以访问到默认启动的memcached服务了，但是实际上我们需要一个memcached集群。我们可以在多台机器上启动memcached服务，这样就可以获取一个无限制内存大小的缓存服务。然后使用memcached客户端连接上去。</p>
+
+<p>鉴于在学习阶段，我们可以尝试在不同的端口上启动memcached，然后获得一个本地集群。</p>
+
+<p>启动memcached:
+    memcached -d -l 0.0.0.0 -m 64 -p 12122</p>
+
+<p>其中<code>-d</code>参数表示启动为daemon, -l 指定监听ip，-p监听端口，-m指定服务的内存大小。</p>
+
+<p>然后使用<code>ps aux |grep memcached</code>确认端口的确运行成功。</p>
+
+<h2>使用memcached客户端</h2>
+
+<p>memcached的守护进程是对不知道集群的存在和server设置的。实际上，是memcached client把数据分布式的存储在不同memcached服务上。所以，同一份存储的数据，你只能在一个memcached服务中访问，其他的memcached都无法获得。</p>
+
+<p>我们这里以java语言作为例子，演示如何使用java访问memcached server。这里使用的是<code>spymemcached</code>这个memcached client。</p>
+
+<p>在<code>maven</code>中添加spymemacached依赖：</p>
+
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;net.spy&lt;/groupId&gt;
+    &lt;artifactId&gt;spymemcached&lt;/artifactId&gt;
+    &lt;version&gt;2.10.1&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>代码示例如下：</p>
+
+<pre><code>public class MemcachedDemo 
+{
+
+    static final  InetSocketAddress[] servers=new InetSocketAddress[]{  //创建好需要连接的memcached集群的ip和端口
+        new InetSocketAddress("192.168.56.101",11211),
+        new InetSocketAddress("192.168.56.101",11212)
+    };
+
+    public static void main( String[] args ) throws IOException{
+        System.out.println( "Begin memcached" );
+        MemcachedClient client=new MemcachedClient(servers);//建立memcached client对象连接到集群，注：spymemcahced,会处理重新连接
+
+
+        //存储两个对象，一个String类型，一个自定义对象（需要实现Serializable接口）
+        client.set("city", 60, "shenzhen");//expired in 60 seconds
+        System.out.println( "city is set" );
+        client.set("emp", 0, new Employee("jaskey", 23));//never expired,注：Employee对象需要实现java.io.Serializable接口        
+
+        //从memcached server中获取对象
+        Employee empFromServer=(Employee)client.get("emp");
+        String city=(String)client.get("city");
+
+        System.out.println("emp from memcached: "+empFromServer);
+        System.out.println("city from memcached: "+city);
+
+        client.shutdown();
+        }
+}
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>Begin memcached
+2014-10-26 01:56:51.431 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=/192.168.56.101:11211, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2014-10-26 01:56:51.435 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=/192.168.56.101:11212, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2014-10-26 01:56:51.443 INFO net.spy.memcached.MemcachedConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@72a7d24a
+emp is set
+emp from memcached: Employee("jaskey", 23)
+city from memcached: shenzhen
+2014-10-26 01:56:51.492 INFO net.spy.memcached.MemcachedConnection:  Shut down memcached client
+</code></pre>
+
+<p>其中，get操作是同步的，如果希望使用异步get，可以使用<code>asyncGet</code>方法返回一个<code>Future</code>对象：</p>
+
+<pre><code>    Future&lt;Object&gt; fobject = client.asyncGet("emp");
+    try {
+        Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的timeout
+        System.out.println("emp from memcached"+emp);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    } catch (ExecutionException e) {
+        e.printStackTrace();
+    } catch (TimeoutException e) {
+        e.printStackTrace();
+    }
+</code></pre>
+
+<h2>关于集群</h2>
+
+<p>如果这时候，你使用telnet命令分别访问不同的memcached服务，你很可能发现emp这个值只存在于其中的一个服务，而其他服务是获取不到的。</p>
+
+<p>这样证明一份数据只被保存了一遍，然而对于客户端而言，具体保存在哪里却是完全透明的，因为spymemcahced把这个数据映射的工作做了。</p>
+
+<p>这样我们就好像操作一份很大内存空间的缓存一样，而实际上，我们是对分布在不同memcached 服务的内存空间在进行操作。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/21/about-wealth/">大学生与烧饼小贩</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-21T19:34:50+08:00'><span class='date'>2014-10-21 Tue</span> <span class='time'>19:34</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近写技术的东西比较多，刚好也在看《黑客与画家》，里面讲到的关于如何创造财富这一论点引起了我极大的共鸣和思考，觉得既然博客折腾起来了，就简单整理下，写下点东西。刚好最近大学生校园招聘的季节，就从这个话题切入扯点东西吧。</p>
+
+<p>在当今社会，什么东西都离不开钱，似乎没有钱，就生存不下去了（似乎的确是这样子）。然后，我们从出生那天起，就被安排着如何成为一个会赚钱的人。</p>
+
+<p>上一个好的小学，报读各种英语培训班、奥数班，目的是为了考上好的中学。在中学和无数人死磕排名，好像排后了一名就世界末日一般的前景，每个人都被用成绩贴上了各种标签，无他，为了高考考个好成绩。</p>
+
+<p>高考罢，要挑一个好的学校，读一门好的专业。好的学校就是就业率高，好的专业就是毕业容易找到好的工作，好的工作就是钱多活少又稳定。呵呵。没有一个人会问学校的学术氛围，也没有几个人会考虑孩子/自己到底喜欢的是什么，毕竟学生已经被训练为不会思考的机器，一辈子都在同一条起跑线上竞争，不需要思考，只需要永远的跑，跟着前面跑，跟着大家跑。所以，突然有了选择的时候，反而迷茫了，下意识的也只会跟着大众走。于是，金融、计算机、工程这些专业变得炙手可热。随之而来的，随便一所不沾边的学校都乱开一通专业。</p>
+
+<p>在这个时候，你会发现，家长、学校变化都十分巨大。学校不再有很多的竞争逼着你走，虽然学生会丑陋的政治斗争依旧十分激烈，但我们可以不参加。而家长似乎也对你的成绩不那么过问了。无他，因为这么多年来，似乎已经到了收割的季节——到了毕业那一年，任务就完成了——孩子成为了一个大学生，理应是一个会赚钱的人咯！</p>
+
+<p>在这个时候，才发现，就业竞争是如此的激烈。几万人应聘那零丁的几个职位，挤破头来最后拿个3 4千的工作。所有人都不知道这一辈是对呢？还是错？反正都这样干，那就都这样吧。毕业了也就那样了，无无聊聊朝九晚五，挤着公交地铁，天天看着房价涨、工资甚至还赶不上物价。眼看着街边一个卖烧饼的收入都一万多了，才可能回想，这一辈子到底得到了什么？</p>
+
+<p>其实这也难怪，一个毕业后只能对着电脑打打字、写几份文件的，比不上一个卖烧饼的，又有什么出奇的？</p>
+
+<p><strong>但肯定很多人出来骂娘了，这TM不公平啊！凭啥！</strong></p>
+
+<p>问题就在这里，很多大学生总觉得这不公平、家长们也觉得无奈：农民工兄弟做的是体力活，我做的好歹他们不会做，说得自己做的东西像战斗机一样是什么高科技。坦白说，即便是如我们这种码农一样的职业，也就用着美国人的电脑，在美国人的系统上用美国人的语言模仿着美国人的代码，也不见得多么高端。</p>
+
+<p>这里似乎有一个误区，我们总潜意识的想着用付出去衡量收获，这可能和读书时代我们宣扬“一分耕耘，一分收获”有关。这完全是一个错误的观点。在市场经济下，能交换收获的，只有输出。</p>
+
+<p>这本来是一个很原始的道理，但随着历史的发展，被慢慢淡化了，所以有必要从头谈谈。</p>
+
+<p>在古时候，没有货币出现的时候，人们会使用物品交换的方式去获得自己所需的东西。如果我需要鸡蛋，但我没有鸡去生蛋，那么我可能用羊去换。找到一家需要羊的，又拥有鸡蛋可换的人，跟他们去交换。然后假如我需要另外的东西，就再找合适的人交换。</p>
+
+<p>这样发展到后面，人们的需求越来越多，在局限的一个地方要找到双方都刚好互补需求的另外一个人，十分不容易。于是，一般等价物便出现了，这类东西的一个最重要的属性是稀有，一般说来是稀有金属，如金、银。人们可以用自己生产的物品交换这一等价物品（卖），然后用这个等价物去购买另外的商品。</p>
+
+<p>再到后来，携带金属交换并不便利，而且计算也没那么灵活。便出现了货币，直至纸币。人们去工作去赚钱，赚到了钱就可以买自己需要的东西。</p>
+
+<p>在这里，一个概念容易被模糊——钱似乎就是财富。但这并不正确。钱只是换取、衡量财富的一种物品，它本身并不具备价值。假如突然有一天，银行印了一大堆钞票满天飞，那么你手上的钱瞬间就沦为废纸。</p>
+
+<p>人类发明了一般等价物和后来的货币，为的不是创造财富，而是为了交换财富。所以，真正的财富，是我们用钱交换（买/卖）的东西，这里面说的很可能是一种物质的商品，也有可能是一种服务。</p>
+
+<p>那么，理清楚这点之后，对于我们理解大学生就业、自己拿多少工资这种问题有什么作用呢？作用十分明显，乃至答案呼之欲出。我们去打工，不是卖自己的时间，自由、劳动力去交换钱（这些是表面的），深沉次的是，我们在出售“生产力”（并不是劳动力）。简单说，就是企业买了我们的某段时间、自由，并用我们的某些技能去为他们服务。而至于他们给多少钱，这并不取决于我们的服务时间、服务态度，而是取决于我们这段时间的“生产力”——能创造多少财富。</p>
+
+<p>对，财富是可以创造出来的，这似乎每个人都懂，但似乎又不是。如果我们把钱=财富的话，这个命题就是假命题。因为钱的多少是由银行决定的，而银行把钱印到全世界都是，这并不增加社会的财富，反而让所有人都变穷了。明显，钱不是财富。那么什么是财富？</p>
+
+<p>举一个例子，有一天，马浓再也敲不动代码了，然后被老板炒了。身上没有钱，穷得只剩下有一台破单车，还要不能跑的。然后他把它修了一下，能跑起来了，于是拿去卖了，获得了100块，够吃一个月的满头了！这一个过程中，马浓就创造了财富，他本来不拥有任何可以交换钱的物品（至少换不了100块），现在有了，因为他创造了一量价值100块（准确地说，价值1个月的馒头）的单车，这个世界因为马浓这一个行为，财富得到了上升。</p>
+
+<p><strong>所以，财富不是一定的，而是不断的变化的（人类历史就是不断创造财富的过程），这并不是一个零和游戏！</strong>马云他成功成为了中国首富，但没有从社会剥夺过一分一毫。相反，他让整个中国的财富迅速上升——很多店主依靠淘宝赚了一桶金，很多老百姓因为淘宝买到了更为便宜的衣服。</p>
+
+<p>但这样一看，似乎只有生产，或者说只有物质生产才是创造财富的过程？也不对！再举个例子，淘宝卖的衣服，衣服本身是财富，但是他一开始并不能成为社会的财富，假如他生产出来的衣服一直都摆在库存没人穿，他们从其量也就一堆布料。</p>
+
+<p>然后这时候，马浓去应聘做了一个物流人员，做起了把衣服从浙江发往广东的工作，使得广东的老百姓能买到浙江的衣服了。在这个过程中，假如没有马浓的输送，衣服无法成为你和我的财富。也就是说，服务也是一个创造财富的过程，由于物流人员的服务，我能够买到衣服，而卖家能卖到钱。这繁荣了整个淘宝，使得大家继续不断地创造更多的财富。而马浓也因此赚到了每月近万元的收入。</p>
+
+<p>扯得有点远，我们回到大学生就业和卖烧饼的例子。大学生工作获得的工资，其实就是帮助企业去创造财富的过程，虽然这一过程似乎都被模糊为帮企业赚钱了。一个企业用4000块请你工作，是因为他觉得你能创造多余4000块的财富（假如一个月后人民币没有贬/升值）。这和市场买卖是一个意思，你值4000块，自然有人用4000买，如果你3000肯卖，肯定很多人愿意买。如果你希望自己能卖个10000块，最后肯定的结果就是没人肯买你（即便买了也会立刻退货），最后经过市场的催化，会逐渐趋向于你最终的“市值”。而没有任何一个人逼你去卖一家烧饼小摊的烧饼，然总有很多人愿意去买，因为他创造了烧饼这一财富，而你认为他卖得并不贵（坦白说，是挺贵的，但市场告诉你，他值这个价），最后他赚得了10000多的收入。</p>
+
+<p>Fair enough! 十分公平。也许你的工作并不比卖烧饼的轻松（不过很多的确比烧饼轻松得多），而且我们的前期投入也肯定比小贩们投入得多得多（无论教育费用，时间），但这就是市场给予我们的回应。一个人的收入，与他创造财富的能力相匹配，这是我能想到的最为公平且合理的资源配置方式。当然，除了创造财富外，还有另外一种获得财富的手段，那就是偷窃。这不包括真真意义上的偷，而还包括贪污、资源垄断，他们和偷窃都拥有一样的特点——没有创造财富而获取创造出来的财富，这在中国还十分的严重，但对比历史已经好得多得多。至少，以前的首富都是达官贵人，现在我们的首富却是马云。</p>
+
+<p>那么，自己能拿多少钱？应该问的，不是自己付出了多少，自己的学历，自己的身份，而是问自己到底能创造多少财富，<strong>在市场化的社会里，最简单、最公平的获取财富的手段，就是创造财富了。</strong></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/18/change-source-folder-in-eclipse/">如何在eclipse中修改源目录路径</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'>2014-10-18 Sat</span> <span class='time'>19:37</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在我们使用<code>Maven</code>或者<code>Gradle</code>的时候，源码目录要求是：src/main/java。</p>
+
+<p>但是如果我们直接用已经构建好了的eclipse项目，无论怎么新建文件夹，都不能构建出这样的源目录结构。eclipse会把main.java视为包(package)。</p>
+
+<p>要解决这个问题，我们需要先让eclipse不要把src视为源目录(source folder)。方法：</p>
+
+<p>右键src目录&mdash;>build path &mdash;> remove from build path.</p>
+
+<p>这样以后，我们就可以建立我们的main和java文件夹在src下。
+然后右键java文件夹&mdash;>select build path &ndash;> use as source folder， 这样就可以把源目录指向src/main/java了</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/17/performance/">浅谈网站性能优化</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>18:41</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>今天简单从上层的角度聊一下如何对有一个网站进行优化。</p>
+
+<p>从用户在浏览器敲下回车，到数据回来，至少可以分为三个路径</p>
+
+<ol>
+<li>在浏览器端，发送用户请求，并且接受服务器返回的响应数据进行页面渲染。</li>
+<li>请求数据在网络进行传输，发送到服务器。服务器把响应数据在网络传输返回。</li>
+<li>服务器端进行数据解析处理（访问文件，数据库等），最后返回响应数据。</li>
+</ol>
+
+
+<p>我们把第一路径简要称为“前端”，第三路径称为“后端”，看看能在这三层如何对网站的性能做出优化。</p>
+
+<h2>前端的过程</h2>
+
+<p>1 . 本地DNS解析域名，得到IP地址（并将IP地址缓存起来），向目标IP发送请求（通常为HTTP）</p>
+
+<p>以上过程可以优化的地方主要依靠减少DNS解析的次数。如果用户的浏览器设置了缓存，那么第二次访问相同域名的时候就不会请求DNS服务器了，而是直接用缓存中的IP发送请求。这主要依靠浏览器的相关设置，但我们也可以在页面告知浏览器需要做DNS的预取：</p>
+
+<pre><code>&lt;meta http-equiv="x-dns-prefetch-control" content="on" /&gt;
+</code></pre>
+
+<p>2 . 浏览器得到相应数据做出渲染计算</p>
+
+<p>在这阶段，浏览器主要做的是解析相应数据，创建DOM树，下载CSS样式应用到DOM树中，下载JS文件开始解析。</p>
+
+<p>为了提高页面的访问速度，我们应该尽可能让CSS样式放到<code>&lt;head&gt;</code>中并且让下载js的语句放到<code>&lt;body&gt;</code>的末尾，这样就可以使得页面先渲染起来再执行js脚本，用户的等待时间将减小。</p>
+
+<p>注：HTML5支持<code>async</code>属性支持脚本的异步执行，如：</p>
+
+<pre><code>&lt;script type="text/javascript" src="demo_async.js" async="async"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>同时，我们可以设置浏览器的缓存，让浏览器下次防蚊时从缓存中读取内容，减小HTTP请求。</p>
+
+<h2>网络传输（第二阶段）</h2>
+
+<p>这是阶段的速度取决于网络情况，由于用户的请求的数据很小但往往接受的响应数据很大，所以这要求企业的网络带宽要有快的上行速度，这和用户的带宽是相反的。</p>
+
+<h2>后端过程</h2>
+
+<p>后端是主要可以发挥的地方，这里包括处理请求，访问数据库等资源的过程。</p>
+
+<p>我们主要可以优化的地方有：</p>
+
+<p>1 .   <strong>使用缓存，减缓数据库压力</strong></p>
+
+<p>我们应该尽可能使用缓存提高常用数据的读取数据，减少访问数据库的次数。现在分布式的场景下，可以使用Memcached搭建起分布式缓存。</p>
+
+<p>2 .  <strong>使用异步操作代替同步操作，避免阻塞的等待时间，提高性能。</strong></p>
+
+<p>在高并发的情况，同步的请求操作（如数据库插入）会对数据库造成很大压力，同时也会导致用户的等待时间增长，我们应该尽可能使用异步的请求操作代替同步操作，以提高整体服务的响应速度，具体的操作将进入消息队列处理。最终的结果可以使用其他的方式告知用户，如邮件提醒的方式。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
+
+<h2>准备工作：</h2>
+
+<p>和  <a href="http://jaskey.github.io/blog/2014/09/04/how-to-octopress/">之前写的“如何开始使用octopress”</a>一样，要先安装相应的软件</p>
+
+<ol>
+<li><a href="http://git-scm.com/">安装Git</a></li>
+<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
+<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
+<li>建立一个文件夹，例如在C：/github</li>
+</ol>
+
+
+<h1>克隆项目</h1>
+
+<p>接下来我们需要把已经建好的博客项目clone下来。</p>
+
+<h2>克隆source分支</h2>
+
+<pre><code>$ git clone -b source git@github.com:username/username.github.com.git octopress ##octopress 为你的项目文件夹
+</code></pre>
+
+<h2>克隆master分支</h2>
+
+<pre><code>$ cd octopress ##进入项目
+$ git clone git@github.com:username/username.github.com.git _deploy ##克隆master分支到_deploy 
+</code></pre>
+
+<h1>配置环境</h1>
+
+<pre><code>$ gem install bundler
+$ rbenv rehash    # If you use rbenv, rehash to be able to run the bundle command
+$ bundle install
+$ rake setup_github_pages
+</code></pre>
+
+<p>然后它会询问你的项目仓库的URL:</p>
+
+<blockquote><p>Enter the read/write url for your repository
+(For example, &lsquo;git@github.com:your_username/your_username.github.com)</p></blockquote>
+
+<p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
+
+<h1>更新变化（重要）</h1>
+
+<p>每次使用前，先确保拿到最新的文件</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+
+<h1>提交</h1>
+
+<p>提交的时候，由于需要多台机器协作，需要把source分支push到origin中，这样另外一台机器才能拿到最新的源文件。</p>
+
+<pre><code>$ rake generate
+$ git add .
+$ git commit -am "提交评论" 
+$ git push origin source  # 更新远程 source branch 
+$ rake deploy             # 更新远程 master branch，并部署博文
+</code></pre>
+
+<h1>另外的机器更新变化</h1>
+
+<p>在另外的机器上，就可以获取到相应的变化。</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/13/java-synchronization/">谈谈Java同步机制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'>2014-10-13 Mon</span> <span class='time'>21:11</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
+今天简单谈谈Java的同步机制。</p>
+
+<p>我们以一个十分简单的例子讲起。</p>
+
+<pre><code>int i=0
+public int getNextI(){
+    return ++i;
+}
+</code></pre>
+
+<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
+
+<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
+
+<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
+
+<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
+
+<h2>volatile</h2>
+
+<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
+
+<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
+
+<h2>synchronized</h2>
+
+<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
+
+<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
+
+<p>我们可以改成</p>
+
+<pre><code>public synchronized int getNextI(){
+    return i++;
+}
+</code></pre>
+
+<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
+
+<p>注：
+如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
+
+<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
+
+<pre><code>public  int getNextI(){
+    synchronized(this){
+        return i++;
+    }
+}
+</code></pre>
+
+<p>更多文档可参考：</p>
+
+<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/11/understanding-soa/">初探SOA</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-11T10:41:33+08:00'><span class='date'>2014-10-11 Sat</span> <span class='time'>10:41</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有些系统或者产品当发展得越来越大后，就会有很多子模块，子产品。但这些模块中却有着很多相同的需要解决的问题，即有许多共有的业务逻辑。例如，可能豆瓣系统下面的豆瓣读书，豆瓣电影，豆瓣小组等等的每个模块虽然都有着独特的功能，但都有对于用户信息的读写，或者用户评价的相关逻辑。</p>
+
+<p>这时候，假如每个系统都要独自的单独维护着这些逻辑，会出现很多重复性的代码和逻辑，这就会导致这一部分共有的逻辑需要修改的时候，每个模块下的对应逻辑都要作相应的更改，会导致系统的维护成本大大上升。</p>
+
+<p>为了解决的这一类问题，可采用提取公共逻辑去划分不同的系统的方法来提高系统的可重用性和可维护性。</p>
+
+<p>还有另外一个问题是，随着系统的访问量逐步上升，由于单一系统需要处理所有的逻辑，必然会导致当访问量、数据量上升到一定程度后出现性能问题。这时候，我们可以把系统进行分解，以让独立的子系统分工处理其中某些具体的任务。</p>
+
+<p>无论哪种问题，在我们把系统分解成了几个子系统之后，都要有一个最明显的问题需要解决：系统之间如何进行通信/交互。</p>
+
+<p>显而易见的，系统可以通过网络进行通信：如基于HTTP，TCP+NIO，RMI或者WebService等等进行通信。同时，具体应该是同步还是异步通信，这也是一个需要考虑的问题。</p>
+
+<p>那么问题就来了，当子系统越来越多，由于系统间的通信没有统一的标准，这将导致开发人员每需要访问一个子系统时，都可能需要使用/学习不同的交互方式，这大大增加了维护成本。</p>
+
+<p>这时候，SOA就出现了，它是为了解决统一交互方式这一问题出出现的。</p>
+
+<p>SOA(Service-oriented architecture)，强调的是系统之间使用一个统一标准的服务方式进行交互，各个系统可以采用不同的语言，不同的框架实现，而交互则全部通过服务的方式进行。</p>
+
+<p>SOA所带来的挑战如下：</p>
+
+<ul>
+<li><strong>服务多级调用所带来的延时。</strong></li>
+</ul>
+
+
+<p>任何一个分布式的应用由于需要通过网络进行调用，除了成功和失败之外，都会多出一种状态：超时。而这在服务多级调用的时候会带来不少挑战：例如：A&mdash;>B&mdash;->C的过程中，可能会带啦大幅度的延时。为了解决高性能交互，需要完善调用的过程，例如当B服务执行的时如果已经超时，就没有必要调用C服务了，而应该直接抛出超时异常给A。</p>
+
+<ul>
+<li><strong>调试/跟踪困难</strong></li>
+</ul>
+
+
+<p>如 A&ndash;>B&ndash;>C的过程，假如B报错了，调用者可能会认为B服务的问题，而B服务的开发人员则可能认为C的问题。而C则又可能认为这是网络的问题。这就导致了出现问题时候调试/跟踪困难</p>
+
+<ul>
+<li><strong>更高的安全/检测要求</strong></li>
+</ul>
+
+
+<p>未拆分系统时候，安全和检测只需要在一个系统出现，而拆分后，每个系统都需要相应的安全控制和监测。</p>
+
+<ul>
+<li><strong>现有应用移植</strong></li>
+</ul>
+
+
+<p>这是推广SOA的大挑战。应用越多，难度和时间越大</p>
+
+<ul>
+<li><strong>QoS(Quality of Service)的支持</strong></li>
+</ul>
+
+
+<p>每个服务提供者能支撑的访问量是有限的，因此设定服务的QoS非常重要，并且应该尽可能利用流量控制、机器资源分配等保障QoS</p>
+
+<ul>
+<li><strong>高可用和高可伸缩的挑战</strong></li>
+</ul>
+
+
+<p>这是互联网应用必须做到的，而SOA由于承担了所有服务的交互，因此其在这两个指标上影响重大</p>
+
+<ul>
+<li><strong>多版本和依赖管理</strong></li>
+</ul>
+
+
+<p>由于服务多起来后，需要对服务的依赖关系进行管理，以便升级时做相应的安排。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/posts/4">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/posts/2">Newer &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Css | 薛定谔的风口猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/css/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2016-01-19T21:07:57+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[CSS实现垂直居中]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
+    <updated>2015-08-04T16:49:40+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
+    <content type="html"><![CDATA[<p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
+
+<p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
+
+<pre><code>parentElement{
+    position:relative;
+}
+childElement{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+</code></pre>
+
+<p>2.若只有父容器下只有一个元素，且父元素设置了高度，则只需要使用相对定位即可</p>
+
+<pre><code>parentElement{
+    height:xxx;
+}
+.childElement {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+</code></pre>
+
+<p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
+
+<hr />
+
+<h2>Flex布局</h2>
+
+<p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
+
+<p>浏览器支持如下：
+<img src="/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
+
+<p>样式：</p>
+
+<pre><code>parentElement{
+    display:flex;/*Flex布局*/
+    display: -webkit-flex; /* Safari */
+    align-items:center;/*交叉轴居中，这里由于flex-direction默认是row,即垂直居中*/
+}
+</code></pre>
+
+<p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
+
+<p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
+
+<hr />
+
+<p>Flex教程可参考<a href="http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html">这里</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
+    <updated>2015-02-16T16:39:20+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
+    <content type="html"><![CDATA[<p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
+
+<h2>display: inline</h2>
+
+<ol>
+<li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
+<li>margin-top/bottommargin-top/bottom 失效.</li>
+<li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
+<li><strong>不能</strong>设置<code>width</code>或者<code>height</code></li>
+</ol>
+
+
+<p>inline的元素有:</p>
+
+<p><code>&lt;span&gt;``&lt;a&gt;</code></p>
+
+<h2>display: block</h2>
+
+<ol>
+<li>在block后强制换行</li>
+<li>可以设置<code>width</code>或者<code>height</code></li>
+<li>padding,margin表现正常</li>
+</ol>
+
+
+<p>block的元素有:</p>
+
+<p><code>&lt;p&gt;``&lt;div&gt;``&lt;h1&gt;</code></p>
+
+<h2>display: inline-block</h2>
+
+<ol>
+<li>像<code>inline</code>一样,允许元素挨在同一行,</li>
+<li>可以设置<code>width</code>或者<code>height</code></li>
+<li>像<code>block</code>一样,padding,margin表现正常</li>
+</ol>
+
+
+<h2>例子</h2>
+
+<p>以下几张图展现几个不同的<code>display效果</code>:</p>
+
+<p>假如我们在div的一大串文字中,嵌入了一个<code>&lt;span&gt;</code>的文字, 通过设置span的不同<code>display</code>,将有以下效果:</p>
+
+<p><strong>diplay:inline</strong></p>
+
+<p><img src="/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
+
+<p><strong>display:block</strong></p>
+
+<p><img src="/images/css/display-block.png" title="display:block" alt="display:block" /></p>
+
+<p><strong>display:inline-block</strong></p>
+
+<p><img src="/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
+
+<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以正常的设置高度和宽度等属性.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
+
+<p><a href="http://jsfiddle.net/Mta2b/" title="demo链接">demo链接</a></p>
+]]></content>
+  </entry>
+  
+</feed>

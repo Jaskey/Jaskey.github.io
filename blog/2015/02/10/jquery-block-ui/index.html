@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>jQuery BlockUI 的使用 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="jQuery BlockUI Plugin(下载链接) 能做到方便得屏蔽整个page或者某些元素。当用于异步请求的时候，尤为有用。 用法也非常简单。以下简单的记录下使用笔记： 使用前，需要先引入jQuery 再引入jQuery blockUI。
+当需要全屏block时候,使用API $. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">jQuery BlockUI 的使用</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-10T12:05:30+08:00'><span class='date'>2015-02-10 Tue</span> <span class='time'>12:05</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>jQuery BlockUI Plugin<a href="http://malsup.github.io/jquery.blockUI.js" title="下载链接">(下载链接)</a>  能做到方便得屏蔽整个page或者某些元素。当用于异步请求的时候，尤为有用。</p>
+
+<p>用法也非常简单。以下简单的记录下使用笔记：</p>
+
+<ol>
+<li>使用前，需要先引入jQuery 再引入jQuery blockUI。</li>
+<li>当需要全屏block时候,使用API <code>$.blockUI()</code>;,unblock使用<code>$.unblockUI()</code></li>
+<li>部分的Element block时，使用 <code>$("选择器").block();</code>unblock使用<code>$(选择器).unblock()</code>即可</li>
+</ol>
+
+
+<p>需要自定义block的消息或者样式，可以传入一个像下面的一个对象：</p>
+
+<pre><code>            {
+                message: '&lt;h1&gt;Processing&lt;/h1&gt;',//显示的消息
+                centerX: false,//当element block时候，注意设置此属性为false,否则位置不生效
+                centerY: false,
+                css: {
+                    top: '5%',
+                    left: '5%'
+                    ....//其他CSS属性
+                }
+            }
+</code></pre>
+
+<p>关于此对象的更多细节，可以查看：<a href="http://malsup.com/jquery/block/#options">http://malsup.com/jquery/block/#options</a></p>
+
+<p>各种demo可以查看：<a href="http://malsup.com/jquery/block/#demos">http://malsup.com/jquery/block/#demos</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-02-10T12:05:30+08:00'><span class='date'>2015-02-10 Tue</span> <span class='time'>12:05</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/jquery/'>jquery</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui/" data-via="" data-counturl="http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/02/02/javascript_function%20closure/" title="Previous Post: JavaScript中返回函数">&laquo; JavaScript中返回函数</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015/02/16/css-display-properties/" title="Next Post: CSS中的display 'block','inline','inline-block'">CSS中的display &#8216;block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217; &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

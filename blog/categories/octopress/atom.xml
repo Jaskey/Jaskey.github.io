@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Octopress | 薛定谔的风口猪]]></title>
+  <link href="http://Jaskey.github.io/blog/categories/octopress/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2016-01-19T21:07:57+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[修改octopress的时间格式]]></title>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
+    <updated>2015-02-16T17:59:19+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
+    <content type="html"><![CDATA[<p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
+
+<p><code>date_format: "%F %a"       #2012-01-01</code></p>
+
+<p>后来在StackOverflow上提了一个问题找到了答案：</p>
+
+<ol>
+<li><p>安装Octopress Date format：</p>
+
+<pre><code> gem install octopress-date-format
+</code></pre></li>
+<li><p>在<code>_config.yml</code>中加入：</p>
+
+<pre><code> gems:
+     - octopress-date-format
+</code></pre></li>
+<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
+
+<pre><code> date_format: 'ordinal' # July 3rd, 2014
+ time_format: '%-I:%M %P'   # 2:08 pm
+</code></pre></li>
+</ol>
+
+
+<p>我们可以改成:</p>
+
+<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
+    time_format: "%H:%M"     # 24 hour time
+</code></pre>
+
+<p>最后生成页面，大功告成：</p>
+
+<pre><code>    rake generate
+</code></pre>
+
+<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[如何在两台机器上使用octopress]]></title>
+    <link href="http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/"/>
+    <updated>2014-10-17T00:55:09+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines</id>
+    <content type="html"><![CDATA[<p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
+
+<h2>准备工作：</h2>
+
+<p>和  <a href="http://jaskey.github.io/blog/2014/09/04/how-to-octopress/">之前写的“如何开始使用octopress”</a>一样，要先安装相应的软件</p>
+
+<ol>
+<li><a href="http://git-scm.com/">安装Git</a></li>
+<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
+<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
+<li>建立一个文件夹，例如在C：/github</li>
+</ol>
+
+
+<h1>克隆项目</h1>
+
+<p>接下来我们需要把已经建好的博客项目clone下来。</p>
+
+<h2>克隆source分支</h2>
+
+<pre><code>$ git clone -b source git@github.com:username/username.github.com.git octopress ##octopress 为你的项目文件夹
+</code></pre>
+
+<h2>克隆master分支</h2>
+
+<pre><code>$ cd octopress ##进入项目
+$ git clone git@github.com:username/username.github.com.git _deploy ##克隆master分支到_deploy 
+</code></pre>
+
+<h1>配置环境</h1>
+
+<pre><code>$ gem install bundler
+$ rbenv rehash    # If you use rbenv, rehash to be able to run the bundle command
+$ bundle install
+$ rake setup_github_pages
+</code></pre>
+
+<p>然后它会询问你的项目仓库的URL:</p>
+
+<blockquote><p>Enter the read/write url for your repository
+(For example, &lsquo;git@github.com:your_username/your_username.github.com)</p></blockquote>
+
+<p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
+
+<h1>更新变化（重要）</h1>
+
+<p>每次使用前，先确保拿到最新的文件</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+
+<h1>提交</h1>
+
+<p>提交的时候，由于需要多台机器协作，需要把source分支push到origin中，这样另外一台机器才能拿到最新的源文件。</p>
+
+<pre><code>$ rake generate
+$ git add .
+$ git commit -am "提交评论" 
+$ git push origin source  # 更新远程 source branch 
+$ rake deploy             # 更新远程 master branch，并部署博文
+</code></pre>
+
+<h1>另外的机器更新变化</h1>
+
+<p>在另外的机器上，就可以获取到相应的变化。</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+]]></content>
+  </entry>
+  
+</feed>

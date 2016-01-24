@@ -1,0 +1,1068 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="Jaskey的个人博客">
+  <meta name="keywords" content="Java, JavaScript, js,git, css#">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
+
+<p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
+
+<h3>索引列参与计算</h3>
+
+<p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
+
+<pre><code>SELECT `sname` FROM `t_stu` WHERE `age`=20;-- 会使用索引
+SELECT `sname` FROM `t_stu` WHERE `age`+10=30;-- 不会使用索引！！因为所有索引列参与了计算
+SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
+</code></pre>
+
+<p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
+
+<h3>索引列使用了函数</h3>
+
+<p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
+
+<pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
+SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
+</code></pre>
+
+<h3>索引列使用了Like %XXX</h3>
+
+<pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
+SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
+</code></pre>
+
+<p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>
+
+<pre><code>SELECT * FROM `table` WHERE `reverse_email` LIKE REVERSE('%.com'); -- 走索引
+</code></pre>
+
+<p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
+
+<p>同样的，索引列上使用正则表达式也不会走索引。</p>
+
+<h3>字符串列与数字直接比较</h3>
+
+<p>这是一个坑，假设有一张表,里面的a列是一个<strong>字符char类型</strong>,且a上建立了索引,你用它与数字类型做比较判断的话：</p>
+
+<pre><code> CREATE TABLE `t1` (`a` char(10));
+
+ SELECT * FROM `t1` WHERE `a`='1' -- 走索引
+ SELECT * FROM `t2` WHERE `a`=1 -- 字符串和数字比较，不走索引！
+</code></pre>
+
+<p>但是如果那个表那个列是一个数字类型，拿来和字符类型的做比较，则不会影响到使用索引</p>
+
+<pre><code> CREATE TABLE `t2` (`b` int);
+
+ SELECT * FROM `t2` WHERE `b`='1' -- 虽然b是数字类型，和'1'比较依然走索引
+</code></pre>
+
+<p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
+
+<h3>尽量避免 OR 操作</h3>
+
+<pre><code>select * from dept where dname='jaskey' or loc='bj' or deptno=45 --如果条件中有or,即使其中有条件带索引也不会使用。换言之,就是要求使用的所有字段,都必须建立索引
+</code></pre>
+
+<p>所以除非每个列都建立了索引，否则不建议使用OR，在多列OR中，可以考虑用UNION 替换</p>
+
+<pre><code>select * from dept where dname='jaskey' union
+select * from dept where loc='bj' union
+select * from dept where deptno=45
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-22T16:12:38+08:00'><span class='date'>2015-12-22 Tue</span> <span class='time'>16:12</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>cherry-pick</h2>
+
+<p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
+
+<pre><code>git cherry-pick &lt;commit 号&gt;
+</code></pre>
+
+<p>如：</p>
+
+<pre><code>git cherry-pick e43a6fd3e94888d76779ad79fb568ed180e5fcdf
+</code></pre>
+
+<p>这样就只会把这个<code>e43a6fd3e94888d76779ad79fb568ed180e5fcdf</code> commit的内容pull到当前的分支，不过你会得到一个新的commit。
+这样就可以按需merge需要的commit,而不需要的就可以直接废弃咯。</p>
+
+<h3>多个commit:</h3>
+
+<p>可以用空格指定多个commit:</p>
+
+<pre><code>git cherry-pick A B C D E F
+</code></pre>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015/12/22/git-cherry-pick/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'>2015-08-04 Tue</span> <span class='time'>16:49</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
+
+<p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
+
+<pre><code>parentElement{
+    position:relative;
+}
+childElement{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+</code></pre>
+
+<p>2.若只有父容器下只有一个元素，且父元素设置了高度，则只需要使用相对定位即可</p>
+
+<pre><code>parentElement{
+    height:xxx;
+}
+.childElement {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+</code></pre>
+
+<p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
+
+<hr />
+
+<h2>Flex布局</h2>
+
+<p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
+
+<p>浏览器支持如下：
+<img src="/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
+
+<p>样式：</p>
+
+<pre><code>parentElement{
+    display:flex;/*Flex布局*/
+    display: -webkit-flex; /* Safari */
+    align-items:center;/*交叉轴居中，这里由于flex-direction默认是row,即垂直居中*/
+}
+</code></pre>
+
+<p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
+
+<p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
+
+<hr />
+
+<p>Flex教程可参考<a href="http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html">这里</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'>2015-07-30 Thu</span> <span class='time'>12:18</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
+
+<p>以下是具体方法，并带一个例子</p>
+
+<h2>引入Javascript</h2>
+
+<p>语法：</p>
+
+<pre><code>&lt;script type="text/javascript" src="/path/to/file.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>例如： 在 source 中的404.markdown 中 加入：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
+</code></pre>
+
+<p>即可在404页面中跳转到腾讯的公益页面</p>
+
+<h2>引入HTML文件</h2>
+
+<p>以下为引入后的样本实例：</p>
+
+<div id="myelement">
+    .markdown文件中，在需要引入HTML文件的地方写上：
+    <p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
+    <p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
+    <p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
+    <p id="clickme">点我试试看</p>
+</div>
+
+
+
+
+<script>
+
+    $(function(){
+        $('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
+        $('p#clickme').hover(function(){
+        $(this).css("color","blue");
+        },function(){
+        $(this).css("color","black");
+        });
+
+        $('div#myelement').on('click',function(e){
+        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+        });
+    })
+
+</script>
+
+
+<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'>2015-05-13 Wed</span> <span class='time'>21:18</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Maven 支持：</h2>
+
+<pre><code>  &lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;codehaus&lt;/id&gt;
+        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+        &lt;version&gt;1.8.5&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+
+<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
+    ObjectMapper mapper = new ObjectMapper();</p>
+
+<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+
+<h2>Java object to JSON</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+</code></pre>
+
+<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+
+<pre><code>StringWriter sw =new StringWriter();
+ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(sw, user);//写到StringWriter
+String JSON = sw.toString();
+sw.close();
+</code></pre>
+
+<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+</code></pre>
+
+<h2>JSON to Java object</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+</code></pre>
+
+<h1>集合操作</h1>
+
+<h2>Map/List to JSON</h2>
+
+<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
+
+<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
+objectMapper.writeValue(new File(jsonFilePath), listObject);
+</code></pre>
+
+<h2>JSON to Map/List/数组</h2>
+
+<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+
+
+
+     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+
+
+     String[] array = mapper.readValue(new File('c:\\user.json'),
+                String[].class);//使用class对象
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/07/change-intelij-short-cut/">修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>18:02</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
+
+<p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
+
+<ol>
+<li>进入Settings（快捷键：<kbd>CTRL</kbd>+<kbd>ALT</kbd>+<kbd>S</kbd>，或者<kbd>SHITT</kbd>*2出<code>Search Everywhere</code>中搜索settings进入）</li>
+<li>左边菜单选择KeyMap（可搜索）</li>
+<li>选择默认的keymaps（IntelliJ的）,然后选择copy出一份新的，在新的keymaps里面修改</li>
+<li>在新的keymaps里面的<code>Main Menu--&gt;Edit--&gt;Redo</code> 右键选择 <code>Add Keyboard Shortcut</code></li>
+<li>键盘按<kbd>CTRL</kbd>+<kbd>Y</kbd> (修改的快捷键)</li>
+<li>OK</li>
+<li>选择 &ldquo;Remove&rdquo; ，当窗口提示： &ldquo;the shortcut is already assigned to other actions. Do you want to remove other assignments?&rdquo;</li>
+<li>Apply</li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/07/insert-sql-with-dictionary-python/">Python中用dictionary操作SQL Select, Insert</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>16:19</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
+
+<p>首先，连接数据库</p>
+
+<pre><code>conn = MySQLdb.connect(host=host,
+                       user=user,
+                       passwd=passwd,
+                       db=db,
+                       charset=charset)
+</code></pre>
+
+<h1>SELECT:</h1>
+
+<p>在获取cursor的时候，传入<code>MySQLdb.cursors.DictCursor</code>即可</p>
+
+<pre><code>cursor = conn.cursor(MySQLdb.cursors.DictCursor)  ##结果集成为dictionary
+cursor.execute(select_sql )  # query
+
+for row in cursor:
+    print type(row),row
+    name = row["name"]  # 直接使用key获取
+    id = row["id"]      # 直接使用key获取
+</code></pre>
+
+<p>会发现,row的类型已经是一个dict, 其中每一列都可以使用key值获取
+    <type 'dict'> {id:123L,&lsquo;name&rsquo;:u&#8217;abc&#8217; }</p>
+
+<h1>INSERT</h1>
+
+<p>如果需要把一个准备好的dict插入到数据库，不想一个个对应的赋值，可以考虑使用如下方式:</p>
+
+<pre><code>myDict = {'name':'abc','age':16L}
+insert_table = 'mytable'
+placeholders = ', '.join(['%s']* len(mydict))  ##按照dict长度返回如：%s, %s 的占位符
+columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
+insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
+
+cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/05/insert-or-update-mysql/">Insert or Update操作，MySQL</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-05T16:46:59+08:00'><span class='date'>2015-05-05 Tue</span> <span class='time'>16:46</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>如果需要执行操作如：“插入一行记录，若存在，则更新”的操作，在MySQL中，不需要使用Exists也不需要分两次语句执行，可以直接使用如下语句：</p>
+
+<pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
+</code></pre>
+
+<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键或者唯一索引冲突，则更新权限值为1。</p>
+
+<p>注：这语法不是标准SQL语法，所以仅适用于MySQL ，详情参看：<a href="https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html">https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html</a></p>
+
+<p>若用于JDBC, 而替换的数据不是像上面一个常数值，而是由变量决定，SQL可以如下：</p>
+
+<pre><code>INSERT INTO mytable VALUES (?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE `col1`=values(col1), 
+                        `col2`=values(col2), 
+                        `col3`=values(col3), 
+                        `col4`=values(col4);
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/03/04/js-private-methods/">JavaScript实现私有方法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-03-04T15:06:11+08:00'><span class='date'>2015-03-04 Wed</span> <span class='time'>15:06</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>JavaScript的所有成员（属性+方法）都是公有的，但是我们有方法模拟出类似于OOP一样的私有方法。</p>
+
+<p>以下使用例子<code>Person</code>，假如我们需要一个<code>toStr</code>的私有方法，只能在Person内部才能访问。
+其中<code>printInfo</code>方法为公有，将使用到<code>toStr</code>方法和其他私有方法。</p>
+
+<h2>1.在构造函数中定义私有方法</h2>
+
+<pre><code>//构造函数
+function Person(name,age){
+    this.name = name;
+    this.age = age;
+
+    //直接在constructor中定义私有方法
+    function privateMethod(){
+        console.log("in private method");
+    }
+    //使用var在构造函数定义私有方法
+    var toStr = function(){
+        return this.name + ' is ' + this.age;
+    }
+
+    //公有方法
+    this.printInfo = function(){
+        console.log(toStr());
+        privateMethod();
+    }
+}
+//test case
+var p = new Person('Jaskey',24);
+p.printInfo();//两个私有方法能访问，但是toStr字段访问有问题.本机测试显示：  is undefined
+p.toStr();//p.toStr is not a function
+</code></pre>
+
+<p>以上方法，我们的确构造了两个私有的方法<code>toStr</code>和<code>privateMethod</code>且在外部不能访问而内部可以访问。</p>
+
+<p>但从打印的结果显示<code>toStr</code>并不能正确的访问到<code>Person</code>对象中的<code>name</code>和<code>age</code>。<strong>原因是当<code>printInfo</code>方法调用<code>toStr</code>时，<code>toStr</code>被当成了函数调用，所以<code>this</code>的scope被绑定到了全局（浏览器中即window）。</strong></p>
+
+<p>要解决这个问题，我们必须要让<code>toStr</code>调用时，<code>this</code>绑定到<code>Person</code>的对象中，所以调用<code>toStr</code>时，可使用<code>call</code>或者<code>apply</code>方法调用。如：<code>toStr.call(this)</code>。</p>
+
+<p>修改版本：</p>
+
+<pre><code>function Person(name,age){
+    this.name = name;
+    this.age = age;
+
+    //直接在constructor中定义私有函数
+    function privateMethod(){
+        console.log("in private method");
+    }
+    //使用var定义私有函数
+    var toStr = function(){
+        return this.name + ' is ' + this.age;
+    }
+
+    this.printInfo = function(){
+        console.log(toStr.call(this));//把this绑定到当前的对象
+        privateMethod.call(this);//为了统一，把privateMethod的this都绑定到正确的scope
+    }
+}
+</code></pre>
+
+<h3>问题：</h3>
+
+<p>使用这种在构造函数中定义私有方法的方式，有两个问题：</p>
+
+<p>1.构造函数中的私有方法并不属于prototype，所以prototype的方法不可以访问这样的方法：</p>
+
+<pre><code>Person.prototype.myPublicMethod=function(){
+    toStr();//toStr is not defined
+}
+</code></pre>
+
+<p>2.内存消耗。每一次new一个<code>Person</code>对象时,每个函数都会重新创建一份,而我们更希望是share同一个函数对象。</p>
+
+<h2>2.使用Module Pattern实现</h2>
+
+<p><em>Douglas Crockford</em> 有一个模式叫<strong>“Module Pattern”</strong>, 可以使用闭包的方法解决实现私有方法的问题，并且可读性非常高。</p>
+
+<p>使用这个方法，我们自己构造一个Person的原型对象，利用一个闭包，则让其能访问外部的私有方法。</p>
+
+<p>同理，由于需要绑定正确的this作用域，我们使用<code>call</code>方法调用</p>
+
+<pre><code>//构建一个原型对象
+Person.prototype = (function(){
+    /******私有方法定义*****/
+
+    //通过var定义
+    var toStr = function(){
+        return this.name + " is " + this.age
+    }
+
+    //直接定义
+    function privateMethod(){
+        console.log("in private method");
+    }
+
+
+    return {//返回的这个函数会返回一个原型对象
+        constructor:Person,//把原型的constructor属性设置到正确的构造函数
+
+        /*******公有方法*******/
+        printInfo:function(){
+            console.log("printing info:",toStr.call(this));
+        },
+
+        publicMethod:function(){
+            privateMethod.call(this);
+        }
+    }
+
+})();//注意这里的括号表示立刻执行此匿名函数，返回原型对象
+
+
+//test case
+var p = new Person('Jaskey',24);
+p.printInfo();//printing info: Jaskey is 24
+p.publicMethod();// in private method
+p.toStr();//"undefined is not a function"
+</code></pre>
+
+<p>通过返回一个新的原型对象，该原型对象可以访问到私有的方法，而且可读性非常高,私有的方法放到原型外面，原型里面的方法都是公有方法。</p>
+
+<h2>定义一个调用方法以正确this调用所有私有方法</h2>
+
+<p>像这样每次的私有方法调用，都需要重新绑定this的scope，非常繁琐。能不能把这个操作封装起来呢？
+答案是有的，我们可以定义一个<code>_</code>方法，该方法接受一个函数指针，然后返回另外一个this绑定到当前对象的函数，以便正确调用:</p>
+
+<pre><code>    //返回一个函数，该函数的this绑定到当前对象
+    _:function(fun){
+        var that = this;//保存当前对象作用域
+        return function(){//返回一个函数，该函数会调用目标函数，但this绑定到that作用域
+            return fun.apply(that,arguments);//记得return
+        }
+    }
+</code></pre>
+
+<p>以第二个闭包的方法为例，最后的<code>Person</code>版本如下:</p>
+
+<pre><code>function Person(name,age){
+    this.name = name;
+    this.age = age;    
+}
+
+
+Person.prototype = (function(){
+/******私有方法定义*****/
+    var toStr = function(){
+        return this.name + " is " + this.age;
+    }
+
+function privateMethod(param){
+    console.log("in privateMethod param = ",param);
+    this.publicMethod2();
+}
+
+return {//返回一个原型对象
+    constructor:Person,//把原型的constructor属性设置到正确的构造函数
+
+    /*******公有方法*******/
+    printInfo:function(){
+        console.log("-------printing info-------");
+        console.log("printing info:",this._(toStr));
+        this._(privateMethod)('param from printInfo')
+        console.log("-------end of printing info-------");
+    },
+
+    publicMethod:function(){
+        console.log("-------public Method-------");
+        this._(privateMethod)('param from pubicMethod');
+        console.log("-------end of Public Method-------");
+    },
+    publicMethod2:function(){
+        console.log('in publicMethod2');
+    },
+
+    //返回一个函数，该函数的this绑定到当前对象
+    _:function(fun){
+        var that = this;
+        return function(){
+            return fun.apply(that,arguments);//注意return
+        }
+    }
+}
+
+})();//立刻执行
+
+//test case:
+var p = new Person('Jaskey',24);
+p.printInfo();
+p.publicMethod();
+//p._(toStr)();//toStr is not defined
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/02/16/octopress-modify-date-format/">修改octopress的时间格式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-16T17:59:19+08:00'><span class='date'>2015-02-16 Mon</span> <span class='time'>17:59</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
+
+<p><code>date_format: "%F %a"       #2012-01-01</code></p>
+
+<p>后来在StackOverflow上提了一个问题找到了答案：</p>
+
+<ol>
+<li><p>安装Octopress Date format：</p>
+
+<pre><code> gem install octopress-date-format
+</code></pre></li>
+<li><p>在<code>_config.yml</code>中加入：</p>
+
+<pre><code> gems:
+     - octopress-date-format
+</code></pre></li>
+<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
+
+<pre><code> date_format: 'ordinal' # July 3rd, 2014
+ time_format: '%-I:%M %P'   # 2:08 pm
+</code></pre></li>
+</ol>
+
+
+<p>我们可以改成:</p>
+
+<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
+    time_format: "%H:%M"     # 24 hour time
+</code></pre>
+
+<p>最后生成页面，大功告成：</p>
+
+<pre><code>    rake generate
+</code></pre>
+
+<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/posts/2">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

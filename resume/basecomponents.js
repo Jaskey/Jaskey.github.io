@@ -17,7 +17,7 @@
 						if(frag.startDate&&frag.endDate){
 							var _dateComp =<div className="date">
 										<span>{frag.startDate}</span>
-										<span>-	</span>
+										<span>-</span>
 										<span>{frag.endDate}</span>
 									  </div>
 						}
@@ -31,18 +31,22 @@
 						
 						return (
 							<div className="fragment">
-								<span className="fragment-name">{frag.name}</span>			
-								<span className="fragment-comment">{frag.comment}</span>			
-								{_dateComp}
-								<div className="fragment-content">
-									{_summaryComp}
-									<div className="fragment-list">
-										<ul>
-											{frag.detail.map(function(e){return <li>{e}</li>})}
-										</ul>
+								<div className="circle-point"></div>
+								<div className="fragment-content-wrapper">
+									<span className="fragment-name">{frag.name}</span>			
+									<span className="fragment-comment">{frag.comment}</span>			
+									<div className="fragment-content">
+										{_summaryComp}
+										<div className="fragment-list">
+											<ul>
+												{frag.detail.map(function(e){return <li>{e}</li>})}
+											</ul>
+										</div>
+										
+										{_dateComp}
+										
 									</div>
 								</div>
-							
 							</div>
 						)
 			}

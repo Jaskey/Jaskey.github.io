@@ -1,9 +1,18 @@
 ﻿{
-			"name":"林俊杰",
+			"name":"林俊杰1",
 			"birth":"11.03",
 			"tel":"13660603218",
 			"email":"linjunjie1103@gmail.com",
+			"blog":"http://jaskey.github.io",
 			"avatar":"image/avatar.jpg",
+			"pages":[
+				{"zhihu":"https://www.zhihu.com/people/linjunjie1103"},
+				{"douban":"https://www.zhihu.com/people/linjunjie1103"},
+				{"weibo":"https://www.zhihu.com/people/linjunjie1103"},
+				{"linkedin":"https://www.zhihu.com/people/linjunjie1103"},
+				{"stackoverflow":"https://www.zhihu.com/people/linjunjie1103"},
+				{"github":"https://www.zhihu.com/people/linjunjie1103"}
+			],
 			"summary":[
 				"熟练Java、Javascript、掌握Android开发，SQL、PL/SQL；用过C、C#、VBA等其他编程语言。",
 				"掌握Spring、Spring MVC、Struts2、Hibernate、Play!；熟悉jQuery、掌握ExjJS、jQuery Mobile前端框架。",
@@ -13,6 +22,7 @@
 			"workExperience":[
 				{
 					"company":"网易游戏",
+					"companyLogo":"image/neteasegame2.png",
 					"post":"高级软件工程师",
 					"startDate":"2015.01",
 					"endDate":"至今",
@@ -24,6 +34,7 @@
 				},
 				{
 					"company":"甲骨文",
+					"companyLogo":"image/neteasegame.png",
 					"post":"软件工程师",
 					"startDate":"2013.07",
 					"endDate":"2015.01",
@@ -36,6 +47,7 @@
 				},
 				{
 					"company":"UC浏览器",
+					"companyLogo":"image/neteasegame.png",
 					"post":"软件工程师(实习)",
 					"startDate":"2012.11",
 					"endDate":"2013.04",

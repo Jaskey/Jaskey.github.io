@@ -27,7 +27,13 @@
 				
 				return (
 					<div id="mainContent">
-						<Info name={this.props.json.name} birth={this.props.json.birth} email={this.props.json.email} tel={this.props.json.tel} avatar={this.props.json.avatar}/>
+						<Info name={this.props.json.name} 
+							  birth={this.props.json.birth}
+							  email={this.props.json.email}
+							  tel={this.props.json.tel}
+							  avatar={this.props.json.avatar}
+							  pages={this.props.json.pages}
+							  />
 						<div id="resumeContent">
 							{comps}
 						</div>
@@ -40,6 +46,50 @@
 			}
 		})
 		
+		var PageIcon=React.createClass(		
+			function(){
+				var iconfontKeymap = {
+						"weixin": "&#xe603;",
+						"zhihu": "&#xe607;",
+						"douban": "&#xe605;",
+						"github": "&#xe604;",
+						"weibo": "&#xe601;",
+						"stackoverflow": "&#xe600;",
+						"segmentfault": "&#xe602;",
+						"lofter": "&#xe608;",
+						"linkedin": "&#xe606;"
+				};
+				return {
+					getDefaultProps:function(){
+						return {
+							page:{}
+						}
+					},
+
+
+					render:function(){
+						var pageUrl;
+						for( var key in this.props.page){
+							pageUrl=this.props.page[key];
+							break;
+						}
+						return (<a ref="iconFontSpan" className="page-icon-font" href={pageUrl} target="_blank"></a>)
+					},
+					componentDidMount:function(){
+						var page="default";
+						
+						for( var key in this.props.page){
+							page=key.toLowerCase();
+							break;
+						}
+						
+						console.log("page=",page," icon-font:",iconfontKeymap[page]);
+						console.log(React.findDOMNode(this.refs.iconFontSpan));
+						$(React.findDOMNode(this.refs.iconFontSpan)).html(iconfontKeymap[page]);
+						}
+				}
+			}());
+		
 		var Info  = React.createClass({
 			getDefaultProps:function(){
 				return {
@@ -47,17 +97,26 @@
 					birth:null,
 					tel:null,
 					email:null,
-					avatar:'/image/avatar.jpg'
+					avatar:'/image/avatar.jpg',
+					pages:[]
 				}
 			},
 			render:function(){
 				console.log(this.props.avatar);
+				var aPages=[];
+				for(var i = 0;i<this.props.pages.length;i++){
+					var cPage = <PageIcon page={this.props.pages[i]}/> ;	
+					aPages.push(cPage);
+				}
 				return (
 					<div className="info" >
 						<div className="info-brief" >
 							<div className="avatar"><img src={this.props.avatar}/></div>
 							<div className="name">{this.props.name}</div>
 							<div className="birth" ref="birth">{this.props.birth}</div>
+							<div className="pages-link">
+								{aPages}
+							</div>
 						</div>
 						<div className="info-contact">
 								<div>电话:{this.props.tel}</div>
@@ -115,11 +174,33 @@
 						endDate:we.endDate,
 						summary:we.summary,
 						detail:we.detail
-					}
-					
+					};
+					//<Fragment option={fragmentOption}/>
+					console.log(we,"companyLogo: ",we.companyLogo)
 					var work = 
 								<div className="work-Fragment">
-									<Fragment option={fragmentOption}/>
+									<div className="work-date">
+										<div>{we.startDate}</div>
+										<div>|</div>
+										<div>{we.endDate} </div>
+									</div>
+									
+									<div className="companyLogo circle-point">
+										{we.company[0]}
+									</div>
+										
+									<div className="work-content">
+										<h2>{we.company}</h2>
+										<h3>{we.post}</h3>
+										
+										<div className="work-detail">
+											<ul>
+												{
+													we.detail.map(function(e){return <li>{e}</li>})
+												}
+											</ul>
+										</div>
+									</div>
 								</div>;
 
 					
@@ -168,7 +249,7 @@
 				return (
 					<div className=" section project-experience">
 						<h3 className="section-title">项目经历</h3>
-						<div className="section-content">{ex}</div>
+						<div className="timeline-section-content">{ex}</div>
 					
 					</div>
 				)

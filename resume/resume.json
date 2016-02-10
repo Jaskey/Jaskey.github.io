@@ -6,12 +6,11 @@
 			"blog":"http://jaskey.github.io",
 			"avatar":"image/avatar.jpg",
 			"pages":[
-				{"zhihu":"https://www.zhihu.com/people/linjunjie1103"},
-				{"douban":"https://www.zhihu.com/people/linjunjie1103"},
-				{"weibo":"https://www.zhihu.com/people/linjunjie1103"},
-				{"linkedin":"https://www.zhihu.com/people/linjunjie1103"},
-				{"stackoverflow":"https://www.zhihu.com/people/linjunjie1103"},
-				{"github":"https://www.zhihu.com/people/linjunjie1103"}
+				{"zhihu":"http://www.zhihu.com/people/linjunjie1103"},
+				{"stackoverflow":"http://stackoverflow.com/users/2087628/jaskey"},
+				{"github":"https://github.com/Jaskey"},
+				{"linkedin":"http://www.linkedin.com/in/jaskeylam/zh-cn?locale=zh_CN&trk=profile_view_lang_sel_click"},
+				{"douban":"http://www.douban.com/people/linjunjie1103/"}
 			],
 			"summary":[
 				"熟练Java、Javascript、掌握Android开发，SQL、PL/SQL；用过C、C#、VBA等其他编程语言。",

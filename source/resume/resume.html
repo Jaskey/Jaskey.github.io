@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv='Content-type' content='text/html; charset=utf-8'>
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>林俊杰</title>
+	<link rel="stylesheet" href="stylesheet/resume.css" type="text/css"></link>
+  </head>
+  <body>
+    <div id="container">
+    </div>
+	
+	<script src="http://lib.sinaapp.com/js/jquery/1.9.1/jquery-1.9.1.min.js"></script>
+
+    <script src="react/react.js"></script>
+    <script src="react/JSXTransformer.js"></script>	
+    <script type="text/jsx" src="js/basecomponents.js"></script>
+    <script type="text/jsx" src="js/resumecomponents.js"></script>
+	
+		
+	<script type="text/jsx">
+		$.getJSON("resume.json",[],function(data){
+			console.log('[resume.json read successfully]',data);
+			var json = data;
+			React.render(<div><Resume  json={json}/></div>,document.getElementById('container'));
+		});
+	</script>
+  
+  </body>
+</html>

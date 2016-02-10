@@ -250,7 +250,6 @@
 					<div className=" section project-experience">
 						<h3 className="section-title">项目经历</h3>
 						<div className="timeline-section-content">{ex}</div>
-					
 					</div>
 				)
 			}

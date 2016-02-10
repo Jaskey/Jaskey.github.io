@@ -33,6 +33,19 @@ body * {
 /**END: Gloaal**/
 
 /**START: Personal Info**/
+
+div#mainContent {
+    height: 100%;
+}
+
+
+div#resumeContent {
+    background-color: #e9f0f5;
+    height: 100%;
+    padding: 0 50px;
+}
+
+
 @media screen and (min-width:1020px) {
     .info {
         width: 350px;
@@ -134,16 +147,6 @@ a.page-icon-font {
 /**END: Personal Info**/
 
 
-
-div#mainContent {
-    height: 100%;
-}
-
-
-div#resumeContent {
-    background-color: #e9f0f5;
-    height: 100%;
-}
 
 
 /**START: Work Experience**/

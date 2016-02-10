@@ -62,7 +62,7 @@
 			},
 			
 			render:function(){
-				var actualEle;
+				var cSection;
 				if(this.props.fragments.length>0){
 					var frags=[];
 					for(var i=0;i<this.props.fragments.length;i++){
@@ -70,7 +70,8 @@
 						var fragComponent=<Fragment option={frag}/>
 						frags.push(fragComponent);
 					}
-					actualEle = frags;
+					var actualEle = frags;
+					cSection = <div className="timeline-section-content">{actualEle}</div>
 				}else if(this.props.points.length>0){
 					var liElement = [];
 					for(var i=0;i<this.props.points.length;i++){
@@ -78,12 +79,13 @@
 						liElement.push(<li>{point}</li>);
 					}
 					var pointEle=<div className="points-container"><ul>{liElement}</ul></div>;
-					actualEle = pointEle;
+					var actualEle = pointEle;
+					cSection = <div className="section-content">{actualEle}</div>
 				}
 				return (
 							<div className="section">
 								<h2 className="section-title">{this.props.title}</h2>
-								<div className="section-content">{actualEle}</div>
+								{cSection}
 							</div>
 					)
 			}

@@ -181,7 +181,7 @@
 								<div className="work-Fragment">
 									<div className="work-date">
 										<div>{we.startDate}</div>
-										<div>|</div>
+										<div className="date-separator"></div>
 										<div>{we.endDate} </div>
 									</div>
 									

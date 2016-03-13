@@ -91,6 +91,7 @@ div#resumeContent {
 
 .birth {
     font-size: 1.5rem;
+    font-weight: normal;
 }
 
 
@@ -105,7 +106,7 @@ div#resumeContent {
 .pages-link {
     font-family: "iconfont" !important;
     width: 200px;
-    margin: 5px auto;
+    margin: 15px auto 0px auto;
 }
 
 
@@ -279,6 +280,7 @@ div.work-Fragment:last-child .fragment {
 .section-content {
     height: auto;
     position: relative;
+    margin-top: 10px;
 }
 
 .section .section-title {
@@ -398,36 +400,99 @@ div.work-Fragment:last-child .fragment {
 /**START: Education**/
 
 .education-section .education-exeperience {
-    margin: 20px 0 10px 0;
+    margin: 10px 0 10px 0;
+    background-color: #dfe7ec;
+    padding: 10px 30px;
+}
+
+.education-section .education-exeperience li {
+    list-style: none;
+    line-height: 200%;
 }
 
 .education-section .section-content {
     position: relative;
-    padding-bottom: 60px;
-    padding-left: 40px;
+    padding-bottom: 0px;
+    padding-left: 10px;
+    margin-top: 10px;
 }
 
 
 .gpa {
-    margin: 5px 0;
+    margin: 0;
+    padding: 0 10px;
+    display: inline-block;
+    width: 50%;
+    background-color: #61b1df;
+    box-sizing: border-box;
+    font-size: 1.4rem;
+    color: white;
+    vertical-align: middle;
 }
 
 .major {
-    margin: 10px 0px;
+    margin: 10px 15px;
+    display: inline-block;
+    font-weight: bold;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.university {
+    display: inline-block;
+    color: #46a2da;
+    font-weight: bold;
+    font-size: 1.6rem;
+}
+
+.scholarship {
+    display: inline-block;
+    width: 50%;
+    padding-left: 10px;
+    box-sizing: border-box;
+    background-color: #d0d8db;
+    vertical-align: middle;
+}
+
+.education-section .date {
+    display: inline-block;
+}
+
+.edu-content {
+    padding: 10px 0;
+    border-top: 1px dashed #d2dadd;
+}
+
+.score {
+    margin: 0;
+    padding: 0;
+    height: 30px;
+    line-height: 30px;
+}
+
+.study-type {
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+.major-name {
+    margin-right: 5px;
+    font-weight: normal;
+}
+
 /**END: Education**/
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -181,7 +181,7 @@
 								<div className="work-Fragment">
 									<div className="work-date">
 										<div>{we.startDate}</div>
-										<div>|</div>
+										<div className="date-separator"></div>
 										<div>{we.endDate} </div>
 									</div>
 									
@@ -250,7 +250,6 @@
 					<div className=" section project-experience">
 						<h3 className="section-title">项目经历</h3>
 						<div className="timeline-section-content">{ex}</div>
-					
 					</div>
 				)
 			}
@@ -343,16 +342,21 @@
 					
 					var section = 					
 						<div className="section-content">
-								<h3 className="university">{edu.university}</h3>								
-								<div className="major"><span>{edu.major}</span>|<span>{edu.studyType}</span></div>
-								<div className="gpa"><span>gpa:{edu.gpa}</span></div>
-								<div className="scholarship"><span>奖学金:{edu.scholarships.join(' ')}</span></div>
+								<div className="university">{edu.university}</div>								
+								<div className="major"><span className="major-name">{edu.major}</span>|<span className="study-type">{edu.studyType}</span></div>
 								<div className="date">
-									<span>{edu.startDate}</span>
-									<span>-	</span>
-									<span>{edu.endDate}</span>
+										<span>{edu.startDate}</span>
+										<span>-	</span>
+										<span>{edu.endDate}</span>
 								</div>
-								{exe}
+								
+								<div className="edu-content">
+									<div className="score">
+										<div className="gpa"><span>GPA:{edu.gpa}</span></div>
+										<div className="scholarship"><span>奖学金:{edu.scholarships.join(' ')}</span></div>
+									</div>
+									{exe}
+								</div>
 
 						</div>
 					

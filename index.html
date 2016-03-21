@@ -73,6 +73,46 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/">通过VM参数指定本地log4j配置文件,Spring Boot</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-03-21T19:20:09+08:00'><span class='date'>2016-03-21 Mon</span> <span class='time'>19:20</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
+
+<p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
+
+<p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，若希望通过VM参数去修改此文件，按照之前的参数<code>-Dlog4j.configuration</code>(非Spring Boot项目请看这里<a href="http://jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>)，在Spring Boot的项目中并不生效。</p>
+
+<p>若需要指定另外的文件，需要用Spring Boot指定的配置：<code>-Dlogging.config</code>如</p>
+
+<pre><code>-Dlogging.config=D:\project\git_repo\prome-data\src\main\resources\log4j-debug.properties
+</code></pre>
+
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a></h1>
     
     
@@ -82,7 +122,7 @@
 
 
 
-<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:24 pm</span></time>
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
         
       </p>
     
@@ -178,7 +218,7 @@ select * from dept where deptno=45
 
 
 
-<time class='entry-date' datetime='2015-12-22T16:12:38+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2015</span></span> <span class='time'>4:12 pm</span></time>
+<time class='entry-date' datetime='2015-12-22T16:12:38+08:00'><span class='date'>2015-12-22 Tue</span> <span class='time'>16:12</span></time>
         
       </p>
     
@@ -232,7 +272,7 @@ select * from dept where deptno=45
 
 
 
-<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:49 pm</span></time>
+<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'>2015-08-04 Tue</span> <span class='time'>16:49</span></time>
         
       </p>
     
@@ -313,7 +353,7 @@ childElement{
 
 
 
-<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:18 pm</span></time>
+<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'>2015-07-30 Thu</span> <span class='time'>12:18</span></time>
         
       </p>
     
@@ -393,7 +433,7 @@ childElement{
 
 
 
-<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:18 pm</span></time>
+<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'>2015-05-13 Wed</span> <span class='time'>21:18</span></time>
         
       </p>
     
@@ -495,7 +535,7 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
 
 
-<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:02 pm</span></time>
+<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>18:02</span></time>
         
       </p>
     
@@ -538,7 +578,7 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
 
 
-<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:19 pm</span></time>
+<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>16:19</span></time>
         
       </p>
     
@@ -605,7 +645,7 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
 
 
 
-<time class='entry-date' datetime='2015-05-05T16:46:59+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:46 pm</span></time>
+<time class='entry-date' datetime='2015-05-05T16:46:59+08:00'><span class='date'>2015-05-05 Tue</span> <span class='time'>16:46</span></time>
         
       </p>
     
@@ -650,7 +690,7 @@ ON DUPLICATE KEY UPDATE `col1`=values(col1),
 
 
 
-<time class='entry-date' datetime='2015-03-04T15:06:11+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:06 pm</span></time>
+<time class='entry-date' datetime='2015-03-04T15:06:11+08:00'><span class='date'>2015-03-04 Wed</span> <span class='time'>15:06</span></time>
         
       </p>
     
@@ -856,70 +896,6 @@ p.publicMethod();
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/02/16/octopress-modify-date-format/">修改octopress的时间格式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-02-16T17:59:19+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:59 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
-
-<p><code>date_format: "%F %a"       #2012-01-01</code></p>
-
-<p>后来在StackOverflow上提了一个问题找到了答案：</p>
-
-<ol>
-<li><p>安装Octopress Date format：</p>
-
-<pre><code> gem install octopress-date-format
-</code></pre></li>
-<li><p>在<code>_config.yml</code>中加入：</p>
-
-<pre><code> gems:
-     - octopress-date-format
-</code></pre></li>
-<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
-
-<pre><code> date_format: 'ordinal' # July 3rd, 2014
- time_format: '%-I:%M %P'   # 2:08 pm
-</code></pre></li>
-</ol>
-
-
-<p>我们可以改成:</p>
-
-<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
-    time_format: "%H:%M"     # 24 hour time
-</code></pre>
-
-<p>最后生成页面，大功告成：</p>
-
-<pre><code>    rake generate
-</code></pre>
-
-<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -935,6 +911,10 @@ p.publicMethod();
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/">通过VM参数指定本地log4j配置文件,Spring Boot</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
       </li>
     
@@ -948,10 +928,6 @@ p.publicMethod();
     
       <li class="post">
         <a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a>
       </li>
     
   </ul>

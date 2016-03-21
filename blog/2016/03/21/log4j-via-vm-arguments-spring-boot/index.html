@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: Bae - 薛定谔的风口猪</title>
+  <title>通过VM参数指定本地log4j配置文件,Spring Boot - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Category: bae">
-  
+  <meta name="description" content="通过VM参数指定本地log4j配置文件,Spring Boot">
+  <meta name="keywords" content="log4j , Spring, Spring-Boot, log4j.properties">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/categories/bae">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -66,35 +66,124 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Category: Bae</h1>
+    
+      <h1 class="entry-title">通过VM参数指定本地log4j配置文件,Spring Boot</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-03-21T19:20:09+08:00'><span class='date'>2016-03-21 Mon</span> <span class='time'>19:20</span></time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+<div class="entry-content"><p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
 
-  
-  <h2>2014</h2>
+<p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
 
-<article>
-  
-<h1><a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a></h1>
-<time datetime="2014-11-25T23:38:51+08:00" pubdate><span class='month'>Nov</span> <span class='day'>25</span> <span class='year'>2014</span></time>
+<p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，若希望通过VM参数去修改此文件，按照之前的参数<code>-Dlog4j.configuration</code>(非Spring Boot项目请看这里<a href="http://jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>)，在Spring Boot的项目中并不生效。</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/bae/'>bae</a>, <a class='category' href='/blog/categories/maven/'>maven</a></span>
-</footer>
+<p>若需要指定另外的文件，需要用Spring Boot指定的配置：<code>-Dlogging.config</code>如</p>
 
+<pre><code>-Dlogging.config=D:\project\git_repo\prome-data\src\main\resources\log4j-debug.properties
+</code></pre>
 
-</article>
-
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-03-21T19:20:09+08:00'><span class='date'>2016-03-21 Mon</span> <span class='time'>19:20</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/log4j/'>log4j</a>, <a class='category' href='/blog/categories/spring/'>spring</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016/01/19/mysql-bad-sql-with-no-index/" title="Previous Post: 避免写出不走索引的SQL, MySQL">&laquo; 避免写出不走索引的SQL, MySQL</a>
+      
+      
+    </p>
+  </footer>
 </article>
 
 </div>

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Spring | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/spring/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2016-03-13T15:25:29+08:00</updated>
+  <updated>2016-03-21T19:39:51+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,26 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[通过VM参数指定本地log4j配置文件,Spring Boot]]></title>
+    <link href="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
+    <updated>2016-03-21T19:20:09+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
+    <content type="html"><![CDATA[<p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
+
+<p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
+
+<p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，若希望通过VM参数去修改此文件，按照之前的参数<code>-Dlog4j.configuration</code>(非Spring Boot项目请看这里<a href="http://jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>)，在Spring Boot的项目中并不生效。</p>
+
+<p>若需要指定另外的文件，需要用Spring Boot指定的配置：<code>-Dlogging.config</code>如</p>
+
+<pre><code>-Dlogging.config=D:\project\git_repo\prome-data\src\main\resources\log4j-debug.properties
+</code></pre>
+
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[从属性文件为变量赋值，Spring]]></title>

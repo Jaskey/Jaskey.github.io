@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/</loc>
+    <lastmod>2016-04-05T15:15:48+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/</loc>
     <lastmod>2016-03-21T19:20:09+08:00</lastmod>
   </url>
@@ -158,15 +162,15 @@
   </url>
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2016-03-21T19:39:51+08:00</lastmod>
+    <lastmod>2016-04-05T15:57:23+08:00</lastmod>
   </url>
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2016-03-21T19:39:51+08:00</lastmod>
+    <lastmod>2016-04-05T15:57:23+08:00</lastmod>
   </url>
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2016-03-21T19:39:51+08:00</lastmod>
+    <lastmod>2016-04-05T15:57:23+08:00</lastmod>
   </url>
   <url>
     <loc>http://Jaskey.github.io/about/index.html</loc>

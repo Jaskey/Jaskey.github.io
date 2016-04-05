@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>怎么在Spring Controller里面返回404 - 薛定谔的风口猪</title>
+  <title>如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用 - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="由于大多的客户端和服务端是独立的（可能用不同语言编写），客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。 以返回404状态码为例，在Spring 的Controller里面我们可以有以下3种方式处理 &hellip;">
-  
+  <meta name="description" content="shutdown spring boot application gracefully, 优雅关闭Spring Boot应用">
+  <meta name="keywords" content="spring , spring boot, endpoint, 内嵌tomcat, embedded">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -70,7 +70,7 @@
   
   <header>
     
-      <h1 class="entry-title">怎么在Spring Controller里面返回404</h1>
+      <h1 class="entry-title">如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</h1>
     
     
       <p class="meta">
@@ -79,77 +79,90 @@
 
 
 
-<time class='entry-date' datetime='2014-09-27T18:02:48+08:00'><span class='date'>2014-09-27 Sat</span> <span class='time'>18:02</span></time>
+<time class='entry-date' datetime='2016-04-05T15:15:48+08:00'><span class='date'>2016-04-05 Tue</span> <span class='time'>15:15</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>由于大多的客户端和服务端是独立的（可能用不同语言编写），客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。</p>
+<div class="entry-content"><p>你很可能根据<a href="https://spring.io/guides/gs/rest-service/" title="官方教程">https://spring.io/guides/gs/rest-service/</a>搭起了一个Spring的Rest服务，然后打包成了jar包，不需要容器就可以在生成环境下通过运行jar包启动一个Web服务。</p>
 
-<p>以返回404状态码为例，在Spring 的Controller里面我们可以有以下3种方式处理：</p>
+<p>但这样的服务怎么样正确的停止呢？或许你只是简单的<code>kill -9</code>对应的进程，但实际上，有更优雅的方式。</p>
 
-<ol>
-<li><h2>自定义异常+@ResponseStatus注解：</h2>
+<p>Spring Boot里面有一个<code>spring-boot-starter-actuator</code>的项目，可以监控和管理Spring Boot应用。其中暴露了很多<a href="http://docs.spring.io/spring-boot/docs/1.3.3.RELEASE/reference/htmlsingle/#production-ready-customizing-endpoints" title="endpoint">endpoint</a>,可以方便的检测应用的健康情况。其中有一个<code>shutdown</code>的endpoint可以优雅地停止应用。</p>
 
-<pre><code> //定义一个自定义异常，抛出时返回状态码404
- @ResponseStatus(value = HttpStatus.NOT_FOUND)
- public class ResourceNotFoundException extends RuntimeException {
-     ...
- }
-
- //在Controller里面直接抛出这个异常
- @Controller
- public class SomeController {
-     @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
-     public @ResponseBody Video getVidoeById(@PathVariable long id){
-         if (isFound()) {
-             // 做该做的逻辑
-         }
-         else {
-             throw new ResourceNotFoundException();//把这个异常抛出 
-         }
-     }
- }
-</code></pre></li>
-<li><h2>使用Spring的内置异常</h2>
-
-<p>默认情况下，Spring 的<code>DispatcherServlet</code>注册了<code>DefaultHandlerExceptionResolver</code>,这个resolver会处理标准的Spring MVC异常来表示特定的状态码</p>
-
-<pre><code>  Exception                                   HTTP Status Code
-  ConversionNotSupportedException             500 (Internal Server Error)
-  HttpMediaTypeNotAcceptableException         406 (Not Acceptable)
-  HttpMediaTypeNotSupportedException          415 (Unsupported Media Type)
-  HttpMessageNotReadableException             400 (Bad Request)
-  HttpMessageNotWritableException             500 (Internal Server Error)
-  HttpRequestMethodNotSupportedException      405 (Method Not Allowed)
-  MissingServletRequestParameterException     400 (Bad Request)
-  NoSuchRequestHandlingMethodException        404 (Not Found)
-  TypeMismatchException                       400 (Bad Request)
-</code></pre></li>
-<li><h2>在Controller方法中通过HttpServletResponse参数直接设值</h2>
-
-<pre><code> //任何一个RequestMapping 的函数都可以接受一个HttpServletResponse类型的参数
- @Controller
- public class SomeController {
-     @RequestMapping(value="/video/{id}",method=RequestMethod.GET)
-     public @ResponseBody Video getVidoeById(@PathVariable long id ,HttpServletResponse response){
-         if (isFound()) {
-             // 做该做的逻辑
-         }
-         else {
-             response.setStatus(HttpServletResponse.SC_NOT_FOUND);//设置状态码
-         }
-         return ....
-     }
- }
-</code></pre></li>
-</ol>
+<!--more-->
 
 
-<p>更多详情：
-<a href="http://docs.spring.io/spring/docs/3.1.x/spring-framework-reference/html/mvc.html#mvc-exceptionhandlers" title="spring doc">Spring MVC 文档</a></p>
+<h2>Maven基本配置</h2>
+
+<p>使用Maven的话，可以用以下方式配置：</p>
+
+<h3>增加依赖</h3>
+
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<h3>配置文件配置启用shutdown的HTTP访问</h3>
+
+<pre><code>#启用 shutdown endpoint的HTTP访问
+endpoints.shutdown.enabled=true
+#不需要用户名密码验证 
+endpoints.shutdown.sensitive=false
+</code></pre>
+
+<h3>POST请求到shutdown路径</h3>
+
+<p>以上配置完成后，可以使用<code>curl -X POST localhost:port/shutdown</code>发动post请求，即可优雅的停止应用：</p>
+
+<pre><code>curl -X POST localhost:8088/manage/shutdown      
+{"message":"Shutting down, bye..."}
+</code></pre>
+
+<h2>密码安全配置</h2>
+
+<p>若需要安全验证，则需要以下依赖：</p>
+
+<pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>并配置你想要密码验证的endpoint的<code>sensitive=true</code>.</p>
+
+<pre><code>endpoints.shutdown.sensitive=true
+</code></pre>
+
+<p>在<code>application.properties文件</code>配置对应的密码：</p>
+
+<pre><code>security.user.name=admin
+security.user.password=secret
+management.security.role=SUPERUSER
+</code></pre>
+
+<h2>路径/端口/ip访问限制</h2>
+
+<p>很可能这种监控你只需要在本机访问（如只有本机才能关闭应用），若需要如此，可以考虑以下管理配置</p>
+
+<pre><code>##management endpoint的路径，默认为/
+management.context-path=/manage
+
+##management endpoint的监听端口
+management.port=8081
+
+##management endpoint只允许来自本机的连接
+management.address=127.0.0.1
+</code></pre>
+
+<hr />
+
+<p>参考：
+<a href="https://github.com/spring-projects/spring-boot/blob/master/spring-boot-docs/src/main/asciidoc/production-ready-features.adoc#endpoints" title="spring boot文档">Spring Boot文档</a></p>
 </div>
 
 
@@ -165,7 +178,7 @@
 
 
 
-<time class='entry-date' datetime='2014-09-27T18:02:48+08:00'><span class='date'>2014-09-27 Sat</span> <span class='time'>18:02</span></time>
+<time class='entry-date' datetime='2016-04-05T15:15:48+08:00'><span class='date'>2016-04-05 Tue</span> <span class='time'>15:15</span></time>
       
 
 <span class="categories">
@@ -196,7 +209,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/" data-via="" data-counturl="http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/" >Tweet</a>
   
   
   
@@ -231,10 +244,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/09/24/when-to-use-static-class/" title="Previous Post: 什么时候应该使用“静态类”而不使用单例？">&laquo; 什么时候应该使用“静态类”而不使用单例？</a>
+        <a class="basic-alignment left" href="/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/" title="Previous Post: 通过VM参数指定本地log4j配置文件,Spring Boot">&laquo; 通过VM参数指定本地log4j配置文件,Spring Boot</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2014/10/02/database-isolation-level/" title="Next Post: 数据库事务的隔离级别与并发控制">数据库事务的隔离级别与并发控制 &raquo;</a>
       
     </p>
   </footer>

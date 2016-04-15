@@ -39,7 +39,7 @@
 										{_summaryComp}
 										<div className="fragment-list">
 											<ul>
-												{frag.detail.map(function(e){return <li>{e}</li>})}
+												{frag.detail.map(function(e,i){return <li key={"frament_"+i}>{e}</li>})}
 											</ul>
 										</div>
 										
@@ -51,7 +51,11 @@
 						)
 			}
 		});
-		
+
+
+		/**
+		一整块区域，一个section下面每一段子区域为Fragment
+		**/
 		var Section = React.createClass({
 			getDefaultProps:function(){
 				return {
@@ -67,7 +71,7 @@
 					var frags=[];
 					for(var i=0;i<this.props.fragments.length;i++){
 						var frag = this.props.fragments[i];
-						var fragComponent=<Fragment option={frag}/>
+						var fragComponent=<Fragment key={"fragment_"+i} option={frag}/>//一个Fragment component
 						frags.push(fragComponent);
 					}
 					var actualEle = frags;
@@ -76,7 +80,7 @@
 					var liElement = [];
 					for(var i=0;i<this.props.points.length;i++){
 						var point = this.props.points[i];
-						liElement.push(<li>{point}</li>);
+						liElement.push(<li key={"point_"+i}>{point}</li>);
 					}
 					var pointEle=<div className="points-container"><ul>{liElement}</ul></div>;
 					var actualEle = pointEle;

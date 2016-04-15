@@ -1,6 +1,6 @@
 ﻿		var Resume = React.createClass({
 			getDefaultProps:function (){
-				console.log('[Resume]getDefaultProps');
+				console.log('[Resume][getDefaultProps]');
 				return {
 					json:{}
 				}
@@ -8,7 +8,7 @@
 			
 
 			getInitialState:function(){
-				console.log('[Resume]getInitialState');
+				console.log('[Resume][getInitialState]');
 				return {
 					
 				}
@@ -16,25 +16,25 @@
 
 			render:function(){
 
-				var cSumary = <Summary summary = {this.props.json.summary}/>;
-				var cWork = <Work workExperience = {this.props.json.workExperience}/>
-				var cProject = <ProjectExperience projectExperience = {this.props.json.projectExperience}/>
-				var cOtherSection = <OtherSections sections={this.props.json.sections}/>
-				var cCourse = <Course courses={this.props.json.courses}/>
-				var cEdu = <Educations educations={this.props.json.educations}/>;
+				var cSumary = <Summary key="summary-section" summary = {this.props.json.summary}/>;//概览模块
+				var cWork = <Work key="work-section" workExperience = {this.props.json.workExperience}/>//工作模块
+				var cProject = <ProjectExperience key="project-section" projectExperience = {this.props.json.projectExperience}/>//项目经验
+				var cOtherSection = <OtherSections key="other-section" sections={this.props.json.sections}/>//其他模块
+				var cCourse = <Course key="course-section" courses={this.props.json.courses}/>//课程
+				var cEdu = <Educations key="education-section" educations={this.props.json.educations}/>;//教育经历
 				
-				var comps=[cSumary,cWork,cProject,cOtherSection,cCourse,cEdu];
+				var comps=[cSumary,cWork,cProject,cOtherSection,cCourse,cEdu];//组合起来成为一个大的component
 				
 				return (
 					<div id="mainContent">
-						<Info name={this.props.json.name} 
-							  birth={this.props.json.birth}
-							  email={this.props.json.email}
-							  tel={this.props.json.tel}
-							  avatar={this.props.json.avatar}
-							  pages={this.props.json.pages}
+						<Info name={this.props.json.name} //姓名
+							  birth={this.props.json.birth}//生日
+							  email={this.props.json.email}//邮件
+							  tel={this.props.json.tel}//电话
+							  avatar={this.props.json.avatar}//头像
+							  pages={this.props.json.pages}//个人主页的icon链接
 							  />
-						<div id="resumeContent">
+						<div id="resumeContent">//简历主内容
 							{comps}
 						</div>
 					</div>
@@ -42,7 +42,7 @@
 			},
 			
 			componentDidMount:function(){
-				console.log('componentDidMount');
+				console.log('[Resume][componentDidMount]');
 			}
 		})
 		
@@ -83,8 +83,8 @@
 							break;
 						}
 						
-						console.log("page=",page," icon-font:",iconfontKeymap[page]);
-						console.log(React.findDOMNode(this.refs.iconFontSpan));
+						//console.log("page=",page," icon-font:",iconfontKeymap[page]);
+						//console.log(React.findDOMNode(this.refs.iconFontSpan));
 						$(React.findDOMNode(this.refs.iconFontSpan)).html(iconfontKeymap[page]);
 						}
 				}
@@ -102,10 +102,9 @@
 				}
 			},
 			render:function(){
-				console.log(this.props.avatar);
 				var aPages=[];
 				for(var i = 0;i<this.props.pages.length;i++){
-					var cPage = <PageIcon page={this.props.pages[i]}/> ;	
+					var cPage = <PageIcon key={"page-icon"+i} page={this.props.pages[i]}/> ;	
 					aPages.push(cPage);
 				}
 				return (
@@ -137,7 +136,7 @@
 				var summary = this.props.summary;
 				var lis = [];
 				for(var i=0;i<summary.length;i++){
-					lis.push(<li>{summary[i]}</li>);
+					lis.push(<li key={"summary-paragrph"+i}>{summary[i]}</li>);
 				};
 
 				return (
@@ -162,7 +161,7 @@
 			},
 			
 			render:function(){
-				var ex=[];
+				var ex=[];//工作经历
 				var workExperience = this.props.workExperience;
 				
 				for(var i =0;i<workExperience.length;i++){
@@ -176,9 +175,9 @@
 						detail:we.detail
 					};
 					//<Fragment option={fragmentOption}/>
-					console.log(we,"companyLogo: ",we.companyLogo)
+					//console.log(we,"companyLogo: ",we.companyLogo)
 					var work = 
-								<div className="work-Fragment">
+								<div key={"work-experience_"+i} className="work-Fragment">
 									<div className="work-date">
 										<div>{we.startDate}</div>
 										<div className="date-separator"></div>
@@ -196,7 +195,7 @@
 										<div className="work-detail">
 											<ul>
 												{
-													we.detail.map(function(e){return <li>{e}</li>})
+													we.detail.map(function(e,i){return <li key={"work-detail_"+we.company+"_"+we.post+i}>{e}</li>})
 												}
 											</ul>
 										</div>
@@ -240,7 +239,7 @@
 					}		
 					
 					var project = 
-						<div className="project-Fragment">
+						<div key={"project-experience_"+i} className="project-Fragment">
 							<Fragment option={fragmentOption}/>
 						</div>;
 					ex.push(project);
@@ -266,11 +265,11 @@
 			},
 			
 			render:function(){
-				var secComponents=[];
+				var secComponents=[];//所有section 的components数组
 				
 				for(var i=0;i<this.props.sections.length;i++){
-					var sec = this.props.sections[i];
-					var secComponent=<Section title={sec.title} fragments = {sec.fragments} points = {sec.points}/>
+					var sec = this.props.sections[i];//一个section配置
+					var secComponent=<Section key={"other-section_"+i} title={sec.title} fragments = {sec.fragments} points = {sec.points}/>//一个section component
 					secComponents.push(secComponent);
 				}
 				return (
@@ -329,19 +328,19 @@
 			,
 			render:function(){
 				var educations = this.props.educations;
-				var eduEles = [];
+				var eduEles = [];//教育经历的内容
 				for(var i=0;i<educations.length;i++){
 					var edu = educations[i];
 					//在校实践
 					var exe = edu.experiences&&edu.experiences.length>0?
 								<div className="education-exeperience">
 									<ul>
-										{edu.experiences.map(function(e){return <li>{e}</li>})}
+										{edu.experiences.map(function(e,index){return <li key={"education-exeperience"+i+"_"+index}>{e}</li>})}
 									</ul>
 								</div>:'';
 					
 					var section = 					
-						<div className="section-content">
+						<div key={"education_section-content_"+i} className="section-content">
 								<div className="university">{edu.university}</div>								
 								<div className="major"><span className="major-name">{edu.major}</span>|<span className="study-type">{edu.studyType}</span></div>
 								<div className="date">

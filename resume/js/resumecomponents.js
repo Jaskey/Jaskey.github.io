@@ -34,7 +34,8 @@
 							  avatar={this.props.json.avatar}//头像
 							  pages={this.props.json.pages}//个人主页的icon链接
 							  />
-						<div id="resumeContent">//简历主内容
+						<div id="resumeContent">
+							{/*简历主内容*/}
 							{comps}
 						</div>
 					</div>

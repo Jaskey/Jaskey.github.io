@@ -21,7 +21,7 @@
 			"workExperience":[
 				{
 					"company":"网易游戏",
-					"companyLogo":"image/neteasegame2.png",
+					"companyLogo":"image/neteasegame.png",
 					"post":"高级软件工程师",
 					"startDate":"2015.01",
 					"endDate":"至今",
@@ -33,7 +33,7 @@
 				},
 				{
 					"company":"甲骨文",
-					"companyLogo":"image/neteasegame.png",
+					"companyLogo":"image/oracle.png",
 					"post":"软件工程师",
 					"startDate":"2013.07",
 					"endDate":"2015.01",
@@ -46,7 +46,7 @@
 				},
 				{
 					"company":"UC浏览器",
-					"companyLogo":"image/neteasegame.png",
+					"companyLogo":"image/uc.png",
 					"post":"软件工程师(实习)",
 					"startDate":"2012.11",
 					"endDate":"2013.04",
@@ -61,8 +61,8 @@
 				{
 					"projectName":"网易游戏数据分析系统",
 					"role":"主要开发成员",
-					"startDate":"2012.11",
-					"endDate":"2013.04",
+					"startDate":"2015.01",
+					"endDate":"2016.04",
 					"summary":"",
 					"detail":[
 						"页面交互、视觉迭代主要负责人；页面导航结构开发者；编写多个通用性前端控件、数据交互、工具类函数。",

@@ -73,6 +73,45 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-04-15T16:45:28+08:00'><span class='date'>2016-04-15 Fri</span> <span class='time'>16:45</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>对于一个Maven项目，如果又是一个tomcat项目，在运行tomcat之前应该要进行Maven的构建。</p>
+
+<p>以下是步骤：</p>
+
+<p>1.新建一个Maven Run/Debug configuration:</p>
+
+<p> <img src="/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
+
+<p>2.在Tomcat Run/Debug Configuration中新增#1的阶段在&#8221;Before Launch&#8221;中</p>
+
+<p> <img src="/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/">如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</a></h1>
     
     
@@ -669,51 +708,6 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/05/05/insert-or-update-mysql/">Insert or Update操作，MySQL</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-05T16:46:59+08:00'><span class='date'>2015-05-05 Tue</span> <span class='time'>16:46</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>如果需要执行操作如：“插入一行记录，若存在，则更新”的操作，在MySQL中，不需要使用Exists也不需要分两次语句执行，可以直接使用如下语句：</p>
-
-<pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
-</code></pre>
-
-<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键或者唯一索引冲突，则更新权限值为1。</p>
-
-<p>注：这语法不是标准SQL语法，所以仅适用于MySQL ，详情参看：<a href="https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html">https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html</a></p>
-
-<p>若用于JDBC, 而替换的数据不是像上面一个常数值，而是由变量决定，SQL可以如下：</p>
-
-<pre><code>INSERT INTO mytable VALUES (?, ?, ?, ?)
-ON DUPLICATE KEY UPDATE `col1`=values(col1), 
-                        `col2`=values(col2), 
-                        `col3`=values(col3), 
-                        `col4`=values(col4);
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -729,6 +723,10 @@ ON DUPLICATE KEY UPDATE `col1`=values(col1),
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/">如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</a>
       </li>
     
@@ -742,10 +740,6 @@ ON DUPLICATE KEY UPDATE `col1`=values(col1),
     
       <li class="post">
         <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a>
       </li>
     
   </ul>

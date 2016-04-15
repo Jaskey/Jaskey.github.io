@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: Mysql - 薛定谔的风口猪</title>
+  <title>在IntilliJ中运行Maven的Tomcat项目 - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Category: mysql">
-  
+  <meta name="description" content="在IntiliJ中运行Maven的Tomcat项目">
+  <meta name="keywords" content="maven, tomcat, intelliJ, IDEA">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/categories/mysql">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -66,35 +66,117 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Category: Mysql</h1>
+    
+      <h1 class="entry-title">在IntilliJ中运行Maven的Tomcat项目</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-04-15T16:45:28+08:00'><span class='date'>2016-04-15 Fri</span> <span class='time'>16:45</span></time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+<div class="entry-content"><p>对于一个Maven项目，如果又是一个tomcat项目，在运行tomcat之前应该要进行Maven的构建。</p>
 
-  
-  <h2>2016</h2>
+<p>以下是步骤：</p>
 
-<article>
-  
-<h1><a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a></h1>
-<time datetime="2016-01-19T20:24:16+08:00" pubdate><span class='month'>Jan</span> <span class='day'>19</span> <span class='year'>2016</span></time>
+<p>1.新建一个Maven Run/Debug configuration:</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/mysql/'>mysql</a>, <a class='category' href='/blog/categories/sql/'>sql</a></span>
-</footer>
+<p> <img src="/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
 
+<p>2.在Tomcat Run/Debug Configuration中新增#1的阶段在&#8221;Before Launch&#8221;中</p>
 
-</article>
-
+<p> <img src="/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-04-15T16:45:28+08:00'><span class='date'>2016-04-15 Fri</span> <span class='time'>16:45</span></time>
+      
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/" title="Previous Post: 如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用">&laquo; 如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</a>
+      
+      
+    </p>
+  </footer>
 </article>
 
 </div>

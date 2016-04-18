@@ -1,4 +1,9 @@
 @media screen and (max-width:450px){
+
+	.section-title {
+    	font-size: 2.2rem;
+ }
+	
     .avatar img {
         height: 150px;
         width: 150px;
@@ -17,10 +22,7 @@
 	}
 
 	div#resumeContent {
-		padding: 10px 20px;
-	}
-
-	h2.section-title {
+		padding: 10px 5px;
 	}
 
 	.work-experience .work-date {
@@ -69,6 +71,8 @@
 	}
 
 }
+
+
 
 
 

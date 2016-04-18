@@ -498,3 +498,19 @@ div.work-Fragment:last-child .fragment {
 
 
 
+
+
+div#footer {
+    text-align: center;
+    padding: 10px 0 5px 0;
+    background-color: grey;
+    color: #888;
+    background: linear-gradient(#e0e0e0,#cccccc,#b0b0b0);
+}
+
+div#credit {
+}
+
+#credit a {
+    color: inherit;
+}

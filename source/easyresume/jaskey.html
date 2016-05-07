@@ -5,17 +5,18 @@
     <meta http-equiv="Cache-control" content="public">
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>easy resume</title>
-	<link rel="stylesheet" href="stylesheet/resume.css" type="text/css"></link>
-	<link rel="stylesheet" media="screen and (min-width: 1020px)"  href="stylesheet/resume_hdp.css" type="text/css"></link>
-	<link rel="stylesheet" media="screen and (max-width: 1019px) and (min-width: 451px)" href="stylesheet/resume_mdp.css" type="text/css"></link>
-	<link rel="stylesheet" media="screen and (max-width: 450px)" href="stylesheet/resume_ldp.css" type="text/css"></link>
+	<link rel="stylesheet" href="src/stylesheet/resume.css" type="text/css"></link>
+	<link rel="stylesheet" media="screen and (min-width: 1020px)"  href="src/stylesheet/resume_hdp.css" type="text/css"></link>
+	<link rel="stylesheet" media="screen and (max-width: 1019px) and (min-width: 451px)" href="src/stylesheet/resume_mdp.css" type="text/css"></link>
+	<link rel="stylesheet" media="screen and (max-width: 450px)" href="src/stylesheet/resume_ldp.css" type="text/css"></link>
 
 
 	<script src="http://lib.sinaapp.com/js/jquery/1.9.1/jquery-1.9.1.min.js"></script>
-    <script src="react/react.js"></script>
-    <script src="react/JSXTransformer.js"></script>	
-    <script type="text/jsx" src="js/basecomponents.js"></script>
-    <script type="text/jsx" src="js/resumecomponents.js"></script>
+    <script src="react15/react.js"></script>
+    <script src="react15/react-dom.js"></script>
+    <script src="react15/browser.min.js"></script>
+    <script type="text/babel" src="src/js/basecomponents.js"></script>
+    <script type="text/babel" src="src/js/resumecomponents.js"></script>
 
 	<style>
 		div#defaultMsg {
@@ -63,11 +64,11 @@
 		</div>
     </div>	
 
-	<script type="text/jsx">
-		$.getJSON("resume.json",[],function(data){
-			console.log('[resume.json read successfully]',data);
+	<script type="text/babel">
+		$.getJSON("jaskey.json",[],function(data){
+			console.log('[jaskey.json read successfully]',data);
 			var json = data;
-			React.render(<div><Resume  json={json}/></div>,document.getElementById('container'));
+			ReactDOM.render(<div><Resume  json={json}/></div>,document.getElementById('container'));
 
 			var name = json.name;
 			if(name) document.title='EasyResume-'+name;

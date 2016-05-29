@@ -16,24 +16,24 @@
 				"熟练Java、Javascript、掌握Android开发，SQL、PL/SQL；用过C、C#、VBA等其他编程语言。",
 				"掌握Spring、Spring MVC、Struts2、Hibernate、Play!；熟悉jQuery、掌握ExjJS、jQuery Mobile前端框架。",
 				"熟悉并能应用面向对象设计原则、掌握多种设计模式，熟悉Java多线程、同步模型，了解分布式架构。",
-				"突出的学习能力和学习热情，能自学MOOC课程并已完成3门证书；擅用文档、StackOverflow学习技术。"
+				"突出的学习能力和学习热情，能自学MOOC课程并已完成3门证书；擅用英文文档、StackOverflow学习技术。"
 			],
 			"workExperiences":[
 				{
 					"company":"网易游戏",
-					"companyLogo":"image/neteasegame.png",
 					"post":"高级软件工程师",
 					"startDate":"2015.01",
 					"endDate":"至今",
 					"summary":"使用Java、JavaScript开发网易游戏数据平台（有数），供百余款游戏提供可视化数据分析。",
 					"details":[
 						"整个系统前端交互、视觉迭代、前端重构等主要负责人；国际化、pjax局部刷新、权限管理、页面布局开发者。",
-						"完成多个专题页面：多游戏产品概览、运营报表、梦幻手游物品产销、镇魔曲实时数据分析、开测对比、付费专题、留存专题、服务器分析、武魂战斗力分析专题等。新专题页面使平台活跃/新增用户均增加约100%。"
+						"完成多个专题页面：多游戏产品概览、运营报表、梦幻手游物品产销、镇魔曲实时数据分析、开测对比、付费专题、留存专题、服务器分析、武魂战斗力分析专题等。新专题页面使平台活跃/新增用户均增加约100%。",
+						"PromeData项目的开发者，提供玩家标签数据REST服务接口，供游戏产品查询如玩家消费、登录、性别等标签。",
+						"获2015 Q4里程碑奖；绩效考核中被被组长评价为“团队代码质量、规范、结构最好之人”；"
 					]		
 				},
 				{
 					"company":"甲骨文",
-					"companyLogo":"image/oracle.png",
 					"post":"软件工程师",
 					"startDate":"2013.07",
 					"endDate":"2015.01",
@@ -46,7 +46,6 @@
 				},
 				{
 					"company":"UC浏览器",
-					"companyLogo":"image/uc.png",
 					"post":"软件工程师(实习)",
 					"startDate":"2012.11",
 					"endDate":"2013.04",
@@ -67,10 +66,20 @@
 					"details":[
 						"页面交互、视觉迭代主要负责人；页面导航结构开发者；编写多个通用性前端控件、数据交互、工具类函数。",
 						"使用Java+JS开发十余个数据可视化页面：运营报表、付费专题、留存专题等、用研团队工具十余个模块。",
+						"使用Spring MVC，Thrift创建PromeData项目提供数据标签的REST服务。",
 						"编写Python脚本进行MySQL部分页面文件配置转换、日志数据解析等工作。"
 					]		
 				},
-				
+				{
+					"projectName":"EasyResume(github.com/jaskey/easyresume)",
+					"role":"个人开源项目",
+					"startDate":"2016.03",
+					"endDate":"2016.04",
+					"summary":"使用JSON配置内容，快速生成简历。支持自定义简历各个模块，提供在线编辑功能。",
+					"details":[
+						"使用ReactJS定义简历各部分组件；CSS样式支持响应式布局。"
+					]		
+				},
 				{
 					"projectName":"One Menu",
 					"role":"兼职开发",

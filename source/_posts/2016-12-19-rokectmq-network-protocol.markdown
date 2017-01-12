@@ -16,7 +16,7 @@ RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，
 ## 通讯协议
 协议分为以下四部分：
 
-![RocketMQ协议](/images/rocketmq/cluster.png "RocketMQ协议")
+![RocketMQ协议](/images/rocketmq/protocol.png "RocketMQ协议")
 
 其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。
 

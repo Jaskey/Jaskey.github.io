@@ -11,7 +11,7 @@ description: java , rocketmq, broker, nameserver, filterserver
 
 
 
-![rocketmq部署](/images/rocketmq/png.jpg "RocketMQ部署")
+![rocketmq部署](/images/rocketmq/cluster.png "RocketMQ部署")
 
 
 RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）

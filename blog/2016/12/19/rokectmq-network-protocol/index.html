@@ -1,0 +1,837 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>RokectMQ——通信协议 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。 &hellip;">
+  <meta name="keywords" content="java , rocketmq, broker, nameserver, filterserver, netty">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/12/19/rokectmq-network-protocol">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">博文</a></li>
+  <li><a href="/blog/archives">归档</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">RokectMQ——通信协议</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-19T20:49:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:49 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
+
+<p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
+
+<h2>通讯协议</h2>
+
+<p>协议分为以下四部分：</p>
+
+<p><img src="/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
+
+<p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
+
+<ul>
+<li><p>header: 协议的头，数据是序列化后的json。json的每个key字段都是固定的，不同的通讯请求字段不一样。后面解释</p></li>
+<li><p>body: 请求的二进制实际数据。例如发送消息的网络请求中，body中传输实际的消息内容。</p></li>
+<li><p>length:2 3 4 端整体的长度。四个字节整数。</p></li>
+<li><p>header length: header的长度。四个字节整数。</p></li>
+</ul>
+
+
+<h3>Header</h3>
+
+<p>协议header具体标识整个通讯请求的元数据，如请求什么，怎样的方式请求（异步/oneway）请求客户端的版本，语言，请求的具体参数等。</p>
+
+<p>header是序列化的json,以下是json中的所有字段,并阐述起在请求和响应两个阶段的区别。</p>
+
+<table>
+<thead>
+<tr>
+<th> 字段      </th>
+<th> 类型                   </th>
+<th> Request                                                                                                                          </th>
+<th> Response                                                                                   </th>
+<th>   </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> code      </td>
+<td> 整数                   </td>
+<td> 请求操作码。响应方通过code决定如何处理请求。                                                                                       </td>
+<td> 响应码。0表示成功，非0表示错误码。                                                         </td>
+<td>   </td>
+</tr>
+<tr>
+<td> language  </td>
+<td> 字符串                 </td>
+<td> 标记请求方的语言类型，如JAVA。                                                                                                   </td>
+<td> 应答方方的所使用的语言。                                                                   </td>
+<td>   </td>
+</tr>
+<tr>
+<td> version   </td>
+<td> 整数                   </td>
+<td> 请求方的版本号                                                                                                                   </td>
+<td> 应答方的版本号                                                                             </td>
+<td>   </td>
+</tr>
+<tr>
+<td> opaque    </td>
+<td> 整数                   </td>
+<td> 在同一个连接上，标记是哪次请求。服务响应的时候会返回这个请求标识码，以达到请求方多线程中复用连接，在收到响应的时候找到对应的请求 </td>
+<td> 原请求的opaque。应答方不做修改原值返回。                                                   </td>
+<td>   </td>
+</tr>
+<tr>
+<td> flag      </td>
+<td> 整数                   </td>
+<td> 通信层的标识位。标识这次通信的类型。                                                                                             </td>
+<td> 通信层的标识位。标识这次通信的类型。                                                       </td>
+<td>   </td>
+</tr>
+<tr>
+<td> remark    </td>
+<td> 字符串                 </td>
+<td> 传输的自定义文本                                                                                                                 </td>
+<td> 应答的文本信息。通常存放错误信息。                                                         </td>
+<td>   </td>
+</tr>
+<tr>
+<td> extFields </td>
+<td> HashMap&lt;String,String> </td>
+<td> 请求自定义字段。不同的请求会有不一样的参数列表，这里存放那些请求自定义的参数列表。                                               </td>
+<td> 响应自定义字段。不同的响应会有不一样的参数列表，若有，这里则存放那些请求自定义的参数列表。 </td>
+<td>   </td>
+</tr>
+</tbody>
+</table>
+
+
+<h4>Header详解：</h4>
+
+<h5>code:</h5>
+
+<p>请求/响应码。所有的请求码参考代码<code>RequestCode.java</code>。响应码则在<code>ResponseCode.java</code>中。</p>
+
+<h5>language:</h5>
+
+<p>由于要支持多语言，所以这一字段可以给通信双方知道对方通信层锁使用的开发语言。</p>
+
+<h5>version:</h5>
+
+<p>给通信层知道对方的版本号，响应方可以以此做兼容老版本等的特殊操作。</p>
+
+<h5>opaque:</h5>
+
+<p>请求标识码。在Java版的通信层中，这个只是一个不断自增的整形，为了收到应答方响应的的时候找到对应的请求。</p>
+
+<p>flag： 按位(bit)解释。</p>
+
+<p>第0位标识是这次通信是request还是response，0标识request, 1 标识response。</p>
+
+<p>第1位标识是否是oneway请求，1标识oneway。应答方在处理oneway请求的时候，不会做出响应，请求方也无序等待应答方响应。</p>
+
+<h5>remark:</h5>
+
+<p>附带的文本信息。常见的如存放一些broker/nameserver返回的一些异常信息，方便开发人员定位问题。</p>
+
+<h5>extFields：</h5>
+
+<p>这个字段不通的请求/响应不一样，完全自定义。数据结构上是java的hashmap。在Java的每个RemotingCammand中，其实都带有一个CommandCustomHeader的属性成员，可以认为他是一个强类型的extFields，再最后传输的时候，这个CommandCustomHeader会被忽略，而传输前会把其中的所有字段全部都原封不动塞到extFields中，以作传输。</p>
+
+<p>以发送消息为例(code=310)，发送消息的自定义header是SendMessageRequestHeaderV2（只是字段名对比SendMessageRequestHeader压缩了）。有以下字段：</p>
+
+<pre><code>@CFNotNull
+private String a;// producerGroup;
+@CFNotNull
+private String b;// topic;
+@CFNotNull
+private String c;// defaultTopic;
+@CFNotNull
+private Integer d;// defaultTopicQueueNums;
+@CFNotNull
+private Integer e;// queueId;
+@CFNotNull
+private Integer f;// sysFlag;
+@CFNotNull
+private Long g;// bornTimestamp;
+@CFNotNull
+private Integer h;// flag;
+@CFNullable
+private String i;// properties;
+@CFNullable
+private Integer j;// reconsumeTimes;
+@CFNullable
+private boolean k;// unitMode = false;
+</code></pre>
+
+<p>这些字段都会原封不动的去到extFields中做传输，最后看到的发送消息的请求header会类似如：</p>
+
+<pre><code>{  
+    "code":310,
+    "extFields":{  
+        "f":"0",
+        "g":"1482158310125",
+        "d":"4",
+        "e":"0",
+        "b":"TopicTest",
+        "c":"TBW102",
+        "a":"please_rename_unique_group_name",
+        "j":"0",
+        "k":"false",
+        "h":"0",
+        "i":"TAGS\u0001TagA\u0002WAIT\u0001true\u0002"
+    },
+    "flag":0,
+    "language":"JAVA",
+    "opaque":206,
+    "version":79
+}
+</code></pre>
+
+<p>注：其中fastjson把值为null的remark过滤了。</p>
+
+<h2>请求码列表</h2>
+
+<p>以下是截至到3.2.6的所有请求码列表</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>    // Broker 发送消息
+</span><span class='line'>    public static final int SEND_MESSAGE = 10;
+</span><span class='line'>    // Broker 订阅消息
+</span><span class='line'>    public static final int PULL_MESSAGE = 11;
+</span><span class='line'>    // Broker 查询消息
+</span><span class='line'>    public static final int QUERY_MESSAGE = 12;
+</span><span class='line'>    // Broker 查询Broker Offset
+</span><span class='line'>    public static final int QUERY_BROKER_OFFSET = 13;
+</span><span class='line'>    // Broker 查询Consumer Offset
+</span><span class='line'>    public static final int QUERY_CONSUMER_OFFSET = 14;
+</span><span class='line'>    // Broker 更新Consumer Offset
+</span><span class='line'>    public static final int UPDATE_CONSUMER_OFFSET = 15;
+</span><span class='line'>    // Broker 更新或者增加一个Topic
+</span><span class='line'>    public static final int UPDATE_AND_CREATE_TOPIC = 17;
+</span><span class='line'>    // Broker 获取所有Topic的配置（Slave和Namesrv都会向Master请求此配置）
+</span><span class='line'>    public static final int GET_ALL_TOPIC_CONFIG = 21;
+</span><span class='line'>    // Broker 获取所有Topic配置（Slave和Namesrv都会向Master请求此配置）
+</span><span class='line'>    public static final int GET_TOPIC_CONFIG_LIST = 22;
+</span><span class='line'>    // Broker 获取所有Topic名称列表
+</span><span class='line'>    public static final int GET_TOPIC_NAME_LIST = 23;
+</span><span class='line'>    // Broker 更新Broker上的配置
+</span><span class='line'>    public static final int UPDATE_BROKER_CONFIG = 25;
+</span><span class='line'>    // Broker 获取Broker上的配置
+</span><span class='line'>    public static final int GET_BROKER_CONFIG = 26;
+</span><span class='line'>    // Broker 触发Broker删除文件
+</span><span class='line'>    public static final int TRIGGER_DELETE_FILES = 27;
+</span><span class='line'>    // Broker 获取Broker运行时信息
+</span><span class='line'>    public static final int GET_BROKER_RUNTIME_INFO = 28;
+</span><span class='line'>    // Broker 根据时间查询队列的Offset
+</span><span class='line'>    public static final int SEARCH_OFFSET_BY_TIMESTAMP = 29;
+</span><span class='line'>    // Broker 查询队列最大Offset
+</span><span class='line'>    public static final int GET_MAX_OFFSET = 30;
+</span><span class='line'>    // Broker 查询队列最小Offset
+</span><span class='line'>    public static final int GET_MIN_OFFSET = 31;
+</span><span class='line'>    // Broker 查询队列最早消息对应时间
+</span><span class='line'>    public static final int GET_EARLIEST_MSG_STORETIME = 32;
+</span><span class='line'>    // Broker 根据消息ID来查询消息
+</span><span class='line'>    public static final int VIEW_MESSAGE_BY_ID = 33;
+</span><span class='line'>    // Broker Client向Client发送心跳，并注册自身
+</span><span class='line'>    public static final int HEART_BEAT = 34;
+</span><span class='line'>    // Broker Client注销
+</span><span class='line'>    public static final int UNREGISTER_CLIENT = 35;
+</span><span class='line'>    // Broker Consumer将处理不了的消息发回服务器
+</span><span class='line'>    public static final int CONSUMER_SEND_MSG_BACK = 36;
+</span><span class='line'>    // Broker Commit或者Rollback事务
+</span><span class='line'>    public static final int END_TRANSACTION = 37;
+</span><span class='line'>    // Broker 获取ConsumerId列表通过GroupName
+</span><span class='line'>    public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
+</span><span class='line'>    // Broker 主动向Producer回查事务状态
+</span><span class='line'>    public static final int CHECK_TRANSACTION_STATE = 39;
+</span><span class='line'>    // Broker Broker通知Consumer列表变化
+</span><span class='line'>    public static final int NOTIFY_CONSUMER_IDS_CHANGED = 40;
+</span><span class='line'>    // Broker Consumer向Master锁定队列
+</span><span class='line'>    public static final int LOCK_BATCH_MQ = 41;
+</span><span class='line'>    // Broker Consumer向Master解锁队列
+</span><span class='line'>    public static final int UNLOCK_BATCH_MQ = 42;
+</span><span class='line'>    // Broker 获取所有Consumer Offset
+</span><span class='line'>    public static final int GET_ALL_CONSUMER_OFFSET = 43;
+</span><span class='line'>    // Broker 获取所有定时进度
+</span><span class='line'>    public static final int GET_ALL_DELAY_OFFSET = 45;
+</span><span class='line'>    // Namesrv 向Namesrv追加KV配置
+</span><span class='line'>    public static final int PUT_KV_CONFIG = 100;
+</span><span class='line'>    // Namesrv 从Namesrv获取KV配置
+</span><span class='line'>    public static final int GET_KV_CONFIG = 101;
+</span><span class='line'>    // Namesrv 从Namesrv获取KV配置
+</span><span class='line'>    public static final int DELETE_KV_CONFIG = 102;
+</span><span class='line'>    // Namesrv 注册一个Broker，数据都是持久化的，如果存在则覆盖配置
+</span><span class='line'>    public static final int REGISTER_BROKER = 103;
+</span><span class='line'>    // Namesrv 卸载一个Broker，数据都是持久化的
+</span><span class='line'>    public static final int UNREGISTER_BROKER = 104;
+</span><span class='line'>    // Namesrv 根据Topic获取Broker Name、队列数(包含读队列与写队列)
+</span><span class='line'>    public static final int GET_ROUTEINTO_BY_TOPIC = 105;
+</span><span class='line'>    // Namesrv 获取注册到Name Server的所有Broker集群信息
+</span><span class='line'>    public static final int GET_BROKER_CLUSTER_INFO = 106;
+</span><span class='line'>    public static final int UPDATE_AND_CREATE_SUBSCRIPTIONGROUP = 200;
+</span><span class='line'>    public static final int GET_ALL_SUBSCRIPTIONGROUP_CONFIG = 201;
+</span><span class='line'>    public static final int GET_TOPIC_STATS_INFO = 202;
+</span><span class='line'>    public static final int GET_CONSUMER_CONNECTION_LIST = 203;
+</span><span class='line'>    public static final int GET_PRODUCER_CONNECTION_LIST = 204;
+</span><span class='line'>    public static final int WIPE_WRITE_PERM_OF_BROKER = 205;
+</span><span class='line'>
+</span><span class='line'>    // 从Name Server获取完整Topic列表
+</span><span class='line'>    public static final int GET_ALL_TOPIC_LIST_FROM_NAMESERVER = 206;
+</span><span class='line'>    // 从Broker删除订阅组
+</span><span class='line'>    public static final int DELETE_SUBSCRIPTIONGROUP = 207;
+</span><span class='line'>    // 从Broker获取消费状态（进度）
+</span><span class='line'>    public static final int GET_CONSUME_STATS = 208;
+</span><span class='line'>    // Suspend Consumer消费过程
+</span><span class='line'>    public static final int SUSPEND_CONSUMER = 209;
+</span><span class='line'>    // Resume Consumer消费过程
+</span><span class='line'>    public static final int RESUME_CONSUMER = 210;
+</span><span class='line'>    // 重置Consumer Offset
+</span><span class='line'>    public static final int RESET_CONSUMER_OFFSET_IN_CONSUMER = 211;
+</span><span class='line'>    // 重置Consumer Offset
+</span><span class='line'>    public static final int RESET_CONSUMER_OFFSET_IN_BROKER = 212;
+</span><span class='line'>    // 调整Consumer线程池数量
+</span><span class='line'>    public static final int ADJUST_CONSUMER_THREAD_POOL = 213;
+</span><span class='line'>    // 查询消息被哪些消费组消费
+</span><span class='line'>    public static final int WHO_CONSUME_THE_MESSAGE = 214;
+</span><span class='line'>
+</span><span class='line'>    // 从Broker删除Topic配置
+</span><span class='line'>    public static final int DELETE_TOPIC_IN_BROKER = 215;
+</span><span class='line'>    // 从Namesrv删除Topic配置
+</span><span class='line'>    public static final int DELETE_TOPIC_IN_NAMESRV = 216;
+</span><span class='line'>    // Namesrv 通过 project 获取所有的 server ip 信息
+</span><span class='line'>    public static final int GET_KV_CONFIG_BY_VALUE = 217;
+</span><span class='line'>    // Namesrv 删除指定 project group 下的所有 server ip 信息
+</span><span class='line'>    public static final int DELETE_KV_CONFIG_BY_VALUE = 218;
+</span><span class='line'>    // 通过NameSpace获取所有的KV List
+</span><span class='line'>    public static final int GET_KVLIST_BY_NAMESPACE = 219;
+</span><span class='line'>
+</span><span class='line'>    // offset 重置
+</span><span class='line'>    public static final int RESET_CONSUMER_CLIENT_OFFSET = 220;
+</span><span class='line'>    // 客户端订阅消息
+</span><span class='line'>    public static final int GET_CONSUMER_STATUS_FROM_CLIENT = 221;
+</span><span class='line'>    // 通知 broker 调用 offset 重置处理
+</span><span class='line'>    public static final int INVOKE_BROKER_TO_RESET_OFFSET = 222;
+</span><span class='line'>    // 通知 broker 调用客户端订阅消息处理
+</span><span class='line'>    public static final int INVOKE_BROKER_TO_GET_CONSUMER_STATUS = 223;
+</span><span class='line'>
+</span><span class='line'>    // Broker 查询topic被谁消费
+</span><span class='line'>    // 2014-03-21 Add By shijia
+</span><span class='line'>    public static final int QUERY_TOPIC_CONSUME_BY_WHO = 300;
+</span><span class='line'>
+</span><span class='line'>    // 获取指定集群下的所有 topic
+</span><span class='line'>    // 2014-03-26
+</span><span class='line'>    public static final int GET_TOPICS_BY_CLUSTER = 224;
+</span><span class='line'>
+</span><span class='line'>    // 向Broker注册Filter Server
+</span><span class='line'>    // 2014-04-06 Add By shijia
+</span><span class='line'>    public static final int REGISTER_FILTER_SERVER = 301;
+</span><span class='line'>    // 向Filter Server注册Class
+</span><span class='line'>    // 2014-04-06 Add By shijia
+</span><span class='line'>    public static final int REGISTER_MESSAGE_FILTER_CLASS = 302;
+</span><span class='line'>    // 根据 topic 和 group 获取消息的时间跨度
+</span><span class='line'>    public static final int QUERY_CONSUME_TIME_SPAN = 303;
+</span><span class='line'>    // 获取所有系统内置 Topic 列表
+</span><span class='line'>    public static final int GET_SYSTEM_TOPIC_LIST_FROM_NS = 304;
+</span><span class='line'>    public static final int GET_SYSTEM_TOPIC_LIST_FROM_BROKER = 305;
+</span><span class='line'>
+</span><span class='line'>    // 清理失效队列
+</span><span class='line'>    public static final int CLEAN_EXPIRED_CONSUMEQUEUE = 306;
+</span><span class='line'>
+</span><span class='line'>    // 通过Broker查询Consumer内存数据
+</span><span class='line'>    // 2014-07-19 Add By shijia
+</span><span class='line'>    public static final int GET_CONSUMER_RUNNING_INFO = 307;
+</span><span class='line'>
+</span><span class='line'>    // 查找被修正 offset (转发组件）
+</span><span class='line'>    public static final int QUERY_CORRECTION_OFFSET = 308;
+</span><span class='line'>
+</span><span class='line'>    // 通过Broker直接向某个Consumer发送一条消息，并立刻消费，返回结果给broker，再返回给调用方
+</span><span class='line'>    // 2014-08-11 Add By shijia
+</span><span class='line'>    public static final int CONSUME_MESSAGE_DIRECTLY = 309;
+</span><span class='line'>
+</span><span class='line'>    // Broker 发送消息，优化网络数据包
+</span><span class='line'>    public static final int SEND_MESSAGE_V2 = 310;
+</span><span class='line'>
+</span><span class='line'>    // 单元化相关 topic
+</span><span class='line'>    public static final int GET_UNIT_TOPIC_LIST = 311;
+</span><span class='line'>    // 获取含有单元化订阅组的 Topic 列表
+</span><span class='line'>    public static final int GET_HAS_UNIT_SUB_TOPIC_LIST = 312;
+</span><span class='line'>    // 获取含有单元化订阅组的非单元化 Topic 列表
+</span><span class='line'>    public static final int GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST = 313;
+</span><span class='line'>    // 克隆某一个组的消费进度到新的组
+</span><span class='line'>    public static final int CLONE_GROUP_OFFSET = 314;
+</span><span class='line'>
+</span><span class='line'>    // 查看Broker上的各种统计信息
+</span><span class='line'>    public static final int VIEW_BROKER_STATS_DATA = 315;
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-12-19T20:49:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:49 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/rocketmq/'>rocketmq</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <span class="about-image">
+          <img src="/images/Jaskey.jpg" alt="Jaskey Lam">
+     </span>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/12/19/rokectmq-network-protocol/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/12/19/rokectmq-network-protocol/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016/12/15/rokectmq-concept/" title="Previous Post: RocketMQ——角色与术语详解">&laquo; RocketMQ——角色与术语详解</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2016/12/19/rokectmq-rebalance/" title="Next Post: RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="http://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2017 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

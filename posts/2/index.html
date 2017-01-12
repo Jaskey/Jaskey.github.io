@@ -73,6 +73,298 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:18 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
+
+<p>以下是具体方法，并带一个例子</p>
+
+<h2>引入Javascript</h2>
+
+<p>语法：</p>
+
+<pre><code>&lt;script type="text/javascript" src="/path/to/file.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>例如： 在 source 中的404.markdown 中 加入：</p>
+
+<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
+</code></pre>
+
+<p>即可在404页面中跳转到腾讯的公益页面</p>
+
+<h2>引入HTML文件</h2>
+
+<p>以下为引入后的样本实例：</p>
+
+<div id="myelement">
+    .markdown文件中，在需要引入HTML文件的地方写上：
+    <p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
+    <p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
+    <p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
+    <p id="clickme">点我试试看</p>
+</div>
+
+
+
+
+<script>
+
+    $(function(){
+        $('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
+        $('p#clickme').hover(function(){
+        $(this).css("color","blue");
+        },function(){
+        $(this).css("color","black");
+        });
+
+        $('div#myelement').on('click',function(e){
+        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
+        });
+    })
+
+</script>
+
+
+<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:18 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Maven 支持：</h2>
+
+<pre><code>  &lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;codehaus&lt;/id&gt;
+        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+        &lt;version&gt;1.8.5&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+
+<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
+    ObjectMapper mapper = new ObjectMapper();</p>
+
+<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
+
+<h2>Java object to JSON</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
+</code></pre>
+
+<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
+
+<pre><code>StringWriter sw =new StringWriter();
+ObjectMapper mapper = new ObjectMapper();
+mapper.writeValue(sw, user);//写到StringWriter
+String JSON = sw.toString();
+sw.close();
+</code></pre>
+
+<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
+</code></pre>
+
+<h2>JSON to Java object</h2>
+
+<pre><code>ObjectMapper mapper = new ObjectMapper();
+User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
+</code></pre>
+
+<h1>集合操作</h1>
+
+<h2>Map/List to JSON</h2>
+
+<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
+
+<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
+objectMapper.writeValue(new File(jsonFilePath), listObject);
+</code></pre>
+
+<h2>JSON to Map/List/数组</h2>
+
+<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
+
+
+
+     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
+                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
+
+
+     String[] array = mapper.readValue(new File('c:\\user.json'),
+                String[].class);//使用class对象
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/07/change-intelij-short-cut/">修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:02 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
+
+<p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
+
+<ol>
+<li>进入Settings（快捷键：<kbd>CTRL</kbd>+<kbd>ALT</kbd>+<kbd>S</kbd>，或者<kbd>SHITT</kbd>*2出<code>Search Everywhere</code>中搜索settings进入）</li>
+<li>左边菜单选择KeyMap（可搜索）</li>
+<li>选择默认的keymaps（IntelliJ的）,然后选择copy出一份新的，在新的keymaps里面修改</li>
+<li>在新的keymaps里面的<code>Main Menu--&gt;Edit--&gt;Redo</code> 右键选择 <code>Add Keyboard Shortcut</code></li>
+<li>键盘按<kbd>CTRL</kbd>+<kbd>Y</kbd> (修改的快捷键)</li>
+<li>OK</li>
+<li>选择 &ldquo;Remove&rdquo; ，当窗口提示： &ldquo;the shortcut is already assigned to other actions. Do you want to remove other assignments?&rdquo;</li>
+<li>Apply</li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/07/insert-sql-with-dictionary-python/">Python中用dictionary操作SQL Select, Insert</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:19 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
+
+<p>首先，连接数据库</p>
+
+<pre><code>conn = MySQLdb.connect(host=host,
+                       user=user,
+                       passwd=passwd,
+                       db=db,
+                       charset=charset)
+</code></pre>
+
+<h1>SELECT:</h1>
+
+<p>在获取cursor的时候，传入<code>MySQLdb.cursors.DictCursor</code>即可</p>
+
+<pre><code>cursor = conn.cursor(MySQLdb.cursors.DictCursor)  ##结果集成为dictionary
+cursor.execute(select_sql )  # query
+
+for row in cursor:
+    print type(row),row
+    name = row["name"]  # 直接使用key获取
+    id = row["id"]      # 直接使用key获取
+</code></pre>
+
+<p>会发现,row的类型已经是一个dict, 其中每一列都可以使用key值获取
+    <type 'dict'> {id:123L,&lsquo;name&rsquo;:u&#8217;abc&#8217; }</p>
+
+<h1>INSERT</h1>
+
+<p>如果需要把一个准备好的dict插入到数据库，不想一个个对应的赋值，可以考虑使用如下方式:</p>
+
+<pre><code>myDict = {'name':'abc','age':16L}
+insert_table = 'mytable'
+placeholders = ', '.join(['%s']* len(mydict))  ##按照dict长度返回如：%s, %s 的占位符
+columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
+insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
+
+cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015/05/05/insert-or-update-mysql/">Insert or Update操作，MySQL</a></h1>
     
     
@@ -641,225 +933,6 @@ alert("Function 'c' returns " + c('junjie'));//先调用了a(who)，所以alert 
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-12-03T11:35:01+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>3</span><span class='date-suffix'>rd</span>, <span class='date-year'>2014</span></span> <span class='time'>11:35 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
-
-<ol>
-<li>确保你现在branch上的重要文件已经commit.</li>
-<li><p>在项目根路径运行：</p>
-
-<pre><code> git rm -r --cached .
-</code></pre></li>
-<li><p>然后从staging area中移除所有已经改变的文件:</p>
-
-<pre><code> git add .
-</code></pre></li>
-<li><p>最后再提交即可</p>
-
-<pre><code> git commit -m ".gitignore is working, fixed untracked files"
-</code></pre></li>
-</ol>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>3:38 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
-
-<p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
-
-<h2>配置</h2>
-
-<p><strong>1. 新建属性文件</strong></p>
-
-<p>如<code>application.properties</code></p>
-
-<p>里面的格式为： <code>name=value</code></p>
-
-<p>如：</p>
-
-<pre><code>token=wodinow
-</code></pre>
-
-<p><strong>2. 配置属性文件路径</strong></p>
-
-<pre><code>&lt;context:property-placeholder location="classpath:application.properties" /&gt;
-</code></pre>
-
-<hr />
-
-<h2>使用注解注入</h2>
-
-<p>在一个Bean中， 使用@Value注解使用${name}格式，如在@Controller中</p>
-
-<pre><code>@Controller
-public class CoreController {   
-
-    @Value("${developer_id}")
-    private String developerID;
-
-    }
-</code></pre>
-
-<h2>为静态变量注入</h2>
-
-<p>Spring不能为静态变量注入属性值，但我们可以配置一个setter完成此项工作，如：</p>
-
-<pre><code>@Component
-public class SignUtil {  
-
-    //需要从属性文件中读值的静态变量
-    private static  String TOKEN;  
-
-    //配置一个setter, 为该静态变量赋值
-    @Value("${token}")
-    private void setTOKEN(String token) {
-        SignUtil.TOKEN = token;
-    }  
-｝
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-11-30T02:32:58+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>2:32 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
-
-<p>在项目的参数中加入：</p>
-
-<pre><code>-Dlog4j.configuration=file:log4j配置文件路径
-</code></pre>
-
-<p>注：路径需要以file:开头，如：</p>
-
-<pre><code>-Dlog4j.configuration=file:E:\Programming\debug_log4j.properties
-</code></pre>
-
-<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/">在windows上使用_netrc文件让Git记住用户名和密码</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-11-28T16:58:21+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>4:58 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码：</p>
-
-<ul>
-<li>定义一个用户环境变量%HOME%， value=%USERPROFILE%。（windows会把路径自动替换为用户路径）</li>
-<li>在%HOME%路径下新建一个文件<code>_netrc</code></li>
-<li><p>在<code>_netrc</code>文件中增加下面的配置：</p>
-
-<p>  machine <hostname1>
-  login <login1>
-  password <password1>
-  machine <hostname2>
-  login <login2>
-  password <password2></p></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>machine github.com
-login cnblogs_user
-password cnblogs_pwd
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -877,23 +950,23 @@ password cnblogs_pwd
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/">如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/">通过VM参数指定本地log4j配置文件,Spring Boot</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
       </li>
     
   </ul>
@@ -979,7 +1052,7 @@ password cnblogs_pwd
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2016 - Jaskey Lam -
+  Copyright &copy; 2017 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

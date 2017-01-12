@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 薛定谔的风口猪]]></title>
   <link href="http://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://Jaskey.github.io/"/>
-  <updated>2016-08-01T23:51:35+08:00</updated>
+  <updated>2017-01-12T23:16:25+08:00</updated>
   <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,600 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[RokectMQ——水平扩展及负载均衡详解]]></title>
+    <link href="http://Jaskey.github.io/blog/2016/12/19/rokectmq-rebalance/"/>
+    <updated>2016-12-19T20:49:23+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2016/12/19/rokectmq-rebalance</id>
+    <content type="html"><![CDATA[<p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
+
+<h2>Broker端水平扩展</h2>
+
+<h3>Broker负载均衡</h3>
+
+<p>Broker是以group为单位提供服务。一个group里面分master和slave,master和slave存储的数据一样，slave从master同步数据（同步双写或异步复制看配置）。</p>
+
+<p>通过nameserver暴露给客户端后，只是客户端关心（注册或发送）一个个的topic路由信息。路由信息中会细化为message queue的路由信息。而message queue会分布在不同的broker group。所以对于客户端来说，分布在不同broker group的message queue为成为一个服务集群，但客户端会把请求分摊到不同的queue。</p>
+
+<p>而由于压力分摊到了不同的queue,不同的queue实际上分布在不同的Broker group，也就是说压力会分摊到不同的broker进程，这样消息的存储和转发均起到了负载均衡的作用。</p>
+
+<p>Broker一旦需要横向扩展，只需要增加broker group，然后把对应的topic建上，客户端的message queue集合即会变大，这样对于broker的负载则由更多的broker group来进行分担。</p>
+
+<p>并且由于每个group下面的topic的配置都是独立的，也就说可以让group1下面的那个topic的queue数量是4，其他group下的topic queue数量是2，这样group1则得到更大的负载。</p>
+
+<h3>commit log</h3>
+
+<p>虽然每个topic下面有很多message queue，但是message queue本身并不存储消息。真正的消息存储会写在CommitLog的文件，message queue只是存储CommitLog中对应的位置信息，方便通过message queue找到对应存储在CommitLog的消息。</p>
+
+<p>不同的topic，message queue都是写到相同的CommitLog 文件，也就是说CommitLog完全的顺序写。</p>
+
+<p>具体如下图：</p>
+
+<p><img src="/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
+
+<h2>Producer</h2>
+
+<p>Producer端，每个实例在发消息的时候，默认会轮询所有的message queue发送，以达到让消息平均落在不同的queue上。而由于queue可以散落在不同的broker，所以消息就发送到不同的broker下，如下图：</p>
+
+<p><img src="/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
+
+<h2>Consumer负载均衡</h2>
+
+<h3>集群模式</h3>
+
+<p>在集群消费模式下，每条消息只需要投递到订阅这个topic的Consumer Group下的一个实例即可。RocketMQ采用主动拉取的方式拉取并消费消息，在拉取的时候需要明确指定拉取哪一条message queue。</p>
+
+<p>而每当实例的数量有变更，都会触发一次所有实例的负载均衡，这时候会按照queue的数量和实例的数量平均分配queue给每个实例。</p>
+
+<p>默认的分配算法是AllocateMessageQueueAveragely，如下图：</p>
+
+<p><img src="/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
+
+<p>还有另外一种平均的算法是AllocateMessageQueueAveragelyByCircle，也是平均分摊每一条queue，只是以环状轮流分queue的形式，如下图：</p>
+
+<p><img src="/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
+
+<p>需要注意的是，集群模式下，queue都是只允许分配只一个实例，这是由于如果多个实例同时消费一个queue的消息，由于拉取哪些消息是consumer主动控制的，那样会导致同一个消息在不同的实例下被消费多次，所以算法上都是一个queue只分给一个consumer实例，一个consumer实例可以允许同时分到不同的queue。</p>
+
+<p>通过增加consumer实例去分摊queue的消费，可以起到水平扩展的消费能力的作用。而有实例下线的时候，会重新触发负载均衡，这时候原来分配到的queue将分配到其他实例上继续消费。</p>
+
+<p>但是如果consumer实例的数量比message queue的总数量还多的话，多出来的consumer实例将无法分到queue，也就无法消费到消息，也就无法起到分摊负载的作用了。所以需要控制让queue的总数量大于等于consumer的数量。</p>
+
+<h3>广播模式</h3>
+
+<p>由于广播模式下要求一条消息需要投递到一个消费组下面所有的消费者实例，所以也就没有消息被分摊消费的说法。</p>
+
+<p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
+
+<p><img src="/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[RokectMQ——通信协议]]></title>
+    <link href="http://Jaskey.github.io/blog/2016/12/19/rokectmq-network-protocol/"/>
+    <updated>2016-12-19T20:49:23+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2016/12/19/rokectmq-network-protocol</id>
+    <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
+
+<p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
+
+<h2>通讯协议</h2>
+
+<p>协议分为以下四部分：</p>
+
+<p><img src="/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
+
+<p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
+
+<ul>
+<li><p>header: 协议的头，数据是序列化后的json。json的每个key字段都是固定的，不同的通讯请求字段不一样。后面解释</p></li>
+<li><p>body: 请求的二进制实际数据。例如发送消息的网络请求中，body中传输实际的消息内容。</p></li>
+<li><p>length:2 3 4 端整体的长度。四个字节整数。</p></li>
+<li><p>header length: header的长度。四个字节整数。</p></li>
+</ul>
+
+
+<h3>Header</h3>
+
+<p>协议header具体标识整个通讯请求的元数据，如请求什么，怎样的方式请求（异步/oneway）请求客户端的版本，语言，请求的具体参数等。</p>
+
+<p>header是序列化的json,以下是json中的所有字段,并阐述起在请求和响应两个阶段的区别。</p>
+
+<table>
+<thead>
+<tr>
+<th> 字段      </th>
+<th> 类型                   </th>
+<th> Request                                                                                                                          </th>
+<th> Response                                                                                   </th>
+<th>   </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> code      </td>
+<td> 整数                   </td>
+<td> 请求操作码。响应方通过code决定如何处理请求。                                                                                       </td>
+<td> 响应码。0表示成功，非0表示错误码。                                                         </td>
+<td>   </td>
+</tr>
+<tr>
+<td> language  </td>
+<td> 字符串                 </td>
+<td> 标记请求方的语言类型，如JAVA。                                                                                                   </td>
+<td> 应答方方的所使用的语言。                                                                   </td>
+<td>   </td>
+</tr>
+<tr>
+<td> version   </td>
+<td> 整数                   </td>
+<td> 请求方的版本号                                                                                                                   </td>
+<td> 应答方的版本号                                                                             </td>
+<td>   </td>
+</tr>
+<tr>
+<td> opaque    </td>
+<td> 整数                   </td>
+<td> 在同一个连接上，标记是哪次请求。服务响应的时候会返回这个请求标识码，以达到请求方多线程中复用连接，在收到响应的时候找到对应的请求 </td>
+<td> 原请求的opaque。应答方不做修改原值返回。                                                   </td>
+<td>   </td>
+</tr>
+<tr>
+<td> flag      </td>
+<td> 整数                   </td>
+<td> 通信层的标识位。标识这次通信的类型。                                                                                             </td>
+<td> 通信层的标识位。标识这次通信的类型。                                                       </td>
+<td>   </td>
+</tr>
+<tr>
+<td> remark    </td>
+<td> 字符串                 </td>
+<td> 传输的自定义文本                                                                                                                 </td>
+<td> 应答的文本信息。通常存放错误信息。                                                         </td>
+<td>   </td>
+</tr>
+<tr>
+<td> extFields </td>
+<td> HashMap&lt;String,String> </td>
+<td> 请求自定义字段。不同的请求会有不一样的参数列表，这里存放那些请求自定义的参数列表。                                               </td>
+<td> 响应自定义字段。不同的响应会有不一样的参数列表，若有，这里则存放那些请求自定义的参数列表。 </td>
+<td>   </td>
+</tr>
+</tbody>
+</table>
+
+
+<h4>Header详解：</h4>
+
+<h5>code:</h5>
+
+<p>请求/响应码。所有的请求码参考代码<code>RequestCode.java</code>。响应码则在<code>ResponseCode.java</code>中。</p>
+
+<h5>language:</h5>
+
+<p>由于要支持多语言，所以这一字段可以给通信双方知道对方通信层锁使用的开发语言。</p>
+
+<h5>version:</h5>
+
+<p>给通信层知道对方的版本号，响应方可以以此做兼容老版本等的特殊操作。</p>
+
+<h5>opaque:</h5>
+
+<p>请求标识码。在Java版的通信层中，这个只是一个不断自增的整形，为了收到应答方响应的的时候找到对应的请求。</p>
+
+<p>flag： 按位(bit)解释。</p>
+
+<p>第0位标识是这次通信是request还是response，0标识request, 1 标识response。</p>
+
+<p>第1位标识是否是oneway请求，1标识oneway。应答方在处理oneway请求的时候，不会做出响应，请求方也无序等待应答方响应。</p>
+
+<h5>remark:</h5>
+
+<p>附带的文本信息。常见的如存放一些broker/nameserver返回的一些异常信息，方便开发人员定位问题。</p>
+
+<h5>extFields：</h5>
+
+<p>这个字段不通的请求/响应不一样，完全自定义。数据结构上是java的hashmap。在Java的每个RemotingCammand中，其实都带有一个CommandCustomHeader的属性成员，可以认为他是一个强类型的extFields，再最后传输的时候，这个CommandCustomHeader会被忽略，而传输前会把其中的所有字段全部都原封不动塞到extFields中，以作传输。</p>
+
+<p>以发送消息为例(code=310)，发送消息的自定义header是SendMessageRequestHeaderV2（只是字段名对比SendMessageRequestHeader压缩了）。有以下字段：</p>
+
+<pre><code>@CFNotNull
+private String a;// producerGroup;
+@CFNotNull
+private String b;// topic;
+@CFNotNull
+private String c;// defaultTopic;
+@CFNotNull
+private Integer d;// defaultTopicQueueNums;
+@CFNotNull
+private Integer e;// queueId;
+@CFNotNull
+private Integer f;// sysFlag;
+@CFNotNull
+private Long g;// bornTimestamp;
+@CFNotNull
+private Integer h;// flag;
+@CFNullable
+private String i;// properties;
+@CFNullable
+private Integer j;// reconsumeTimes;
+@CFNullable
+private boolean k;// unitMode = false;
+</code></pre>
+
+<p>这些字段都会原封不动的去到extFields中做传输，最后看到的发送消息的请求header会类似如：</p>
+
+<pre><code>{  
+    "code":310,
+    "extFields":{  
+        "f":"0",
+        "g":"1482158310125",
+        "d":"4",
+        "e":"0",
+        "b":"TopicTest",
+        "c":"TBW102",
+        "a":"please_rename_unique_group_name",
+        "j":"0",
+        "k":"false",
+        "h":"0",
+        "i":"TAGS\u0001TagA\u0002WAIT\u0001true\u0002"
+    },
+    "flag":0,
+    "language":"JAVA",
+    "opaque":206,
+    "version":79
+}
+</code></pre>
+
+<p>注：其中fastjson把值为null的remark过滤了。</p>
+
+<h2>请求码列表</h2>
+
+<p>以下是截至到3.2.6的所有请求码列表</p>
+
+<pre><code>
+    // Broker 发送消息
+    public static final int SEND_MESSAGE = 10;
+    // Broker 订阅消息
+    public static final int PULL_MESSAGE = 11;
+    // Broker 查询消息
+    public static final int QUERY_MESSAGE = 12;
+    // Broker 查询Broker Offset
+    public static final int QUERY_BROKER_OFFSET = 13;
+    // Broker 查询Consumer Offset
+    public static final int QUERY_CONSUMER_OFFSET = 14;
+    // Broker 更新Consumer Offset
+    public static final int UPDATE_CONSUMER_OFFSET = 15;
+    // Broker 更新或者增加一个Topic
+    public static final int UPDATE_AND_CREATE_TOPIC = 17;
+    // Broker 获取所有Topic的配置（Slave和Namesrv都会向Master请求此配置）
+    public static final int GET_ALL_TOPIC_CONFIG = 21;
+    // Broker 获取所有Topic配置（Slave和Namesrv都会向Master请求此配置）
+    public static final int GET_TOPIC_CONFIG_LIST = 22;
+    // Broker 获取所有Topic名称列表
+    public static final int GET_TOPIC_NAME_LIST = 23;
+    // Broker 更新Broker上的配置
+    public static final int UPDATE_BROKER_CONFIG = 25;
+    // Broker 获取Broker上的配置
+    public static final int GET_BROKER_CONFIG = 26;
+    // Broker 触发Broker删除文件
+    public static final int TRIGGER_DELETE_FILES = 27;
+    // Broker 获取Broker运行时信息
+    public static final int GET_BROKER_RUNTIME_INFO = 28;
+    // Broker 根据时间查询队列的Offset
+    public static final int SEARCH_OFFSET_BY_TIMESTAMP = 29;
+    // Broker 查询队列最大Offset
+    public static final int GET_MAX_OFFSET = 30;
+    // Broker 查询队列最小Offset
+    public static final int GET_MIN_OFFSET = 31;
+    // Broker 查询队列最早消息对应时间
+    public static final int GET_EARLIEST_MSG_STORETIME = 32;
+    // Broker 根据消息ID来查询消息
+    public static final int VIEW_MESSAGE_BY_ID = 33;
+    // Broker Client向Client发送心跳，并注册自身
+    public static final int HEART_BEAT = 34;
+    // Broker Client注销
+    public static final int UNREGISTER_CLIENT = 35;
+    // Broker Consumer将处理不了的消息发回服务器
+    public static final int CONSUMER_SEND_MSG_BACK = 36;
+    // Broker Commit或者Rollback事务
+    public static final int END_TRANSACTION = 37;
+    // Broker 获取ConsumerId列表通过GroupName
+    public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
+    // Broker 主动向Producer回查事务状态
+    public static final int CHECK_TRANSACTION_STATE = 39;
+    // Broker Broker通知Consumer列表变化
+    public static final int NOTIFY_CONSUMER_IDS_CHANGED = 40;
+    // Broker Consumer向Master锁定队列
+    public static final int LOCK_BATCH_MQ = 41;
+    // Broker Consumer向Master解锁队列
+    public static final int UNLOCK_BATCH_MQ = 42;
+    // Broker 获取所有Consumer Offset
+    public static final int GET_ALL_CONSUMER_OFFSET = 43;
+    // Broker 获取所有定时进度
+    public static final int GET_ALL_DELAY_OFFSET = 45;
+    // Namesrv 向Namesrv追加KV配置
+    public static final int PUT_KV_CONFIG = 100;
+    // Namesrv 从Namesrv获取KV配置
+    public static final int GET_KV_CONFIG = 101;
+    // Namesrv 从Namesrv获取KV配置
+    public static final int DELETE_KV_CONFIG = 102;
+    // Namesrv 注册一个Broker，数据都是持久化的，如果存在则覆盖配置
+    public static final int REGISTER_BROKER = 103;
+    // Namesrv 卸载一个Broker，数据都是持久化的
+    public static final int UNREGISTER_BROKER = 104;
+    // Namesrv 根据Topic获取Broker Name、队列数(包含读队列与写队列)
+    public static final int GET_ROUTEINTO_BY_TOPIC = 105;
+    // Namesrv 获取注册到Name Server的所有Broker集群信息
+    public static final int GET_BROKER_CLUSTER_INFO = 106;
+    public static final int UPDATE_AND_CREATE_SUBSCRIPTIONGROUP = 200;
+    public static final int GET_ALL_SUBSCRIPTIONGROUP_CONFIG = 201;
+    public static final int GET_TOPIC_STATS_INFO = 202;
+    public static final int GET_CONSUMER_CONNECTION_LIST = 203;
+    public static final int GET_PRODUCER_CONNECTION_LIST = 204;
+    public static final int WIPE_WRITE_PERM_OF_BROKER = 205;
+
+    // 从Name Server获取完整Topic列表
+    public static final int GET_ALL_TOPIC_LIST_FROM_NAMESERVER = 206;
+    // 从Broker删除订阅组
+    public static final int DELETE_SUBSCRIPTIONGROUP = 207;
+    // 从Broker获取消费状态（进度）
+    public static final int GET_CONSUME_STATS = 208;
+    // Suspend Consumer消费过程
+    public static final int SUSPEND_CONSUMER = 209;
+    // Resume Consumer消费过程
+    public static final int RESUME_CONSUMER = 210;
+    // 重置Consumer Offset
+    public static final int RESET_CONSUMER_OFFSET_IN_CONSUMER = 211;
+    // 重置Consumer Offset
+    public static final int RESET_CONSUMER_OFFSET_IN_BROKER = 212;
+    // 调整Consumer线程池数量
+    public static final int ADJUST_CONSUMER_THREAD_POOL = 213;
+    // 查询消息被哪些消费组消费
+    public static final int WHO_CONSUME_THE_MESSAGE = 214;
+
+    // 从Broker删除Topic配置
+    public static final int DELETE_TOPIC_IN_BROKER = 215;
+    // 从Namesrv删除Topic配置
+    public static final int DELETE_TOPIC_IN_NAMESRV = 216;
+    // Namesrv 通过 project 获取所有的 server ip 信息
+    public static final int GET_KV_CONFIG_BY_VALUE = 217;
+    // Namesrv 删除指定 project group 下的所有 server ip 信息
+    public static final int DELETE_KV_CONFIG_BY_VALUE = 218;
+    // 通过NameSpace获取所有的KV List
+    public static final int GET_KVLIST_BY_NAMESPACE = 219;
+
+    // offset 重置
+    public static final int RESET_CONSUMER_CLIENT_OFFSET = 220;
+    // 客户端订阅消息
+    public static final int GET_CONSUMER_STATUS_FROM_CLIENT = 221;
+    // 通知 broker 调用 offset 重置处理
+    public static final int INVOKE_BROKER_TO_RESET_OFFSET = 222;
+    // 通知 broker 调用客户端订阅消息处理
+    public static final int INVOKE_BROKER_TO_GET_CONSUMER_STATUS = 223;
+
+    // Broker 查询topic被谁消费
+    // 2014-03-21 Add By shijia
+    public static final int QUERY_TOPIC_CONSUME_BY_WHO = 300;
+
+    // 获取指定集群下的所有 topic
+    // 2014-03-26
+    public static final int GET_TOPICS_BY_CLUSTER = 224;
+
+    // 向Broker注册Filter Server
+    // 2014-04-06 Add By shijia
+    public static final int REGISTER_FILTER_SERVER = 301;
+    // 向Filter Server注册Class
+    // 2014-04-06 Add By shijia
+    public static final int REGISTER_MESSAGE_FILTER_CLASS = 302;
+    // 根据 topic 和 group 获取消息的时间跨度
+    public static final int QUERY_CONSUME_TIME_SPAN = 303;
+    // 获取所有系统内置 Topic 列表
+    public static final int GET_SYSTEM_TOPIC_LIST_FROM_NS = 304;
+    public static final int GET_SYSTEM_TOPIC_LIST_FROM_BROKER = 305;
+
+    // 清理失效队列
+    public static final int CLEAN_EXPIRED_CONSUMEQUEUE = 306;
+
+    // 通过Broker查询Consumer内存数据
+    // 2014-07-19 Add By shijia
+    public static final int GET_CONSUMER_RUNNING_INFO = 307;
+
+    // 查找被修正 offset (转发组件）
+    public static final int QUERY_CORRECTION_OFFSET = 308;
+
+    // 通过Broker直接向某个Consumer发送一条消息，并立刻消费，返回结果给broker，再返回给调用方
+    // 2014-08-11 Add By shijia
+    public static final int CONSUME_MESSAGE_DIRECTLY = 309;
+
+    // Broker 发送消息，优化网络数据包
+    public static final int SEND_MESSAGE_V2 = 310;
+
+    // 单元化相关 topic
+    public static final int GET_UNIT_TOPIC_LIST = 311;
+    // 获取含有单元化订阅组的 Topic 列表
+    public static final int GET_HAS_UNIT_SUB_TOPIC_LIST = 312;
+    // 获取含有单元化订阅组的非单元化 Topic 列表
+    public static final int GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST = 313;
+    // 克隆某一个组的消费进度到新的组
+    public static final int CLONE_GROUP_OFFSET = 314;
+
+    // 查看Broker上的各种统计信息
+    public static final int VIEW_BROKER_STATS_DATA = 315;
+</code></pre>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[RocketMQ——角色与术语详解]]></title>
+    <link href="http://Jaskey.github.io/blog/2016/12/15/rokectmq-concept/"/>
+    <updated>2016-12-15T15:48:01+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2016/12/15/rokectmq-concept</id>
+    <content type="html"><![CDATA[<p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
+
+<p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>
+
+<h2>角色：</h2>
+
+<h3>Producer</h3>
+
+<p>生产者。发送消息的客户端角色。发送消息的时候需要指定Topic。</p>
+
+<h3>Consumer</h3>
+
+<p>消费者。消费消息的客户端角色。通常是后台处理异步消费的系统。 RocketMQ中Consumer有两种实现：PushConsumer和PullConsumer。</p>
+
+<h4>PushConsumer</h4>
+
+<p>推送模式（虽然RocketMQ使用的是长轮询）的消费者。消息的能及时被消费。使用非常简单，内部已处理如线程池消费、流控、负载均衡、异常处理等等的各种场景。</p>
+
+<h4>PullConsumer</h4>
+
+<p>拉取模式的消费者。应用主动控制拉取的时机，怎么拉取，怎么消费等。主动权更高。但要自己处理各种场景。</p>
+
+<h2>概念术语</h2>
+
+<h3>Producer Group</h3>
+
+<p>标识发送同一类消息的Producer，通常发送逻辑一致。发送普通消息的时候，仅标识使用，并无特别用处。若事务消息，如果某条发送某条消息的producer-A宕机，使得事务消息一直处于PREPARED状态并超时，则broker会回查同一个group的其 他producer，确认这条消息应该commit还是rollback。但开源版本并不支持事务消息。</p>
+
+<h3>Consumer Group</h3>
+
+<p>标识一类Consumer的集合名称，这类Consumer通常消费一类消息，且消费逻辑一致。同一个Consumer Group下的各个实例将共同消费topic的消息，起到负载均衡的作用。</p>
+
+<p>消费进度以Consumer Group为粒度管理，不同Consumer Group之间消费进度彼此不受影响，即消息A被Consumer Group1消费过，也会再给Consumer Group2消费。</p>
+
+<p>注： RocketMQ要求同一个Consumer Group的消费者必须要拥有相同的注册信息，即必须要听一样的topic(并且tag也一样)。</p>
+
+<h3>Topic</h3>
+
+<p>标识一类消息的逻辑名字，消息的逻辑管理单位。无论消息生产还是消费，都需要指定Topic。</p>
+
+<h3>Tag</h3>
+
+<p>RocketMQ支持给在发送的时候给topic打tag，同一个topic的消息虽然逻辑管理是一样的。但是消费topic1的时候，如果你订阅的时候指定的是tagA，那么tagB的消息将不会投递。</p>
+
+<h3>Message Queue</h3>
+
+<p>简称Queue或Q。消息物理管理单位。一个Topic将有若干个Q。若Topic同时创建在不通的Broker，则不同的broker上都有若干Q，消息将物理地存储落在不同Broker结点上，具有水平扩展的能力。</p>
+
+<p>无论生产者还是消费者，实际的生产和消费都是针对Q级别。例如Producer发送消息的时候，会预先选择（默认轮询）好该Topic下面的某一条Q地发送；Consumer消费的时候也会负载均衡地分配若干个Q，只拉取对应Q的消息。</p>
+
+<p>每一条message queue均对应一个文件，这个文件存储了实际消息的索引信息。并且即使文件被删除，也能通过实际纯粹的消息文件（commit log）恢复回来。</p>
+
+<h3>Offset</h3>
+
+<p>RocketMQ中，有很多offset的概念。但通常我们只关心暴露到客户端的offset。一般我们不特指的话，就是指逻辑Message Queue下面的offset。</p>
+
+<p>可以认为一条逻辑的message queue是无限长的数组。一条消息进来下标就会涨1.下标就是offset。</p>
+
+<p>一条message queue中的max offset表示消息的最大offset，即消息最新消息的offset。而min offset则标识现存在的最小offset。</p>
+
+<p>由于消息存储一段时间后，消费会被物理地从磁盘删除，message queue的min offset也就对应增长。这意味着比min offset要小的那些消息已经不在broker上了，无法被消费。</p>
+
+<h3>消费进度</h3>
+
+<p>又称consumer offset，用于标记Consumer Group在一条逻辑Message Queue上，消息消费到哪里。</p>
+
+<p>消费者拉取消息的时候需要指定offset，broker不主动推送消息，而是接受到请求的时候把存储的对应offset的消息返回给客户端。这个offset在成功消费后会更新到内存，并定时持久化。在集群消费模式下，会同步持久化到broker。在广播模式下，会持久化到本地文件。</p>
+
+<p>实例重启的时候会获取持久化的consumer offset，用以决定从哪里开始消费。</p>
+
+<h3>集群消费</h3>
+
+<p>消费者的一种消费模式。一个Consumer Group中的各个Consumer实例分摊去消费消息，即一条消息只会投递到一个Consumer Group下面的一个实例。</p>
+
+<p>实际上，每个Consumer是平均分摊Message Queue的去做拉取消费。例如某个Topic有3条Q，其中一个Consumer Group 有 3 个实例（可能是 3 个进程，或者 3 台机器），那么每个实例只消费其中的1条Q。</p>
+
+<p>而由Producer发送消息的时候是轮询所有的Q,所以消息会平均散落在不同的Q上，可以认为Q上的消息是平均的。那么实例也就平均地消费消息了。</p>
+
+<p>这种模式下，消费进度的存储会持久化到Broker。</p>
+
+<h3>广播消费</h3>
+
+<p>消费者的一种消费模式。消息将对一个Consumer Group下的各个Consumer实例都投递一遍。即即使这些 Consumer 属于同一个Consumer Group，消息也会被Consumer Group 中的每个Consumer都消费一次。</p>
+
+<p>实际上，是一个消费组下的每个消费者实例都获取到了topic下面的每个Message Queue去拉取消费。所以消息会投递到每个消费者实例。</p>
+
+<p>这种模式下，消费进度会存储持久化到实例本地。</p>
+
+<h3>顺序消息</h3>
+
+<p>消费消息的顺序要同发送消息的顺序一致。由于Consumer消费消息的时候是针对Message Queue顺序拉取并开始消费，且一条Message Queue只会给一个消费者（集群模式下），所以能够保证同一个消费者实例对于Q上消息的消费是顺序地开始消费（不一定顺序消费完成，因为消费可能并行）。</p>
+
+<p>在RocketMQ中，顺序消费主要指的是都是Queue级别的局部顺序。这一类消息为满足顺序性，必须Producer单线程顺序发送，且发送到同一个队列，这样Consumer就可以按照Producer发送的顺序去消费消息。</p>
+
+<p>生产者发送的时候可以用MessageQueueSelector为某一批消息（通常是有相同的唯一标示id）选择同一个Queue，则这一批消息的消费将是顺序消息（并由同一个consumer完成消息）。或者Message Queue的数量只有1，但这样消费的实例只能有一个，多出来的实例都会空跑。</p>
+
+<h3>普通顺序消息</h3>
+
+<p>顺序消息的一种，正常情况下可以保证完全的顺序消息，但是一旦发生异常，Broker宕机或重启，由于队列总数发生发化，消费者会触发负载均衡，而默认地负载均衡算法采取哈希取模平均，这样负载均衡分配到定位的队列会发化，使得队列可能分配到别的实例上，则会短暂地出现消息顺序不一致。</p>
+
+<p>如果业务能容忍在集群异常情况（如某个 Broker 宕机或者重启）下，消息短暂的乱序，使用普通顺序方式比较合适。</p>
+
+<h3>严格顺序消息</h3>
+
+<p>顺序消息的一种，无论正常异常情况都能保证顺序，但是牺牲了分布式 Failover 特性，即 Broker集群中只要有一台机器不可用，则整个集群都不可用，服务可用性大大降低。</p>
+
+<p>如果服务器部署为同步双写模式，此缺陷可通过备机自动切换为主避免，不过仍然会存在几分钟的服务不可用。（依赖同步双写，主备自动切换，自动切换功能目前并未实现）</p>
+
+<p>目前已知的应用只有数据库 binlog 同步强依赖严格顺序消息，其他应用绝大部分都可以容忍短暂乱序，推荐使用普通的顺序消息</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[RocketMQ——组件]]></title>
+    <link href="http://Jaskey.github.io/blog/2016/12/14/rokectmq-startup/"/>
+    <updated>2016-12-14T20:54:20+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2016/12/14/rokectmq-startup</id>
+    <content type="html"><![CDATA[<p><img src="/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+
+<p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
+
+<p>下面分别介绍三个组件：</p>
+
+<h1>Name Server</h1>
+
+<p>Name Server是RocketMQ的寻址服务。用于把Broker的路由信息做聚合。用户端依靠Name Server决定去获取对应topic的路由信息，从而决定对哪些Broker做连接。</p>
+
+<ul>
+<li><p>Name Server是一个几乎无状态的结点，Name Server之间采取share-nothing的设计，互不通信。</p></li>
+<li><p>对于一个Name Server集群列表，客户端连接Name Server的时候，只会选择随机连接一个结点，以做到负载均衡。</p></li>
+<li><p>Name Server所有状态都从Broker上报而来，本身不存储任何状态，所有数据均在内存。</p></li>
+<li><p>如果中途所有Name Server全都挂了，影响到路由信息的更新，不会影响和Broker的通信。</p></li>
+</ul>
+
+
+<h1>Broker</h1>
+
+<p>Broker是处理消息存储，转发等处理的服务器。</p>
+
+<ul>
+<li>Broker以group分开，每个group只允许一个master，若干个slave。</li>
+<li>只有master才能进行写入操作，slave不允许。</li>
+<li>slave从master中同步数据。同步策略取决于master的配置，可以采用同步双写，异步复制两种。</li>
+<li>客户端消费可以从master和slave消费。在默认情况下，消费者都从master消费，在master挂后，客户端由于从Name Server中感知到Broker挂机，就会从slave消费。</li>
+<li>Broker向所有的NameServer结点建立长连接，注册Topic信息。</li>
+</ul>
+
+
+<h1>Filter Server（可选）</h1>
+
+<p>RocketMQ可以允许消费者上传一个Java类给Filter Server进行过滤。</p>
+
+<ul>
+<li>Filter Server只能起在Broker所在的机器</li>
+<li>可以有若干个Filter Server进程</li>
+<li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
+<li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
+<li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
+<li>使用 Java 诧言迕行作为过滤表达式是一个双刃剑，方便了应用的过滤操作且节省网卡资源，但是带来了服务器端的安全风险。需要应用来保证过滤代码安全，例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
@@ -66,380 +660,6 @@
 </script></p>
 
 <p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Jackson 操作JSON]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
-    <updated>2015-05-13T21:18:28+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
-    <content type="html"><![CDATA[<h2>Maven 支持：</h2>
-
-<pre><code>  &lt;repositories&gt;
-    &lt;repository&gt;
-        &lt;id&gt;codehaus&lt;/id&gt;
-        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
-    &lt;/repository&gt;
-  &lt;/repositories&gt;
-
-  &lt;dependencies&gt;
-    &lt;dependency&gt;
-        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
-        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
-        &lt;version&gt;1.8.5&lt;/version&gt;
-    &lt;/dependency&gt;
-  &lt;/dependencies&gt;
-</code></pre>
-
-<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
-    ObjectMapper mapper = new ObjectMapper();</p>
-
-<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
-
-<h2>Java object to JSON</h2>
-
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
-</code></pre>
-
-<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
-
-<pre><code>StringWriter sw =new StringWriter();
-ObjectMapper mapper = new ObjectMapper();
-mapper.writeValue(sw, user);//写到StringWriter
-String JSON = sw.toString();
-sw.close();
-</code></pre>
-
-<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
-
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
-</code></pre>
-
-<h2>JSON to Java object</h2>
-
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
-</code></pre>
-
-<h1>集合操作</h1>
-
-<h2>Map/List to JSON</h2>
-
-<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
-
-<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
-objectMapper.writeValue(new File(jsonFilePath), listObject);
-</code></pre>
-
-<h2>JSON to Map/List/数组</h2>
-
-<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
-                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
-
-
-
-     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
-                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
-
-
-     String[] array = mapper.readValue(new File('c:\\user.json'),
-                String[].class);//使用class对象
-</code></pre>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[谈谈性能瓶颈及简单调优]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/31/program-tunning/"/>
-    <updated>2014-10-31T17:44:25+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/31/program-tunning</id>
-    <content type="html"><![CDATA[<p>随着系统访问量的上升，系统资源的消耗，系统的响应通常会越来越慢。这时候我们需要对系统的性能进行相关分析，找到性能瓶颈。</p>
-
-<p>从代码的角度来看，性能瓶颈很可能出现在几个关键资源:CPU,内存，IO。</p>
-
-<h2>CPU</h2>
-
-<p>由于每个CPU的每个核一个时间只能执行一个线程，Linux采用的是抢占式的调度。</p>
-
-<h4>上下文切换</h4>
-
-<p>如果有频繁的上下文切换，则会造成内核占据较多的CPU使用，降低系统性能。典型的例子有是有非常强烈的锁竞争情况。这会导致当前进程频繁的进入阻塞或者休眠状态，使得应用响应下降。</p>
-
-<p>这类型的解决方法有，</p>
-
-<ol>
-<li>减小Thread的数量</li>
-<li>降低锁竞争，如分多把锁。</li>
-</ol>
-
-
-<h4>线程一直处于Running</h4>
-
-<p>还有另外一种情况是线程一直处于Running状态，这会导致该线程消耗大部分的CPU，通常情况是进行循环，或者大批量计算。</p>
-
-<p>例如</p>
-
-<pre><code>while(somevalue!=XXX){//
-   ;//死循环
-}   
-</code></pre>
-
-<p>或者有一个大批量的数据操作，如对集合进行很大数据量的增加操作：</p>
-
-<pre><code>for(int i=0;i&lt;10000;i++){
-    list.add(value[i])
-}
-</code></pre>
-
-<p>以上两种例子都会使得线程一直处于running状态而不释放CPU，一个可取的方法是进行部分操作后进行<code>Thread.sleep()</code>,让出CPU。</p>
-
-<p>如上面第二个例子：</p>
-
-<pre><code>for(int i=0;i&lt;10000;i++){
-   list.add(value[i])
-   if(i%50==0){//每50个就让出一次CPU 
-        Thread.sleep(1);
-    }
-}
-</code></pre>
-
-<p>当然，对于第一个例子，假如是希望线程中的协作的话，最好使用的是monitor object 的wait()/notify()之类的方法。</p>
-
-<p>如</p>
-
-<pre><code>while(!some_condition){
-    condition.wait();//挂起等待notify
-}
-</code></pre>
-
-<h2>内存</h2>
-
-<p>如果消耗了过多的JVM Heap内存，将会频繁触发GC，将大大影响系统的性能。</p>
-
-<h4>使用对象缓存池</h4>
-
-<p>使用对象池可以一定程度创建对象所花费的CPU和内存</p>
-
-<h4>采用合理的缓存失效算法</h4>
-
-<p>上面讲到了对象池降低内存消耗，但假如放入太多对象到缓存池里面，反而会造成更严重的内存消耗，这是因为池本身对于对象持有引用，从而可能造成频繁的Full GC。所以，需要控制池中对象的数量。</p>
-
-<p>当池中对象达到最大值后，如果需要加入新的对象，则需要采用合理的失效算法清除池中的对象。如FIFO,LRU,LFU。</p>
-
-<h4>中途释放不用的大对象引用</h4>
-
-<p>如：</p>
-
-<pre><code>void foo(){
-  Object bigObject=new Object();
-  bigObject.doSomething();//下面不需要了
-  // 下面有很多其他耗时，耗内存的操作的话，可考虑释放bigObject的引用
-  bigObject=null;
-
-  //some long opertions
-}
-</code></pre>
-
-<h4>合理使用WeakReference 和 SoftReference</h4>
-
-<p>有些对象我们允许在某些情况下即使我们还有引用，也要被GC。这时候可以考虑使用弱引用或者软引用。</p>
-
-<p>当某些对象用作类似缓存对象的时候，内存不足就可以被回收的话，这类对象可以使用软引用。</p>
-
-<p>而当某些对象A如果依附于某个对象B存在，如果B不存在了，A就没有必要存在，并且A的存在与否不应该阻碍B是否存在，那么A引用B的时候可以考虑使用弱引用。</p>
-
-<p>关于两者区别可以参考<a href="http://stackoverflow.com/questions/299659/what-is-the-difference-between-a-soft-reference-and-a-weak-reference-in-java">what is the difference between a soft reference and a weak reference</a></p>
-
-<h2>文件IO</h2>
-
-<p>文件IO严重的主要原因是多个线程在写大量的数据在同一个文件，导致文件变得很大，写入速度越来越慢，并造成线程竞争文件锁激烈。</p>
-
-<p>解决此类问题的方向有：</p>
-
-<h4>异步写文件</h4>
-
-<p>把文件的写入操作改为异步，如写日志的时候使用<code>log4j</code>的<a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/AsyncAppender.html">AsynAppender</a></p>
-
-<h4>批量读写</h4>
-
-<p>如大数据插入数据库改改为批量的插入操作数据库的操作：</p>
-
-<pre><code>  PreparedStatement ps = c.prepareStatement("INSERT INTO employees VALUES (?, ?)");
-
-  ps.setString(1, "John");
-  ps.setString(2,"Doe");
-  ps.addBatch();
-
-  ps.clearParameters();
-  ps.setString(1, "Dave");
-  ps.setString(2,"Smith");
-  ps.addBatch();
-
-  ps.clearParameters();
-  int[] results = ps.executeBatch();
-</code></pre>
-
-<p>具体可参考：<a href="http://viralpatel.net/blogs/batch-insert-in-java-jdbc/">batch insert in java</a></p>
-
-<h4>限制文件大小</h4>
-
-<p>无论数据库表，还是日志文件，我们都应该限制其的大小。</p>
-
-<p>有必要的话，对于数据库表，需要分拆成小表，增加读写速度。</p>
-
-<p>对于文件如日志文件则需要设置一个最大值，超过后生成另外一个新文件。如<code>log4j</code>中使用<code>RollingFileAppender</code>的<code>maxFileSize</code>属性。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[谈谈Java同步机制]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/13/java-synchronization/"/>
-    <updated>2014-10-13T21:11:20+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/13/java-synchronization</id>
-    <content type="html"><![CDATA[<p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
-今天简单谈谈Java的同步机制。</p>
-
-<p>我们以一个十分简单的例子讲起。</p>
-
-<pre><code>int i=0
-public int getNextI(){
-    return ++i;
-}
-</code></pre>
-
-<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
-
-<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
-
-<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
-
-<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
-
-<h2>volatile</h2>
-
-<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
-
-<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
-
-<h2>synchronized</h2>
-
-<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
-
-<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
-
-<p>我们可以改成</p>
-
-<pre><code>public synchronized int getNextI(){
-    return i++;
-}
-</code></pre>
-
-<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
-
-<p>注：
-如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
-
-<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
-
-<pre><code>public  int getNextI(){
-    synchronized(this){
-        return i++;
-    }
-}
-</code></pre>
-
-<p>更多文档可参考：</p>
-
-<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[JVM垃圾回收算法]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/"/>
-    <updated>2014-10-10T17:09:51+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm</id>
-    <content type="html"><![CDATA[<p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
-
-<ul>
-<li><strong>引用计数收集器</strong></li>
-</ul>
-
-
-<hr />
-
-<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
-
-<p><img src="http://jaskey.github.io/images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
-
-<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
-
-<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
-
-<h2>- <strong>跟踪收集器</strong></h2>
-
-<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
-
-<!--more-->
-
-
-<ul>
-<li><strong>复制（Copying）</strong>
-复制收集器从根集合开始扫描所有存活的对象，把能达到的所有对象（存活对象）复制到一块新的未被使用的空间中，没有到达的对象则证明没有被引用，可以回收。这样就解决了循环引用不可回收的问题，如下图所示：</li>
-</ul>
-
-
-<p><img src="/images/gc/copying.jpg" title="复制算法" alt="复制算法" /></p>
-
-<p>好处：仅需扫描一次所有存活的对象，当存活对象较少时（垃圾对象多），比较高效。适合于新生代区</p>
-
-<p>坏处：需要额外的内存空间，不适合老年代（大部分是存活对象）</p>
-
-<ul>
-<li><strong>标记-清除(Mark-Sweep)</strong></li>
-</ul>
-
-
-<p>采用从根集合开始扫描，对能到达的对象（存活）进行标记，标记完成后，再扫描整个空间中未标记的对象，并进行回收。</p>
-
-<p><img src="/images/gc/mark-sweep.jpg" title="标记-清除法" alt="标记-清除" /></p>
-
-<p>好处：仅需扫描一次所有存活的对象，不需要移动对象，仅需要对不可达对象（垃圾对象）进行处理。适合于垃圾对象比较少的情况。</p>
-
-<p>坏处：容易造成内存碎片</p>
-
-<ul>
-<li><strong>标记-压缩(Mark-Compact)</strong></li>
-</ul>
-
-
-<p>和标记-清除一样对可达对象（存活对象）进行标记，但是回收垃圾对象的后，会对其他存活的对象往左端空闲空间进行移动，并更新引用对象的指针。适合老年代。如下图：</p>
-
-<p><img src="/images/gc/mark-compact.jpg" title="标记-压缩法" alt="标记-压缩" /></p>
-
-<p>好处：对比标记-清除，避免了内存碎片</p>
-
-<p>坏处：增加了移动对象的成本。</p>
-
-<hr />
-
-<ul>
-<li><strong>增量算法</strong></li>
-</ul>
-
-
-<p>由于大部分的回收算法在回收时候，只有垃圾回收线程在运行，其他线程都会被挂起，直到垃圾回收结束。</p>
-
-<p>这将导致在垃圾回收很久时候，其他线程一直不工作，而导致系统无响应。例如在Android应用中，如果UI进程5秒不响应就会出现ANR(Application Not Responding)错误。所以一个可行的方法是让垃圾进程与其他线程交替执行，每次垃圾回收仅进行部分内存的回收，减小系统的停顿时间。但由于线程的来回切换，提高了垃圾回收的开销。</p>
-
-<hr />
-
-<h2>总结：</h2>
-
-<p>一个对象新创建的时候进入到新生代，然后垃圾回收几次后，该对象依然存活，于是就放入老年代。所以，新生代适合使用复制算法（大多是垃圾对象，复制开销小），老年代多用标记-压缩算法（大多是存活对象，回收对象少）。然后整个垃圾回收器的工作线程是用增量算法，时间轮转片执行。</p>
 ]]></content>
   </entry>
   

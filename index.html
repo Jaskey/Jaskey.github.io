@@ -73,6 +73,850 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-19T20:49:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:49 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
+
+<h2>Broker端水平扩展</h2>
+
+<h3>Broker负载均衡</h3>
+
+<p>Broker是以group为单位提供服务。一个group里面分master和slave,master和slave存储的数据一样，slave从master同步数据（同步双写或异步复制看配置）。</p>
+
+<p>通过nameserver暴露给客户端后，只是客户端关心（注册或发送）一个个的topic路由信息。路由信息中会细化为message queue的路由信息。而message queue会分布在不同的broker group。所以对于客户端来说，分布在不同broker group的message queue为成为一个服务集群，但客户端会把请求分摊到不同的queue。</p>
+
+<p>而由于压力分摊到了不同的queue,不同的queue实际上分布在不同的Broker group，也就是说压力会分摊到不同的broker进程，这样消息的存储和转发均起到了负载均衡的作用。</p>
+
+<p>Broker一旦需要横向扩展，只需要增加broker group，然后把对应的topic建上，客户端的message queue集合即会变大，这样对于broker的负载则由更多的broker group来进行分担。</p>
+
+<p>并且由于每个group下面的topic的配置都是独立的，也就说可以让group1下面的那个topic的queue数量是4，其他group下的topic queue数量是2，这样group1则得到更大的负载。</p>
+
+<h3>commit log</h3>
+
+<p>虽然每个topic下面有很多message queue，但是message queue本身并不存储消息。真正的消息存储会写在CommitLog的文件，message queue只是存储CommitLog中对应的位置信息，方便通过message queue找到对应存储在CommitLog的消息。</p>
+
+<p>不同的topic，message queue都是写到相同的CommitLog 文件，也就是说CommitLog完全的顺序写。</p>
+
+<p>具体如下图：</p>
+
+<p><img src="/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
+
+<h2>Producer</h2>
+
+<p>Producer端，每个实例在发消息的时候，默认会轮询所有的message queue发送，以达到让消息平均落在不同的queue上。而由于queue可以散落在不同的broker，所以消息就发送到不同的broker下，如下图：</p>
+
+<p><img src="/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
+
+<h2>Consumer负载均衡</h2>
+
+<h3>集群模式</h3>
+
+<p>在集群消费模式下，每条消息只需要投递到订阅这个topic的Consumer Group下的一个实例即可。RocketMQ采用主动拉取的方式拉取并消费消息，在拉取的时候需要明确指定拉取哪一条message queue。</p>
+
+<p>而每当实例的数量有变更，都会触发一次所有实例的负载均衡，这时候会按照queue的数量和实例的数量平均分配queue给每个实例。</p>
+
+<p>默认的分配算法是AllocateMessageQueueAveragely，如下图：</p>
+
+<p><img src="/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
+
+<p>还有另外一种平均的算法是AllocateMessageQueueAveragelyByCircle，也是平均分摊每一条queue，只是以环状轮流分queue的形式，如下图：</p>
+
+<p><img src="/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
+
+<p>需要注意的是，集群模式下，queue都是只允许分配只一个实例，这是由于如果多个实例同时消费一个queue的消息，由于拉取哪些消息是consumer主动控制的，那样会导致同一个消息在不同的实例下被消费多次，所以算法上都是一个queue只分给一个consumer实例，一个consumer实例可以允许同时分到不同的queue。</p>
+
+<p>通过增加consumer实例去分摊queue的消费，可以起到水平扩展的消费能力的作用。而有实例下线的时候，会重新触发负载均衡，这时候原来分配到的queue将分配到其他实例上继续消费。</p>
+
+<p>但是如果consumer实例的数量比message queue的总数量还多的话，多出来的consumer实例将无法分到queue，也就无法消费到消息，也就无法起到分摊负载的作用了。所以需要控制让queue的总数量大于等于consumer的数量。</p>
+
+<h3>广播模式</h3>
+
+<p>由于广播模式下要求一条消息需要投递到一个消费组下面所有的消费者实例，所以也就没有消息被分摊消费的说法。</p>
+
+<p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
+
+<p><img src="/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-19T20:49:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:49 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
+
+<p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
+
+<h2>通讯协议</h2>
+
+<p>协议分为以下四部分：</p>
+
+<p><img src="/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
+
+<p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
+
+<ul>
+<li><p>header: 协议的头，数据是序列化后的json。json的每个key字段都是固定的，不同的通讯请求字段不一样。后面解释</p></li>
+<li><p>body: 请求的二进制实际数据。例如发送消息的网络请求中，body中传输实际的消息内容。</p></li>
+<li><p>length:2 3 4 端整体的长度。四个字节整数。</p></li>
+<li><p>header length: header的长度。四个字节整数。</p></li>
+</ul>
+
+
+<h3>Header</h3>
+
+<p>协议header具体标识整个通讯请求的元数据，如请求什么，怎样的方式请求（异步/oneway）请求客户端的版本，语言，请求的具体参数等。</p>
+
+<p>header是序列化的json,以下是json中的所有字段,并阐述起在请求和响应两个阶段的区别。</p>
+
+<table>
+<thead>
+<tr>
+<th> 字段      </th>
+<th> 类型                   </th>
+<th> Request                                                                                                                          </th>
+<th> Response                                                                                   </th>
+<th>   </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> code      </td>
+<td> 整数                   </td>
+<td> 请求操作码。响应方通过code决定如何处理请求。                                                                                       </td>
+<td> 响应码。0表示成功，非0表示错误码。                                                         </td>
+<td>   </td>
+</tr>
+<tr>
+<td> language  </td>
+<td> 字符串                 </td>
+<td> 标记请求方的语言类型，如JAVA。                                                                                                   </td>
+<td> 应答方方的所使用的语言。                                                                   </td>
+<td>   </td>
+</tr>
+<tr>
+<td> version   </td>
+<td> 整数                   </td>
+<td> 请求方的版本号                                                                                                                   </td>
+<td> 应答方的版本号                                                                             </td>
+<td>   </td>
+</tr>
+<tr>
+<td> opaque    </td>
+<td> 整数                   </td>
+<td> 在同一个连接上，标记是哪次请求。服务响应的时候会返回这个请求标识码，以达到请求方多线程中复用连接，在收到响应的时候找到对应的请求 </td>
+<td> 原请求的opaque。应答方不做修改原值返回。                                                   </td>
+<td>   </td>
+</tr>
+<tr>
+<td> flag      </td>
+<td> 整数                   </td>
+<td> 通信层的标识位。标识这次通信的类型。                                                                                             </td>
+<td> 通信层的标识位。标识这次通信的类型。                                                       </td>
+<td>   </td>
+</tr>
+<tr>
+<td> remark    </td>
+<td> 字符串                 </td>
+<td> 传输的自定义文本                                                                                                                 </td>
+<td> 应答的文本信息。通常存放错误信息。                                                         </td>
+<td>   </td>
+</tr>
+<tr>
+<td> extFields </td>
+<td> HashMap&lt;String,String> </td>
+<td> 请求自定义字段。不同的请求会有不一样的参数列表，这里存放那些请求自定义的参数列表。                                               </td>
+<td> 响应自定义字段。不同的响应会有不一样的参数列表，若有，这里则存放那些请求自定义的参数列表。 </td>
+<td>   </td>
+</tr>
+</tbody>
+</table>
+
+
+<h4>Header详解：</h4>
+
+<h5>code:</h5>
+
+<p>请求/响应码。所有的请求码参考代码<code>RequestCode.java</code>。响应码则在<code>ResponseCode.java</code>中。</p>
+
+<h5>language:</h5>
+
+<p>由于要支持多语言，所以这一字段可以给通信双方知道对方通信层锁使用的开发语言。</p>
+
+<h5>version:</h5>
+
+<p>给通信层知道对方的版本号，响应方可以以此做兼容老版本等的特殊操作。</p>
+
+<h5>opaque:</h5>
+
+<p>请求标识码。在Java版的通信层中，这个只是一个不断自增的整形，为了收到应答方响应的的时候找到对应的请求。</p>
+
+<p>flag： 按位(bit)解释。</p>
+
+<p>第0位标识是这次通信是request还是response，0标识request, 1 标识response。</p>
+
+<p>第1位标识是否是oneway请求，1标识oneway。应答方在处理oneway请求的时候，不会做出响应，请求方也无序等待应答方响应。</p>
+
+<h5>remark:</h5>
+
+<p>附带的文本信息。常见的如存放一些broker/nameserver返回的一些异常信息，方便开发人员定位问题。</p>
+
+<h5>extFields：</h5>
+
+<p>这个字段不通的请求/响应不一样，完全自定义。数据结构上是java的hashmap。在Java的每个RemotingCammand中，其实都带有一个CommandCustomHeader的属性成员，可以认为他是一个强类型的extFields，再最后传输的时候，这个CommandCustomHeader会被忽略，而传输前会把其中的所有字段全部都原封不动塞到extFields中，以作传输。</p>
+
+<p>以发送消息为例(code=310)，发送消息的自定义header是SendMessageRequestHeaderV2（只是字段名对比SendMessageRequestHeader压缩了）。有以下字段：</p>
+
+<pre><code>@CFNotNull
+private String a;// producerGroup;
+@CFNotNull
+private String b;// topic;
+@CFNotNull
+private String c;// defaultTopic;
+@CFNotNull
+private Integer d;// defaultTopicQueueNums;
+@CFNotNull
+private Integer e;// queueId;
+@CFNotNull
+private Integer f;// sysFlag;
+@CFNotNull
+private Long g;// bornTimestamp;
+@CFNotNull
+private Integer h;// flag;
+@CFNullable
+private String i;// properties;
+@CFNullable
+private Integer j;// reconsumeTimes;
+@CFNullable
+private boolean k;// unitMode = false;
+</code></pre>
+
+<p>这些字段都会原封不动的去到extFields中做传输，最后看到的发送消息的请求header会类似如：</p>
+
+<pre><code>{  
+    "code":310,
+    "extFields":{  
+        "f":"0",
+        "g":"1482158310125",
+        "d":"4",
+        "e":"0",
+        "b":"TopicTest",
+        "c":"TBW102",
+        "a":"please_rename_unique_group_name",
+        "j":"0",
+        "k":"false",
+        "h":"0",
+        "i":"TAGS\u0001TagA\u0002WAIT\u0001true\u0002"
+    },
+    "flag":0,
+    "language":"JAVA",
+    "opaque":206,
+    "version":79
+}
+</code></pre>
+
+<p>注：其中fastjson把值为null的remark过滤了。</p>
+
+<h2>请求码列表</h2>
+
+<p>以下是截至到3.2.6的所有请求码列表</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>    // Broker 发送消息
+</span><span class='line'>    public static final int SEND_MESSAGE = 10;
+</span><span class='line'>    // Broker 订阅消息
+</span><span class='line'>    public static final int PULL_MESSAGE = 11;
+</span><span class='line'>    // Broker 查询消息
+</span><span class='line'>    public static final int QUERY_MESSAGE = 12;
+</span><span class='line'>    // Broker 查询Broker Offset
+</span><span class='line'>    public static final int QUERY_BROKER_OFFSET = 13;
+</span><span class='line'>    // Broker 查询Consumer Offset
+</span><span class='line'>    public static final int QUERY_CONSUMER_OFFSET = 14;
+</span><span class='line'>    // Broker 更新Consumer Offset
+</span><span class='line'>    public static final int UPDATE_CONSUMER_OFFSET = 15;
+</span><span class='line'>    // Broker 更新或者增加一个Topic
+</span><span class='line'>    public static final int UPDATE_AND_CREATE_TOPIC = 17;
+</span><span class='line'>    // Broker 获取所有Topic的配置（Slave和Namesrv都会向Master请求此配置）
+</span><span class='line'>    public static final int GET_ALL_TOPIC_CONFIG = 21;
+</span><span class='line'>    // Broker 获取所有Topic配置（Slave和Namesrv都会向Master请求此配置）
+</span><span class='line'>    public static final int GET_TOPIC_CONFIG_LIST = 22;
+</span><span class='line'>    // Broker 获取所有Topic名称列表
+</span><span class='line'>    public static final int GET_TOPIC_NAME_LIST = 23;
+</span><span class='line'>    // Broker 更新Broker上的配置
+</span><span class='line'>    public static final int UPDATE_BROKER_CONFIG = 25;
+</span><span class='line'>    // Broker 获取Broker上的配置
+</span><span class='line'>    public static final int GET_BROKER_CONFIG = 26;
+</span><span class='line'>    // Broker 触发Broker删除文件
+</span><span class='line'>    public static final int TRIGGER_DELETE_FILES = 27;
+</span><span class='line'>    // Broker 获取Broker运行时信息
+</span><span class='line'>    public static final int GET_BROKER_RUNTIME_INFO = 28;
+</span><span class='line'>    // Broker 根据时间查询队列的Offset
+</span><span class='line'>    public static final int SEARCH_OFFSET_BY_TIMESTAMP = 29;
+</span><span class='line'>    // Broker 查询队列最大Offset
+</span><span class='line'>    public static final int GET_MAX_OFFSET = 30;
+</span><span class='line'>    // Broker 查询队列最小Offset
+</span><span class='line'>    public static final int GET_MIN_OFFSET = 31;
+</span><span class='line'>    // Broker 查询队列最早消息对应时间
+</span><span class='line'>    public static final int GET_EARLIEST_MSG_STORETIME = 32;
+</span><span class='line'>    // Broker 根据消息ID来查询消息
+</span><span class='line'>    public static final int VIEW_MESSAGE_BY_ID = 33;
+</span><span class='line'>    // Broker Client向Client发送心跳，并注册自身
+</span><span class='line'>    public static final int HEART_BEAT = 34;
+</span><span class='line'>    // Broker Client注销
+</span><span class='line'>    public static final int UNREGISTER_CLIENT = 35;
+</span><span class='line'>    // Broker Consumer将处理不了的消息发回服务器
+</span><span class='line'>    public static final int CONSUMER_SEND_MSG_BACK = 36;
+</span><span class='line'>    // Broker Commit或者Rollback事务
+</span><span class='line'>    public static final int END_TRANSACTION = 37;
+</span><span class='line'>    // Broker 获取ConsumerId列表通过GroupName
+</span><span class='line'>    public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
+</span><span class='line'>    // Broker 主动向Producer回查事务状态
+</span><span class='line'>    public static final int CHECK_TRANSACTION_STATE = 39;
+</span><span class='line'>    // Broker Broker通知Consumer列表变化
+</span><span class='line'>    public static final int NOTIFY_CONSUMER_IDS_CHANGED = 40;
+</span><span class='line'>    // Broker Consumer向Master锁定队列
+</span><span class='line'>    public static final int LOCK_BATCH_MQ = 41;
+</span><span class='line'>    // Broker Consumer向Master解锁队列
+</span><span class='line'>    public static final int UNLOCK_BATCH_MQ = 42;
+</span><span class='line'>    // Broker 获取所有Consumer Offset
+</span><span class='line'>    public static final int GET_ALL_CONSUMER_OFFSET = 43;
+</span><span class='line'>    // Broker 获取所有定时进度
+</span><span class='line'>    public static final int GET_ALL_DELAY_OFFSET = 45;
+</span><span class='line'>    // Namesrv 向Namesrv追加KV配置
+</span><span class='line'>    public static final int PUT_KV_CONFIG = 100;
+</span><span class='line'>    // Namesrv 从Namesrv获取KV配置
+</span><span class='line'>    public static final int GET_KV_CONFIG = 101;
+</span><span class='line'>    // Namesrv 从Namesrv获取KV配置
+</span><span class='line'>    public static final int DELETE_KV_CONFIG = 102;
+</span><span class='line'>    // Namesrv 注册一个Broker，数据都是持久化的，如果存在则覆盖配置
+</span><span class='line'>    public static final int REGISTER_BROKER = 103;
+</span><span class='line'>    // Namesrv 卸载一个Broker，数据都是持久化的
+</span><span class='line'>    public static final int UNREGISTER_BROKER = 104;
+</span><span class='line'>    // Namesrv 根据Topic获取Broker Name、队列数(包含读队列与写队列)
+</span><span class='line'>    public static final int GET_ROUTEINTO_BY_TOPIC = 105;
+</span><span class='line'>    // Namesrv 获取注册到Name Server的所有Broker集群信息
+</span><span class='line'>    public static final int GET_BROKER_CLUSTER_INFO = 106;
+</span><span class='line'>    public static final int UPDATE_AND_CREATE_SUBSCRIPTIONGROUP = 200;
+</span><span class='line'>    public static final int GET_ALL_SUBSCRIPTIONGROUP_CONFIG = 201;
+</span><span class='line'>    public static final int GET_TOPIC_STATS_INFO = 202;
+</span><span class='line'>    public static final int GET_CONSUMER_CONNECTION_LIST = 203;
+</span><span class='line'>    public static final int GET_PRODUCER_CONNECTION_LIST = 204;
+</span><span class='line'>    public static final int WIPE_WRITE_PERM_OF_BROKER = 205;
+</span><span class='line'>
+</span><span class='line'>    // 从Name Server获取完整Topic列表
+</span><span class='line'>    public static final int GET_ALL_TOPIC_LIST_FROM_NAMESERVER = 206;
+</span><span class='line'>    // 从Broker删除订阅组
+</span><span class='line'>    public static final int DELETE_SUBSCRIPTIONGROUP = 207;
+</span><span class='line'>    // 从Broker获取消费状态（进度）
+</span><span class='line'>    public static final int GET_CONSUME_STATS = 208;
+</span><span class='line'>    // Suspend Consumer消费过程
+</span><span class='line'>    public static final int SUSPEND_CONSUMER = 209;
+</span><span class='line'>    // Resume Consumer消费过程
+</span><span class='line'>    public static final int RESUME_CONSUMER = 210;
+</span><span class='line'>    // 重置Consumer Offset
+</span><span class='line'>    public static final int RESET_CONSUMER_OFFSET_IN_CONSUMER = 211;
+</span><span class='line'>    // 重置Consumer Offset
+</span><span class='line'>    public static final int RESET_CONSUMER_OFFSET_IN_BROKER = 212;
+</span><span class='line'>    // 调整Consumer线程池数量
+</span><span class='line'>    public static final int ADJUST_CONSUMER_THREAD_POOL = 213;
+</span><span class='line'>    // 查询消息被哪些消费组消费
+</span><span class='line'>    public static final int WHO_CONSUME_THE_MESSAGE = 214;
+</span><span class='line'>
+</span><span class='line'>    // 从Broker删除Topic配置
+</span><span class='line'>    public static final int DELETE_TOPIC_IN_BROKER = 215;
+</span><span class='line'>    // 从Namesrv删除Topic配置
+</span><span class='line'>    public static final int DELETE_TOPIC_IN_NAMESRV = 216;
+</span><span class='line'>    // Namesrv 通过 project 获取所有的 server ip 信息
+</span><span class='line'>    public static final int GET_KV_CONFIG_BY_VALUE = 217;
+</span><span class='line'>    // Namesrv 删除指定 project group 下的所有 server ip 信息
+</span><span class='line'>    public static final int DELETE_KV_CONFIG_BY_VALUE = 218;
+</span><span class='line'>    // 通过NameSpace获取所有的KV List
+</span><span class='line'>    public static final int GET_KVLIST_BY_NAMESPACE = 219;
+</span><span class='line'>
+</span><span class='line'>    // offset 重置
+</span><span class='line'>    public static final int RESET_CONSUMER_CLIENT_OFFSET = 220;
+</span><span class='line'>    // 客户端订阅消息
+</span><span class='line'>    public static final int GET_CONSUMER_STATUS_FROM_CLIENT = 221;
+</span><span class='line'>    // 通知 broker 调用 offset 重置处理
+</span><span class='line'>    public static final int INVOKE_BROKER_TO_RESET_OFFSET = 222;
+</span><span class='line'>    // 通知 broker 调用客户端订阅消息处理
+</span><span class='line'>    public static final int INVOKE_BROKER_TO_GET_CONSUMER_STATUS = 223;
+</span><span class='line'>
+</span><span class='line'>    // Broker 查询topic被谁消费
+</span><span class='line'>    // 2014-03-21 Add By shijia
+</span><span class='line'>    public static final int QUERY_TOPIC_CONSUME_BY_WHO = 300;
+</span><span class='line'>
+</span><span class='line'>    // 获取指定集群下的所有 topic
+</span><span class='line'>    // 2014-03-26
+</span><span class='line'>    public static final int GET_TOPICS_BY_CLUSTER = 224;
+</span><span class='line'>
+</span><span class='line'>    // 向Broker注册Filter Server
+</span><span class='line'>    // 2014-04-06 Add By shijia
+</span><span class='line'>    public static final int REGISTER_FILTER_SERVER = 301;
+</span><span class='line'>    // 向Filter Server注册Class
+</span><span class='line'>    // 2014-04-06 Add By shijia
+</span><span class='line'>    public static final int REGISTER_MESSAGE_FILTER_CLASS = 302;
+</span><span class='line'>    // 根据 topic 和 group 获取消息的时间跨度
+</span><span class='line'>    public static final int QUERY_CONSUME_TIME_SPAN = 303;
+</span><span class='line'>    // 获取所有系统内置 Topic 列表
+</span><span class='line'>    public static final int GET_SYSTEM_TOPIC_LIST_FROM_NS = 304;
+</span><span class='line'>    public static final int GET_SYSTEM_TOPIC_LIST_FROM_BROKER = 305;
+</span><span class='line'>
+</span><span class='line'>    // 清理失效队列
+</span><span class='line'>    public static final int CLEAN_EXPIRED_CONSUMEQUEUE = 306;
+</span><span class='line'>
+</span><span class='line'>    // 通过Broker查询Consumer内存数据
+</span><span class='line'>    // 2014-07-19 Add By shijia
+</span><span class='line'>    public static final int GET_CONSUMER_RUNNING_INFO = 307;
+</span><span class='line'>
+</span><span class='line'>    // 查找被修正 offset (转发组件）
+</span><span class='line'>    public static final int QUERY_CORRECTION_OFFSET = 308;
+</span><span class='line'>
+</span><span class='line'>    // 通过Broker直接向某个Consumer发送一条消息，并立刻消费，返回结果给broker，再返回给调用方
+</span><span class='line'>    // 2014-08-11 Add By shijia
+</span><span class='line'>    public static final int CONSUME_MESSAGE_DIRECTLY = 309;
+</span><span class='line'>
+</span><span class='line'>    // Broker 发送消息，优化网络数据包
+</span><span class='line'>    public static final int SEND_MESSAGE_V2 = 310;
+</span><span class='line'>
+</span><span class='line'>    // 单元化相关 topic
+</span><span class='line'>    public static final int GET_UNIT_TOPIC_LIST = 311;
+</span><span class='line'>    // 获取含有单元化订阅组的 Topic 列表
+</span><span class='line'>    public static final int GET_HAS_UNIT_SUB_TOPIC_LIST = 312;
+</span><span class='line'>    // 获取含有单元化订阅组的非单元化 Topic 列表
+</span><span class='line'>    public static final int GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST = 313;
+</span><span class='line'>    // 克隆某一个组的消费进度到新的组
+</span><span class='line'>    public static final int CLONE_GROUP_OFFSET = 314;
+</span><span class='line'>
+</span><span class='line'>    // 查看Broker上的各种统计信息
+</span><span class='line'>    public static final int VIEW_BROKER_STATS_DATA = 315;
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-15T15:48:01+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>3:48 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
+
+<p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>
+
+<h2>角色：</h2>
+
+<h3>Producer</h3>
+
+<p>生产者。发送消息的客户端角色。发送消息的时候需要指定Topic。</p>
+
+<h3>Consumer</h3>
+
+<p>消费者。消费消息的客户端角色。通常是后台处理异步消费的系统。 RocketMQ中Consumer有两种实现：PushConsumer和PullConsumer。</p>
+
+<h4>PushConsumer</h4>
+
+<p>推送模式（虽然RocketMQ使用的是长轮询）的消费者。消息的能及时被消费。使用非常简单，内部已处理如线程池消费、流控、负载均衡、异常处理等等的各种场景。</p>
+
+<h4>PullConsumer</h4>
+
+<p>拉取模式的消费者。应用主动控制拉取的时机，怎么拉取，怎么消费等。主动权更高。但要自己处理各种场景。</p>
+
+<h2>概念术语</h2>
+
+<h3>Producer Group</h3>
+
+<p>标识发送同一类消息的Producer，通常发送逻辑一致。发送普通消息的时候，仅标识使用，并无特别用处。若事务消息，如果某条发送某条消息的producer-A宕机，使得事务消息一直处于PREPARED状态并超时，则broker会回查同一个group的其 他producer，确认这条消息应该commit还是rollback。但开源版本并不支持事务消息。</p>
+
+<h3>Consumer Group</h3>
+
+<p>标识一类Consumer的集合名称，这类Consumer通常消费一类消息，且消费逻辑一致。同一个Consumer Group下的各个实例将共同消费topic的消息，起到负载均衡的作用。</p>
+
+<p>消费进度以Consumer Group为粒度管理，不同Consumer Group之间消费进度彼此不受影响，即消息A被Consumer Group1消费过，也会再给Consumer Group2消费。</p>
+
+<p>注： RocketMQ要求同一个Consumer Group的消费者必须要拥有相同的注册信息，即必须要听一样的topic(并且tag也一样)。</p>
+
+<h3>Topic</h3>
+
+<p>标识一类消息的逻辑名字，消息的逻辑管理单位。无论消息生产还是消费，都需要指定Topic。</p>
+
+<h3>Tag</h3>
+
+<p>RocketMQ支持给在发送的时候给topic打tag，同一个topic的消息虽然逻辑管理是一样的。但是消费topic1的时候，如果你订阅的时候指定的是tagA，那么tagB的消息将不会投递。</p>
+
+<h3>Message Queue</h3>
+
+<p>简称Queue或Q。消息物理管理单位。一个Topic将有若干个Q。若Topic同时创建在不通的Broker，则不同的broker上都有若干Q，消息将物理地存储落在不同Broker结点上，具有水平扩展的能力。</p>
+
+<p>无论生产者还是消费者，实际的生产和消费都是针对Q级别。例如Producer发送消息的时候，会预先选择（默认轮询）好该Topic下面的某一条Q地发送；Consumer消费的时候也会负载均衡地分配若干个Q，只拉取对应Q的消息。</p>
+
+<p>每一条message queue均对应一个文件，这个文件存储了实际消息的索引信息。并且即使文件被删除，也能通过实际纯粹的消息文件（commit log）恢复回来。</p>
+
+<h3>Offset</h3>
+
+<p>RocketMQ中，有很多offset的概念。但通常我们只关心暴露到客户端的offset。一般我们不特指的话，就是指逻辑Message Queue下面的offset。</p>
+
+<p>可以认为一条逻辑的message queue是无限长的数组。一条消息进来下标就会涨1.下标就是offset。</p>
+
+<p>一条message queue中的max offset表示消息的最大offset，即消息最新消息的offset。而min offset则标识现存在的最小offset。</p>
+
+<p>由于消息存储一段时间后，消费会被物理地从磁盘删除，message queue的min offset也就对应增长。这意味着比min offset要小的那些消息已经不在broker上了，无法被消费。</p>
+
+<h3>消费进度</h3>
+
+<p>又称consumer offset，用于标记Consumer Group在一条逻辑Message Queue上，消息消费到哪里。</p>
+
+<p>消费者拉取消息的时候需要指定offset，broker不主动推送消息，而是接受到请求的时候把存储的对应offset的消息返回给客户端。这个offset在成功消费后会更新到内存，并定时持久化。在集群消费模式下，会同步持久化到broker。在广播模式下，会持久化到本地文件。</p>
+
+<p>实例重启的时候会获取持久化的consumer offset，用以决定从哪里开始消费。</p>
+
+<h3>集群消费</h3>
+
+<p>消费者的一种消费模式。一个Consumer Group中的各个Consumer实例分摊去消费消息，即一条消息只会投递到一个Consumer Group下面的一个实例。</p>
+
+<p>实际上，每个Consumer是平均分摊Message Queue的去做拉取消费。例如某个Topic有3条Q，其中一个Consumer Group 有 3 个实例（可能是 3 个进程，或者 3 台机器），那么每个实例只消费其中的1条Q。</p>
+
+<p>而由Producer发送消息的时候是轮询所有的Q,所以消息会平均散落在不同的Q上，可以认为Q上的消息是平均的。那么实例也就平均地消费消息了。</p>
+
+<p>这种模式下，消费进度的存储会持久化到Broker。</p>
+
+<h3>广播消费</h3>
+
+<p>消费者的一种消费模式。消息将对一个Consumer Group下的各个Consumer实例都投递一遍。即即使这些 Consumer 属于同一个Consumer Group，消息也会被Consumer Group 中的每个Consumer都消费一次。</p>
+
+<p>实际上，是一个消费组下的每个消费者实例都获取到了topic下面的每个Message Queue去拉取消费。所以消息会投递到每个消费者实例。</p>
+
+<p>这种模式下，消费进度会存储持久化到实例本地。</p>
+
+<h3>顺序消息</h3>
+
+<p>消费消息的顺序要同发送消息的顺序一致。由于Consumer消费消息的时候是针对Message Queue顺序拉取并开始消费，且一条Message Queue只会给一个消费者（集群模式下），所以能够保证同一个消费者实例对于Q上消息的消费是顺序地开始消费（不一定顺序消费完成，因为消费可能并行）。</p>
+
+<p>在RocketMQ中，顺序消费主要指的是都是Queue级别的局部顺序。这一类消息为满足顺序性，必须Producer单线程顺序发送，且发送到同一个队列，这样Consumer就可以按照Producer发送的顺序去消费消息。</p>
+
+<p>生产者发送的时候可以用MessageQueueSelector为某一批消息（通常是有相同的唯一标示id）选择同一个Queue，则这一批消息的消费将是顺序消息（并由同一个consumer完成消息）。或者Message Queue的数量只有1，但这样消费的实例只能有一个，多出来的实例都会空跑。</p>
+
+<h3>普通顺序消息</h3>
+
+<p>顺序消息的一种，正常情况下可以保证完全的顺序消息，但是一旦发生异常，Broker宕机或重启，由于队列总数发生发化，消费者会触发负载均衡，而默认地负载均衡算法采取哈希取模平均，这样负载均衡分配到定位的队列会发化，使得队列可能分配到别的实例上，则会短暂地出现消息顺序不一致。</p>
+
+<p>如果业务能容忍在集群异常情况（如某个 Broker 宕机或者重启）下，消息短暂的乱序，使用普通顺序方式比较合适。</p>
+
+<h3>严格顺序消息</h3>
+
+<p>顺序消息的一种，无论正常异常情况都能保证顺序，但是牺牲了分布式 Failover 特性，即 Broker集群中只要有一台机器不可用，则整个集群都不可用，服务可用性大大降低。</p>
+
+<p>如果服务器部署为同步双写模式，此缺陷可通过备机自动切换为主避免，不过仍然会存在几分钟的服务不可用。（依赖同步双写，主备自动切换，自动切换功能目前并未实现）</p>
+
+<p>目前已知的应用只有数据库 binlog 同步强依赖严格顺序消息，其他应用绝大部分都可以容忍短暂乱序，推荐使用普通的顺序消息</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:54 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img src="/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+
+<p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
+
+<p>下面分别介绍三个组件：</p>
+
+<h1>Name Server</h1>
+
+<p>Name Server是RocketMQ的寻址服务。用于把Broker的路由信息做聚合。用户端依靠Name Server决定去获取对应topic的路由信息，从而决定对哪些Broker做连接。</p>
+
+<ul>
+<li><p>Name Server是一个几乎无状态的结点，Name Server之间采取share-nothing的设计，互不通信。</p></li>
+<li><p>对于一个Name Server集群列表，客户端连接Name Server的时候，只会选择随机连接一个结点，以做到负载均衡。</p></li>
+<li><p>Name Server所有状态都从Broker上报而来，本身不存储任何状态，所有数据均在内存。</p></li>
+<li><p>如果中途所有Name Server全都挂了，影响到路由信息的更新，不会影响和Broker的通信。</p></li>
+</ul>
+
+
+<h1>Broker</h1>
+
+<p>Broker是处理消息存储，转发等处理的服务器。</p>
+
+<ul>
+<li>Broker以group分开，每个group只允许一个master，若干个slave。</li>
+<li>只有master才能进行写入操作，slave不允许。</li>
+<li>slave从master中同步数据。同步策略取决于master的配置，可以采用同步双写，异步复制两种。</li>
+<li>客户端消费可以从master和slave消费。在默认情况下，消费者都从master消费，在master挂后，客户端由于从Name Server中感知到Broker挂机，就会从slave消费。</li>
+<li>Broker向所有的NameServer结点建立长连接，注册Topic信息。</li>
+</ul>
+
+
+<h1>Filter Server（可选）</h1>
+
+<p>RocketMQ可以允许消费者上传一个Java类给Filter Server进行过滤。</p>
+
+<ul>
+<li>Filter Server只能起在Broker所在的机器</li>
+<li>可以有若干个Filter Server进程</li>
+<li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
+<li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
+<li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
+<li>使用 Java 诧言迕行作为过滤表达式是一个双刃剑，方便了应用的过滤操作且节省网卡资源，但是带来了服务器端的安全风险。需要应用来保证过滤代码安全，例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a></h1>
     
     
@@ -416,298 +1260,6 @@ childElement{
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/07/30/TEST-include/">Octopress 博文中引入javascript文件/HTML文件</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:18 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
-
-<p>以下是具体方法，并带一个例子</p>
-
-<h2>引入Javascript</h2>
-
-<p>语法：</p>
-
-<pre><code>&lt;script type="text/javascript" src="/path/to/file.js"&gt;&lt;/script&gt;
-</code></pre>
-
-<p>例如： 在 source 中的404.markdown 中 加入：</p>
-
-<pre><code>&lt;script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8&gt;&lt;/script&gt;
-</code></pre>
-
-<p>即可在404页面中跳转到腾讯的公益页面</p>
-
-<h2>引入HTML文件</h2>
-
-<p>以下为引入后的样本实例：</p>
-
-<div id="myelement">
-    .markdown文件中，在需要引入HTML文件的地方写上：
-    <p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
-    <p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
-    <p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
-    <p id="clickme">点我试试看</p>
-</div>
-
-
-
-
-<script>
-
-    $(function(){
-        $('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
-        $('p#clickme').hover(function(){
-        $(this).css("color","blue");
-        },function(){
-        $(this).css("color","black");
-        });
-
-        $('div#myelement').on('click',function(e){
-        alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-        });
-    })
-
-</script>
-
-
-<p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/05/13/jackson-json/">Jackson 操作JSON</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:18 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Maven 支持：</h2>
-
-<pre><code>  &lt;repositories&gt;
-    &lt;repository&gt;
-        &lt;id&gt;codehaus&lt;/id&gt;
-        &lt;url&gt;http://repository.codehaus.org/org/codehaus&lt;/url&gt;
-    &lt;/repository&gt;
-  &lt;/repositories&gt;
-
-  &lt;dependencies&gt;
-    &lt;dependency&gt;
-        &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
-        &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
-        &lt;version&gt;1.8.5&lt;/version&gt;
-    &lt;/dependency&gt;
-  &lt;/dependencies&gt;
-</code></pre>
-
-<p>需要进行JSON操作的转换，仅需要一个<code>ObjectMapper</code>对象
-    ObjectMapper mapper = new ObjectMapper();</p>
-
-<p>转换为对象时候，使用<code>read</code>相关方法，转换为JSON字符串时，使用<code>write</code>相关方法。</p>
-
-<h2>Java object to JSON</h2>
-
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-mapper.writeValue(new File("c:\\user.json"), user);//写到文件,User 有get set 方法的POJO
-</code></pre>
-
-<p>大多数情况下，我们只需要一个JSON字符串，可以使用<code>StringWriter</code>作为参数的重载的<code>writeValue</code>方法：</p>
-
-<pre><code>StringWriter sw =new StringWriter();
-ObjectMapper mapper = new ObjectMapper();
-mapper.writeValue(sw, user);//写到StringWriter
-String JSON = sw.toString();
-sw.close();
-</code></pre>
-
-<p>也可以直接使用<code>writeValueAsString</code> ，其内部使用的也是<code>StringWriter</code>的。</p>
-
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-String JSON  = mapper.writeValueAsString(user));//直接转为String 类型的JSON
-</code></pre>
-
-<h2>JSON to Java object</h2>
-
-<pre><code>ObjectMapper mapper = new ObjectMapper();
-User user = mapper.readValue(new File("c:\\user.json"), User.class);//User 有get set 方法的POJO
-</code></pre>
-
-<h1>集合操作</h1>
-
-<h2>Map/List to JSON</h2>
-
-<p>和普通对象一样，使用(同样，可以使用重载方法)</p>
-
-<pre><code>objectMapper.writeValue(new File(jsonFilePath), mapObject);
-objectMapper.writeValue(new File(jsonFilePath), listObject);
-</code></pre>
-
-<h2>JSON to Map/List/数组</h2>
-
-<pre><code>     Map&lt;String, Object&gt; mapObject = mapper.readValue(new File('c:\\user.json'),
-                new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {});//使用TypeReference, 注意末尾有{}
-
-
-
-     List&lt;String&gt; listObject = mapper.readValue(new File('c:\\user.json'),
-                new TypeReference&lt;List&lt;String&gt;(){});//使用TypeReference, 注意末尾有{}
-
-
-     String[] array = mapper.readValue(new File('c:\\user.json'),
-                String[].class);//使用class对象
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/05/07/change-intelij-short-cut/">修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:02 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
-
-<p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
-
-<ol>
-<li>进入Settings（快捷键：<kbd>CTRL</kbd>+<kbd>ALT</kbd>+<kbd>S</kbd>，或者<kbd>SHITT</kbd>*2出<code>Search Everywhere</code>中搜索settings进入）</li>
-<li>左边菜单选择KeyMap（可搜索）</li>
-<li>选择默认的keymaps（IntelliJ的）,然后选择copy出一份新的，在新的keymaps里面修改</li>
-<li>在新的keymaps里面的<code>Main Menu--&gt;Edit--&gt;Redo</code> 右键选择 <code>Add Keyboard Shortcut</code></li>
-<li>键盘按<kbd>CTRL</kbd>+<kbd>Y</kbd> (修改的快捷键)</li>
-<li>OK</li>
-<li>选择 &ldquo;Remove&rdquo; ，当窗口提示： &ldquo;the shortcut is already assigned to other actions. Do you want to remove other assignments?&rdquo;</li>
-<li>Apply</li>
-</ol>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/05/07/insert-sql-with-dictionary-python/">Python中用dictionary操作SQL Select, Insert</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:19 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
-
-<p>首先，连接数据库</p>
-
-<pre><code>conn = MySQLdb.connect(host=host,
-                       user=user,
-                       passwd=passwd,
-                       db=db,
-                       charset=charset)
-</code></pre>
-
-<h1>SELECT:</h1>
-
-<p>在获取cursor的时候，传入<code>MySQLdb.cursors.DictCursor</code>即可</p>
-
-<pre><code>cursor = conn.cursor(MySQLdb.cursors.DictCursor)  ##结果集成为dictionary
-cursor.execute(select_sql )  # query
-
-for row in cursor:
-    print type(row),row
-    name = row["name"]  # 直接使用key获取
-    id = row["id"]      # 直接使用key获取
-</code></pre>
-
-<p>会发现,row的类型已经是一个dict, 其中每一列都可以使用key值获取
-    <type 'dict'> {id:123L,&lsquo;name&rsquo;:u&#8217;abc&#8217; }</p>
-
-<h1>INSERT</h1>
-
-<p>如果需要把一个准备好的dict插入到数据库，不想一个个对应的赋值，可以考虑使用如下方式:</p>
-
-<pre><code>myDict = {'name':'abc','age':16L}
-insert_table = 'mytable'
-placeholders = ', '.join(['%s']* len(mydict))  ##按照dict长度返回如：%s, %s 的占位符
-columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
-insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
-
-cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -723,23 +1275,23 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/">如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/">通过VM参数指定本地log4j配置文件,Spring Boot</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a>
       </li>
     
   </ul>
@@ -825,7 +1377,7 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2016 - Jaskey Lam -
+  Copyright &copy; 2017 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

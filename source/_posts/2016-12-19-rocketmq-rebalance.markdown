@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "RokectMQ——水平扩展及负载均衡详解"
+title: "RocketMQ——水平扩展及负载均衡详解"
 date: 2016-12-19 20:49:23 +0800
 comments: true
 categories: java rocketmq

@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "RokectMQ——通信协议"
+title: "RocketMQ——通信协议"
 date: 2016-12-19 20:49:23 +0800
 comments: true
 categories: java rocketmq

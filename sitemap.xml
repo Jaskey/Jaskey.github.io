@@ -3,7 +3,15 @@
   
   
   <url>
-    <loc>http://Jaskey.github.io/blog/2016/12/19/rokectmq-rebalance/</loc>
+    <loc>http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/</loc>
+    
+    <lastmod>2017-01-25T20:49:23+08:00</lastmod>
+    
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/</loc>
     
     <lastmod>2016-12-19T20:49:23+08:00</lastmod>
     
@@ -11,7 +19,7 @@
   </url>
   
   <url>
-    <loc>http://Jaskey.github.io/blog/2016/12/19/rokectmq-network-protocol/</loc>
+    <loc>http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/</loc>
     
     <lastmod>2016-12-19T20:49:23+08:00</lastmod>
     
@@ -19,7 +27,7 @@
   </url>
   
   <url>
-    <loc>http://Jaskey.github.io/blog/2016/12/15/rokectmq-concept/</loc>
+    <loc>http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/</loc>
     
     <lastmod>2016-12-15T15:48:01+08:00</lastmod>
     
@@ -27,7 +35,7 @@
   </url>
   
   <url>
-    <loc>http://Jaskey.github.io/blog/2016/12/14/rokectmq-startup/</loc>
+    <loc>http://Jaskey.github.io/blog/2016/12/14/rocketmq-startup/</loc>
     
     <lastmod>2016-12-14T20:54:20+08:00</lastmod>
     
@@ -365,21 +373,21 @@
   
   <url>
     <loc>http://Jaskey.github.io/404.html</loc>
-    <lastmod>2017-01-12T23:29:21+08:00</lastmod>
+    <lastmod>2017-01-26T00:07:42+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/blog/archives/</loc>
-    <lastmod>2017-01-12T23:29:21+08:00</lastmod>
+    <lastmod>2017-01-26T00:07:42+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://Jaskey.github.io/</loc>
-    <lastmod>2017-01-12T23:29:21+08:00</lastmod>
+    <lastmod>2017-01-26T00:07:42+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

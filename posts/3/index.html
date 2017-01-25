@@ -73,6 +73,107 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015/02/02/javascript_function%20closure/">JavaScript中返回函数</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-02T18:20:05+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2015</span></span> <span class='time'>6:20 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近学习JavaScript,遇到了函数闭包的相关问题，由于这是Java没有的概念，认知上容易糊涂。到底</p>
+
+<pre><code>function a(){
+    function b(){
+        alert('b');
+      } 
+        return b;//没有括号
+} 
+</code></pre>
+
+<p>和</p>
+
+<pre><code>function a(){
+    function b(){
+        alert('b');
+    }
+        return b();//多一个括号
+}
+</code></pre>
+
+<p>有何区别呢？ 在Java中，我们是不能返回一个函数的，也不能为一个对象的属性赋值为函数，但这在Javascript中都可以。以上两种的函数都是正确的，但却表达着完全一样的意义。</p>
+
+<p>第一种方式返回时候不带括号，return函数的名称时，<strong>返回的其实是一个函数b的引用</strong>，即<code>function a</code> 返回的结果是<code>function b</code>的引用。</p>
+
+<p>而第二种方式带着括号，其实是返回b的执行结果。而b本身不返回东西，所以<code>return undefined</code>。</p>
+
+<p>请观察以下几个demo：</p>
+
+<pre><code>function a() {
+    alert('A');
+}
+//alerts 'A', returns undefined
+
+function b() {
+    alert('B');
+    return a;
+}
+//alerts 'B', returns function a
+
+function c() {
+    alert('C');
+    return a();
+}
+//alerts 'C', alerts 'A', returns undefined
+
+alert("Function 'a' returns " + a());
+alert("Function 'b' returns " + b());//特别留意这里，b()返回的是整一个函数。
+alert("Function 'c' returns " + c());//这里是返回a()的结果，所以会先alert('A'),再返回underfined
+</code></pre>
+
+<p>加上参数以便更加理解这一例子：</p>
+
+<pre><code>function a(who) {
+    alert('a say hello to '+ who);
+}
+//alerts 'A', returns undefined
+
+function b(who) {
+    alert('b say hello to '+ who);
+    return a;
+}
+//alerts 'B', returns function a
+
+function c(who) {
+    alert('c say hello to '+ who);
+    return a(who);
+}
+//alerts 'C', alerts 'A', returns undefined
+
+alert("Function 'a' returns " + a("junjie"));//return undefined
+alert("Function 'b' returns " + b("junjie"));//返回整个函数a的定义
+alert("Function 'c' returns " + c('junjie'));//先调用了a(who)，所以alert 了"a say hello to junjie"，再返回undefined，因为a本身不返回值
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a></h1>
     
     
@@ -922,221 +1023,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/26/sql-optimization/">SQL优化的一些技巧</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-26T21:19:25+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:19 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近在学习MySQL的优化，今天整理下一些对于开发人员有必要了解的一些技巧。</p>
-
-<h2>关于索引</h2>
-
-<p>很多SQL优化都和索引有关，所以，在了解SQL优化前，最好先理解什么是索引，索引做的是什么。关于这点，stackoverflow上有很好的一个问题：<a href="http://stackoverflow.com/questions/1108/how-does-database-indexing-work/1130#1130">how does database indexing work</a>。</p>
-
-<p>简单说，索引就是把数据库中的字段进行了一定规则的建立额外的排序，使得SQL查找可以快速找到所需的数据块，避免全表搜索。</p>
-
-<p>关于如何建立索引，以下有一张图可以给出一个较好的指导：</p>
-
-<p><img src="http://jaskey.github.io/images/SQL/Index_SQL_Tunning.png" alt="method 1" /></p>
-
-<h2>索引列相关的SQL优化技巧</h2>
-
-<ul>
-<li><strong>避免在索引列使用通配符%开头</strong></li>
-</ul>
-
-
-<p>如（&#8217;%.com&#8217;），这将会令MySQL无法使用改列索引，而使用%结尾则可以（如&#8217;www.%&lsquo;）使用索引。</p>
-
-<p>如果需要经常基于某索引列作以通配符开头的查询，如查询所有.com结尾的ip     <code>email like '%.com'</code>，可以在数据库中保存改列的反序值(如reverse_email)，然后搜索的时候使用 <code>reverse_email like REVERSE('%.com')</code>，则可以使用到reverse_email的索引了。</p>
-
-<ul>
-<li><strong>避免在索引列使用函数或者计算</strong></li>
-</ul>
-
-
-<p>如 <code>where trunc(create_date)=trunc(:date1)</code>这样的where 条件将无法使用到create_date的索引。</p>
-
-<ul>
-<li><p><strong>避免在索引列上出现数据类型转换</strong></p></li>
-<li><p><strong>避免在索引字段上使用not，&lt;></strong></p></li>
-</ul>
-
-
-<hr />
-
-<h2>其他技巧：</h2>
-
-<ul>
-<li><strong>尽量避免使用相关子查询</strong></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>SELECT c.Name, 
-       c.City,
-       (SELECT CompanyName FROM Company WHERE ID = c.CompanyID) AS CompanyName 
-FROM Customer c
-</code></pre>
-
-<p>其中子查询 <code>SELECT CompanyName....</code>的结果与外层查询结果相关，这样会导致每一个外层查询的结果都会返回到子查询中查询一遍，导致性能下降。这种子查询大多可以改造为表的join：</p>
-
-<pre><code>SELECT c.Name, 
-       c.City, 
-       co.CompanyName 
-FROM Customer c 
-    LEFT JOIN Company co
-        ON c.CompanyID = co.CompanyID
-</code></pre>
-
-<ul>
-<li><strong>避免循环中使用SQL</strong></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>//查询满足
-SELECT a.id,a.author_id,a.title //找出满足某条件的文章的作者 
-FROM article a
-WHERE a.type=2
-AND a.created&gt; '2011-06-01';
-
-
-//For 循环这些记录，然后查询作者信息，
-select id, name,age
-from arthor where id=:author_id 
-</code></pre>
-
-<p>这类问题常被称作N+1问题，即每对应外层的每一行都生成了一条SQL语句，这导致了很多的SQL语句重复执行。</p>
-
-<p>这种SQL通常也可以通过join而被改写为单条SQL语句：</p>
-
-<pre><code>SELECT a.id, a.title,au.author_id,au.author_name,au.age
-FROM artitle a
-INNER JOIN author au on a.author_id = au.id
-WHERE a.type=2
-AND a.created&gt; '2011-06-01';
-</code></pre>
-
-<ul>
-<li><strong>不要使用SELECT *</strong></li>
-</ul>
-
-
-<p>使用<code>SELECT *</code> 有很多的坏处，例如：</p>
-
-<ol>
-<li>选择过多的列导致不必要的开销。有些时候我们只需要两列，但select * 会把所有的列（可能20列）全部返回，这是额外的IO开销。</li>
-<li>SELECT * 不容易针对化的建立索引。由于不知道该 SQL语句中具体需要哪些列，就很难针对化的设计所需的索引。而且，即便按照所有的列都设计了索引，一旦表结构发生了增加列的情况，此索引也会失效，而且后来的人很难发觉。</li>
-<li>MySQL 引擎需要解释*所代表的列，也会带来一定的开销</li>
-</ol>
-
-
-<p>更多相关讨论可以参考：<a href="http://stackoverflow.com/questions/3639861/why-is-select-considered-harmful#answer-3639964">why is select * considered harmful</a></p>
-
-<ul>
-<li><strong>拆分大的INSERT/DELETE语句</strong></li>
-</ul>
-
-
-<p>如果有一个很大批量的INSERT/DELETE（需要锁表）语句需要执行，例如对几十万行的语句执行，可以考虑分量的一批一批执行，每次执行完后放开CPU，这样可以避免阻塞其他线程的操作。如：</p>
-
-<pre><code>    while (1) {
-        //每次只做1000条
-        pst.execute("DELETE FROM logs WHERE log_date &lt;= '2009-11-01' LIMIT 1000");
-        if row return 0 {
-            // 没得可删了，退出！
-            break;
-        }
-        // 每次都要sleep一段时间让出CPU
-        sleep(50000);
-    }
-</code></pre>
-
-<ul>
-<li><strong>当只需要一行数据的时候，使用LIMIT 1</strong></li>
-</ul>
-
-
-<p>当你查询表的有些时候，如果我们知道只会有一条结果，加上 LIMIT 1 可以增加性能。这样一样，MySQL数据库引擎会在找到一条数据后停止搜索，而不是继续往后查少下一条符合记录的数据。
-    请看下面伪代码：</p>
-
-<pre><code>    // 没有效率的：
-    result_set= ps.execute_query("SELECT user_name FROM user WHERE country = 'China'");
-    if (result_set.hasNext()) {
-        // ...
-    }
-
-    //更好效率的：
-    result_set= ps.execute_query("SELECT user_name FROM user WHERE country = 'China' LIMIT 1");
-    if (result_set.hasNext()) {
-        // ...
-    }
-</code></pre>
-
-<ul>
-<li><strong>避免在WHERE子句中使用in，not  in</strong></li>
-</ul>
-
-
-<p>可以使用 exist 和not exist代替 in和not in。</p>
-
-<pre><code>//低效
-SELECT order_id,order_num,customer_name  FROM ORDERS WHERE CUSTOMER_NAME NOT IN 
-(SELECT CUSTOMER_NAME FROM CUSTOMER)
-
-//高效    
-SELECT order_id,order_num,customer_name FROM ORDERS WHERE not exist 
-(SELECT CUSTOMER_NAME FROM CUSTOMER where CUSTOMER.customer_name = ORDERS.customer_name)
-</code></pre>
-
-<h2>关于缓存</h2>
-
-<ul>
-<li><p><strong>在MySQL中使用缓存把查询结果保留能有效减小SQL查询时间</strong></p></li>
-<li><p><strong>在应用程序中使用缓存</strong></p></li>
-</ul>
-
-
-<p>如：</p>
-
-<pre><code>IF CACHE NOT EMPTY
-SELECT FROM CACHE
-
-IF CACHE EMPTY
-    SELECT TABLE 
-    PUT INTO CACHE
-</code></pre>
-
-<p>但需要注意一旦表发生了改变，需要移除CACHE的相关数据。</p>
-
-<p>注：
-可用流行的<code>memcached</code>框架缓存查询结果，减小数据库压力。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -1154,23 +1040,23 @@ IF CACHE EMPTY
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a>
+        <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——ACK及消费进度管理</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a>
+        <a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a>
+        <a href="/blog/2016/12/19/rocketmq-network-protocol/">RocketMQ——通信协议</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a>
+        <a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
+        <a href="/blog/2016/12/14/rocketmq-startup/">RocketMQ——组件</a>
       </li>
     
   </ul>

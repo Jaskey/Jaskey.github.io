@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>RocketMQ——组件 - 薛定谔的风口猪</title>
+  <title>RocketMQ——水平扩展及负载均衡详解 - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="java , rocketmq, broker, nameserver, filterserver">
-  
+  <meta name="description" content="RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。 Broker端水平扩展 Broker负载均衡 Broker是以group为单位提供服务。一个group里面分master和slave, &hellip;">
+  <meta name="keywords" content="java , rocketmq, broker, nameserver, filterserver, netty">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/12/14/rokectmq-startup">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -70,7 +70,7 @@
   
   <header>
     
-      <h1 class="entry-title">RocketMQ——组件</h1>
+      <h1 class="entry-title">RocketMQ——水平扩展及负载均衡详解</h1>
     
     
       <p class="meta">
@@ -79,57 +79,74 @@
 
 
 
-<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:54 pm</span></time>
+<time class='entry-date' datetime='2016-12-19T20:49:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:49 pm</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p><img src="/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+<div class="entry-content"><p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
 
-<p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
+<h2>Broker端水平扩展</h2>
 
-<p>下面分别介绍三个组件：</p>
+<h3>Broker负载均衡</h3>
 
-<h1>Name Server</h1>
+<p>Broker是以group为单位提供服务。一个group里面分master和slave,master和slave存储的数据一样，slave从master同步数据（同步双写或异步复制看配置）。</p>
 
-<p>Name Server是RocketMQ的寻址服务。用于把Broker的路由信息做聚合。用户端依靠Name Server决定去获取对应topic的路由信息，从而决定对哪些Broker做连接。</p>
+<p>通过nameserver暴露给客户端后，只是客户端关心（注册或发送）一个个的topic路由信息。路由信息中会细化为message queue的路由信息。而message queue会分布在不同的broker group。所以对于客户端来说，分布在不同broker group的message queue为成为一个服务集群，但客户端会把请求分摊到不同的queue。</p>
 
-<ul>
-<li><p>Name Server是一个几乎无状态的结点，Name Server之间采取share-nothing的设计，互不通信。</p></li>
-<li><p>对于一个Name Server集群列表，客户端连接Name Server的时候，只会选择随机连接一个结点，以做到负载均衡。</p></li>
-<li><p>Name Server所有状态都从Broker上报而来，本身不存储任何状态，所有数据均在内存。</p></li>
-<li><p>如果中途所有Name Server全都挂了，影响到路由信息的更新，不会影响和Broker的通信。</p></li>
-</ul>
+<p>而由于压力分摊到了不同的queue,不同的queue实际上分布在不同的Broker group，也就是说压力会分摊到不同的broker进程，这样消息的存储和转发均起到了负载均衡的作用。</p>
 
+<p>Broker一旦需要横向扩展，只需要增加broker group，然后把对应的topic建上，客户端的message queue集合即会变大，这样对于broker的负载则由更多的broker group来进行分担。</p>
 
-<h1>Broker</h1>
+<p>并且由于每个group下面的topic的配置都是独立的，也就说可以让group1下面的那个topic的queue数量是4，其他group下的topic queue数量是2，这样group1则得到更大的负载。</p>
 
-<p>Broker是处理消息存储，转发等处理的服务器。</p>
+<h3>commit log</h3>
 
-<ul>
-<li>Broker以group分开，每个group只允许一个master，若干个slave。</li>
-<li>只有master才能进行写入操作，slave不允许。</li>
-<li>slave从master中同步数据。同步策略取决于master的配置，可以采用同步双写，异步复制两种。</li>
-<li>客户端消费可以从master和slave消费。在默认情况下，消费者都从master消费，在master挂后，客户端由于从Name Server中感知到Broker挂机，就会从slave消费。</li>
-<li>Broker向所有的NameServer结点建立长连接，注册Topic信息。</li>
-</ul>
+<p>虽然每个topic下面有很多message queue，但是message queue本身并不存储消息。真正的消息存储会写在CommitLog的文件，message queue只是存储CommitLog中对应的位置信息，方便通过message queue找到对应存储在CommitLog的消息。</p>
 
+<p>不同的topic，message queue都是写到相同的CommitLog 文件，也就是说CommitLog完全的顺序写。</p>
 
-<h1>Filter Server（可选）</h1>
+<p>具体如下图：</p>
 
-<p>RocketMQ可以允许消费者上传一个Java类给Filter Server进行过滤。</p>
+<p><img src="/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
 
-<ul>
-<li>Filter Server只能起在Broker所在的机器</li>
-<li>可以有若干个Filter Server进程</li>
-<li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
-<li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
-<li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
-<li>使用 Java 诧言迕行作为过滤表达式是一个双刃剑，方便了应用的过滤操作且节省网卡资源，但是带来了服务器端的安全风险。需要应用来保证过滤代码安全，例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
-</ul>
+<h2>Producer</h2>
 
+<p>Producer端，每个实例在发消息的时候，默认会轮询所有的message queue发送，以达到让消息平均落在不同的queue上。而由于queue可以散落在不同的broker，所以消息就发送到不同的broker下，如下图：</p>
+
+<p><img src="/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
+
+<h2>Consumer负载均衡</h2>
+
+<h3>集群模式</h3>
+
+<p>在集群消费模式下，每条消息只需要投递到订阅这个topic的Consumer Group下的一个实例即可。RocketMQ采用主动拉取的方式拉取并消费消息，在拉取的时候需要明确指定拉取哪一条message queue。</p>
+
+<p>而每当实例的数量有变更，都会触发一次所有实例的负载均衡，这时候会按照queue的数量和实例的数量平均分配queue给每个实例。</p>
+
+<p>默认的分配算法是AllocateMessageQueueAveragely，如下图：</p>
+
+<p><img src="/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
+
+<p>还有另外一种平均的算法是AllocateMessageQueueAveragelyByCircle，也是平均分摊每一条queue，只是以环状轮流分queue的形式，如下图：</p>
+
+<p><img src="/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
+
+<p>需要注意的是，集群模式下，queue都是只允许分配只一个实例，这是由于如果多个实例同时消费一个queue的消息，由于拉取哪些消息是consumer主动控制的，那样会导致同一个消息在不同的实例下被消费多次，所以算法上都是一个queue只分给一个consumer实例，一个consumer实例可以允许同时分到不同的queue。</p>
+
+<p>通过增加consumer实例去分摊queue的消费，可以起到水平扩展的消费能力的作用。而有实例下线的时候，会重新触发负载均衡，这时候原来分配到的queue将分配到其他实例上继续消费。</p>
+
+<p>但是如果consumer实例的数量比message queue的总数量还多的话，多出来的consumer实例将无法分到queue，也就无法消费到消息，也就无法起到分摊负载的作用了。所以需要控制让queue的总数量大于等于consumer的数量。</p>
+
+<h3>广播模式</h3>
+
+<p>由于广播模式下要求一条消息需要投递到一个消费组下面所有的消费者实例，所以也就没有消息被分摊消费的说法。</p>
+
+<p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
+
+<p><img src="/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
 </div>
 
 
@@ -145,7 +162,7 @@
 
 
 
-<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:54 pm</span></time>
+<time class='entry-date' datetime='2016-12-19T20:49:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:49 pm</span></time>
       
 
 <span class="categories">
@@ -176,7 +193,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/12/14/rokectmq-startup/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/12/14/rokectmq-startup/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" >Tweet</a>
   
   
   
@@ -211,10 +228,10 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/" title="Previous Post: 在IntilliJ中运行Maven的Tomcat项目">&laquo; 在IntilliJ中运行Maven的Tomcat项目</a>
+        <a class="basic-alignment left" href="/blog/2016/12/19/rocketmq-network-protocol/" title="Previous Post: RocketMQ——通信协议">&laquo; RocketMQ——通信协议</a>
       
       
-        <a class="basic-alignment right" href="/blog/2016/12/15/rokectmq-concept/" title="Next Post: RocketMQ——角色与术语详解">RocketMQ——角色与术语详解 &raquo;</a>
+        <a class="basic-alignment right" href="/blog/2017/01/25/rocketmq-consume-offset-management/" title="Next Post: RocketMQ——ACK及消费进度管理">RocketMQ——ACK及消费进度管理 &raquo;</a>
       
     </p>
   </footer>
@@ -229,23 +246,23 @@ var jiathis_config = {data_track_clickback:'true'};
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a>
+        <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——ACK及消费进度管理</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a>
+        <a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a>
+        <a href="/blog/2016/12/19/rocketmq-network-protocol/">RocketMQ——通信协议</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a>
+        <a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
+        <a href="/blog/2016/12/14/rocketmq-startup/">RocketMQ——组件</a>
       </li>
     
   </ul>

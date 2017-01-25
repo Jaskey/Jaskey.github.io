@@ -73,7 +73,144 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a></h1>
+      <h1 class="entry-title"><a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——ACK及消费进度管理</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-01-25T20:49:23+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>25</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>8:49 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="http://jaskey.github.io/blog/2016/12/19/rockectmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的（RocketMQ有保证消息肯定消费成功的特性（失败则重试）？</p>
+
+<p>本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。</p>
+
+<p>由于以上工作所有的机制都实现在PushConsumer中，所以本文的原理均只适用于Rocket中的PushConsumer即Java客户端中的<code>DefaultPushConsumer</code>。 若使用PullConsumer模式，类似的工作如何ack，如何保证消费等均需要使用方自己实现。</p>
+
+<p>注：广播消费和集群消费的处理有部分区别，以下均特指集群消费（CLSUTER），广播（BROADCASTING）下部分可能不适用。</p>
+
+<h2>保证消费成功</h2>
+
+<p>PushConsumer为了保证消息肯定消费成功，只有使用方明确表示消费成功，RocketMQ才会认为消息消费成功，中途断电，抛出异常等都不会认为成功——即都会重新投递。</p>
+
+<p>消费的时候，我们需要注入一个消费回调，具体sample代码如下：</p>
+
+<pre><code>    consumer.registerMessageListener(new MessageListenerConcurrently() {
+        @Override
+        public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context) {
+            System.out.println(Thread.currentThread().getName() + " Receive New Messages: " + msgs);
+            doMyJob();//执行真正消费
+            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+        }
+    });
+</code></pre>
+
+<p>业务实现消费回调的时候，当且仅当此回调函数返回<code>ConsumeConcurrentlyStatus.CONSUME_SUCCESS</code>，RocketMQ才会认为这批消息（默认是1条）是消费完成的。（具体如何ACK见后面章节）</p>
+
+<p>如果这时候消息消费失败，例如数据库异常，余额不足扣款失败等一切业务认为消息需要重试的场景，只要返回<code>ConsumeConcurrentlyStatus.RECONSUME_LATER</code>，RocketMQ就会认为这批消息消费失败了。</p>
+
+<p>为了保证消息是肯定被至少消费成功一次，RocketMQ会把这批消息重发回Broker，在延迟的某个时间点（默认是10秒，业务可设置）后，再次投递到这个ConsumerGroup。而如果一直这样重复消费都持续失败到一定次数（默认16次），就会投递到DLQ死信队列。监控可以监控死信队列来做人工干预。</p>
+
+<p>注：</p>
+
+<ol>
+<li>如果业务的回调没有处理好而抛出异常，会认为是消费失败当<code>ConsumeConcurrentlyStatus.RECONSUME_LATER</code>处理。</li>
+<li>当使用顺序消费的回调<code>MessageListenerOrderly</code>时，由于顺序消费是要前者消费成功才能继续消费，所以没有<code>RECONSUME_LATER</code>的这个状态，只有<code>SUSPEND_CURRENT_QUEUE_A_MOMENT</code>来暂停队列的其余消费，直到原消息不断重试成功为止才能继续消费。</li>
+</ol>
+
+
+<h2>消费完后的消息去哪里了？</h2>
+
+<p>消息存储在broker之后，会一直存储在磁盘直到消息文件过期（默认48小时）或磁盘已经达到上限必须释放（85%水位线）的时候，才会批量删除消息文件（CommitLog）。</p>
+
+<p>所以即使消息被消费了，消息也不会立刻被删除。并且，从哪里(offset)消费的决定权一直都是客户端决定。broker端只是按照客户端需要而搜索出对应消息即可。</p>
+
+<p>这样做有几个好处：</p>
+
+<ol>
+<li>一个消息很可能需要被N个消费组（设计上很可能就是系统）消费，但消息只需要存储一份，消费进度单独记录即可。这给强大的消息堆积能力提供了很好的支持。</li>
+<li>由于消费从哪里消费的决定权一直都是客户端决定，所以只要消息还在，就可以消息，这使得RocketMQ可以支持其他传统消息中间件不支持的回溯消费。</li>
+<li>消息索引服务。只要消息还存在就能被搜索出来。所以可以依靠消息的索引搜索出消息的各种原信息，方便事后排查问题。</li>
+</ol>
+
+
+<p>消息既然一直没有删除，那RocketMQ怎么知道应该投递不重复的消息呢——答案是客户端自身维护，主动告诉broker。</p>
+
+<p>在PushConsumer中，RocketMQ有一条拉取线程，每次拉取到消息之后都会按照消息拉取到的结果来调整下一次应该从哪里拉取，这样就保证了正常情况下，消息只会被投递一次。</p>
+
+<h2>启动的时候从哪里消费</h2>
+
+<p>当新实例启动的时候，PushConsumer会拿到本消费组broker已经记录好的消费进度（consumer offset），按照这个进度发起自己的第一次Pull请求。</p>
+
+<p>如果这个消费进度在Broker并没有存储起来，证明这个是一个全新的消费组，这时候客户端有几个策略可以选择：</p>
+
+<pre><code>CONSUME_FROM_LAST_OFFSET //默认策略，从该队列最尾开始消费，即跳过历史消息
+CONSUME_FROM_FIRST_OFFSET //从队列最开始开始消费，即历史消息（还储存在broker的）全部消费一遍
+CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp()配合使用，默认是半个小时以前
+</code></pre>
+
+<p>所以，社区中经常有人问我：“为什么我设了<code>CONSUME_FROM_LAST_OFFSET</code>，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。</p>
+
+<p>对于老消费组想跳过历史消息可以采用以下两种方法：</p>
+
+<ol>
+<li>代码按照日期做过滤</li>
+<li>启动前，先调整该消费组的消费进度，再开始消费。可以人工使用命令<code>resetOffsetByTime</code>，或调用内部的运维接口，祥见<code>ResetOffsetByTimeCommand.java</code></li>
+</ol>
+
+
+<h2>消费ACK</h2>
+
+<p>RocketMQ是以queue为单位是管理消费进度的，以一个consumer offset标记这个这个消费组在这条queue上的消费进度——每个consumer group单独记录某一条queue的消费进度，即以ConsumerGroup+queue为一个纬度。</p>
+
+<p>如果某消费组出现新消费实例启动的时候，依靠这个组的消费进度，就可以判断第一次是从哪里开始拉取的。</p>
+
+<p>每次消息成功后，本地的消费进度会被更新，然后由定时器定时同步到broker，以此持久化消费进度。</p>
+
+<p>但是每次记录消费进度的时候，只会把一批消息中最小的offset值为消费进度值，如下图：</p>
+
+<p><img src="/images/rocketmq/rocketmq-ack.png" title="message ack" alt="message ack" /></p>
+
+<p>这钟方式和传统的一条message单独ack的方式有本质的区别。性能上提升的同时，会带来一个潜在的重复问题——由于消费进度只是记录了一个下标，就可能出现拉取了100条消息如 2101-2200的消息，后面99条都消费结束了，只有2101消费一直没有结束的情况。</p>
+
+<p>在这种情况下，RocketMQ为了保证消息肯定被消费成功，消费进度职能维持在2101，直到2101也消费结束了，本地的消费进度才会一下子更新到2200。</p>
+
+<p>在这种设计下，就有消费大量重复的风险。如2101在还没有消费完成的时候消费实例突然退出（机器断电，或者被kill）。这条queue的消费进度还是维持在2101，当queue重新分配给新的实例的时候，新的实例从broker上拿到的消费进度还是维持在2101，这时候就会又从2101开始消费，2102-2200这批消息实际上已经被消费过还是会投递一次。</p>
+
+<p>对于这个场景，RocketMQ暂时无能为力（实上很多重复的场景RocketMQ都是持放弃治疗的态度），所以业务必须要保证消息消费的幂等性，这也是RocketMQ官方多次强调的态度。</p>
+
+<p>实际上，从源码的角度上看，RocketMQ可能是考虑过这个问题的，所以为了缓解这个问题的影响面，<code>DefaultMQPushConsumer</code>中有个配置<code>consumeConcurrentlyMaxSpan</code></p>
+
+<pre><code>/**
+ * Concurrently max span offset.it has no effect on sequential consumption
+ */
+private int consumeConcurrentlyMaxSpan = 2000;
+</code></pre>
+
+<p>这个值默认是2000，当RocketMQ发现本地缓存的消息的最大值-最小值差距大于这个值（2000）的时候，会触发流控——也就是说如果头尾都卡住了部分消息，达到了这个阈值就不再拉取消息。</p>
+
+<p>但作用实际很有限，像刚刚这个例子，2101的消费是死循环，其他消费非常正常的话，是无能为力的。一旦退出，在不人工干预的情况下，2101后所有消息全部重复!</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a></h1>
     
     
       <p class="meta">
@@ -162,7 +299,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a></h1>
+      <h1 class="entry-title"><a href="/blog/2016/12/19/rocketmq-network-protocol/">RocketMQ——通信协议</a></h1>
     
     
       <p class="meta">
@@ -708,7 +845,7 @@ private boolean k;// unitMode = false;
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a></h1>
+      <h1 class="entry-title"><a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a></h1>
     
     
       <p class="meta">
@@ -845,7 +982,7 @@ private boolean k;// unitMode = false;
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a></h1>
+      <h1 class="entry-title"><a href="/blog/2016/12/14/rocketmq-startup/">RocketMQ——组件</a></h1>
     
     
       <p class="meta">
@@ -1179,87 +1316,6 @@ select * from dept where deptno=45
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:49 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
-
-<p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
-
-<pre><code>parentElement{
-    position:relative;
-}
-childElement{
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-}
-</code></pre>
-
-<p>2.若只有父容器下只有一个元素，且父元素设置了高度，则只需要使用相对定位即可</p>
-
-<pre><code>parentElement{
-    height:xxx;
-}
-.childElement {
-  position: relative;
-  top: 50%;
-  transform: translateY(-50%);
-}
-</code></pre>
-
-<p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
-
-<hr />
-
-<h2>Flex布局</h2>
-
-<p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
-
-<p>浏览器支持如下：
-<img src="/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
-
-<p>样式：</p>
-
-<pre><code>parentElement{
-    display:flex;/*Flex布局*/
-    display: -webkit-flex; /* Safari */
-    align-items:center;/*交叉轴居中，这里由于flex-direction默认是row,即垂直居中*/
-}
-</code></pre>
-
-<p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
-
-<p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
-
-<hr />
-
-<p>Flex教程可参考<a href="http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html">这里</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1275,23 +1331,23 @@ childElement{
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2016/12/19/rokectmq-rebalance/">RokectMQ——水平扩展及负载均衡详解</a>
+        <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——ACK及消费进度管理</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/19/rokectmq-network-protocol/">RokectMQ——通信协议</a>
+        <a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/15/rokectmq-concept/">RocketMQ——角色与术语详解</a>
+        <a href="/blog/2016/12/19/rocketmq-network-protocol/">RocketMQ——通信协议</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/14/rokectmq-startup/">RocketMQ——组件</a>
+        <a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a>
+        <a href="/blog/2016/12/14/rocketmq-startup/">RocketMQ——组件</a>
       </li>
     
   </ul>

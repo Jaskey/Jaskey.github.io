@@ -8,7 +8,7 @@ keywords: java , rocketmq, broker, nameserver, filterserver, netty
 description: 
 ---
 
-[RokectMQ——水平扩展及负载均衡详解](http://jaskey.github.io/blog/2016/12/19/rockectmq-rebalance/ "RokectMQ——水平扩展及负载均衡详解") 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的（RocketMQ有保证消息肯定消费成功的特性（失败则重试）？
+[RokectMQ——水平扩展及负载均衡详解](http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/ "RokectMQ——水平扩展及负载均衡详解") 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的（RocketMQ有保证消息肯定消费成功的特性（失败则重试）？
 
 本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。
 

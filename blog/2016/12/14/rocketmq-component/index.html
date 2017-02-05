@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/12/14/rocketmq-startup">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -127,7 +127,7 @@
 <li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
 <li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
 <li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
-<li>使用 Java 诧言迕行作为过滤表达式是一个双刃剑，方便了应用的过滤操作且节省网卡资源，但是带来了服务器端的安全风险。需要应用来保证过滤代码安全，例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
+<li>使用 Java class上传作为过滤表达式是一个双刃剑——一方面方便了应用的过滤操作且节省网卡资源，另一方面也带来了服务器端的安全风险。这就需要应用来保证过滤代码安全——例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
 </ul>
 
 </div>
@@ -176,7 +176,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/12/14/rocketmq-startup/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/12/14/rocketmq-startup/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component/" >Tweet</a>
   
   
   
@@ -229,7 +229,7 @@ var jiathis_config = {data_track_clickback:'true'};
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——ACK及消费进度管理</a>
+        <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——消息ACK机制及消费进度管理</a>
       </li>
     
       <li class="post">
@@ -245,7 +245,7 @@ var jiathis_config = {data_track_clickback:'true'};
       </li>
     
       <li class="post">
-        <a href="/blog/2016/12/14/rocketmq-startup/">RocketMQ——组件</a>
+        <a href="/blog/2016/12/14/rocketmq-component/">RocketMQ——组件</a>
       </li>
     
   </ul>

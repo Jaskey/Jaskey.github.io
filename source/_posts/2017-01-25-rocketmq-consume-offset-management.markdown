@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "RocketMQ——ACK及消费进度管理"
+title: "RocketMQ——消息ACK机制及消费进度管理"
 date: 2017-01-25 20:49:23 +0800
 comments: true
 categories: java rocketmq
@@ -12,13 +12,13 @@ description:
 
 本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。
 
-由于以上工作所有的机制都实现在PushConsumer中，所以本文的原理均只适用于Rocket中的PushConsumer即Java客户端中的`DefaultPushConsumer`。 若使用PullConsumer模式，类似的工作如何ack，如何保证消费等均需要使用方自己实现。
+由于以上工作所有的机制都实现在PushConsumer中，所以本文的原理均只适用于RocketMQ中的PushConsumer即Java客户端中的`DefaultPushConsumer`。 若使用了PullConsumer模式，类似的工作如何ack，如何保证消费等均需要使用方自己实现。
 
 注：广播消费和集群消费的处理有部分区别，以下均特指集群消费（CLSUTER），广播（BROADCASTING）下部分可能不适用。
 
 ## 保证消费成功
 
-PushConsumer为了保证消息肯定消费成功，只有使用方明确表示消费成功，RocketMQ才会认为消息消费成功，中途断电，抛出异常等都不会认为成功——即都会重新投递。
+PushConsumer为了保证消息肯定消费成功，只有使用方明确表示消费成功，RocketMQ才会认为消息消费成功。中途断电，抛出异常等都不会认为成功——即都会重新投递。
 
 消费的时候，我们需要注入一个消费回调，具体sample代码如下：
 
@@ -37,7 +37,7 @@ PushConsumer为了保证消息肯定消费成功，只有使用方明确表示�
 
 如果这时候消息消费失败，例如数据库异常，余额不足扣款失败等一切业务认为消息需要重试的场景，只要返回`ConsumeConcurrentlyStatus.RECONSUME_LATER`，RocketMQ就会认为这批消息消费失败了。
 
-为了保证消息是肯定被至少消费成功一次，RocketMQ会把这批消息重发回Broker，在延迟的某个时间点（默认是10秒，业务可设置）后，再次投递到这个ConsumerGroup。而如果一直这样重复消费都持续失败到一定次数（默认16次），就会投递到DLQ死信队列。监控可以监控死信队列来做人工干预。
+为了保证消息是肯定被至少消费成功一次，RocketMQ会把这批消息重发回Broker（topic不是原topic而是这个消费租的RETRY topic），在延迟的某个时间点（默认是10秒，业务可设置）后，再次投递到这个ConsumerGroup。而如果一直这样重复消费都持续失败到一定次数（默认16次），就会投递到DLQ死信队列。应用可以监控死信队列来做人工干预。
 
 注：
 
@@ -50,9 +50,9 @@ PushConsumer为了保证消息肯定消费成功，只有使用方明确表示�
 
 消息存储在broker之后，会一直存储在磁盘直到消息文件过期（默认48小时）或磁盘已经达到上限必须释放（85%水位线）的时候，才会批量删除消息文件（CommitLog）。
 
-所以即使消息被消费了，消息也不会立刻被删除。并且，从哪里(offset)消费的决定权一直都是客户端决定。broker端只是按照客户端需要而搜索出对应消息即可。
+所以即使消息被消费了，消息也不会立刻被删除。并且，从哪里(offset)消费的决定权一直都是客户端决定。一开始启动的时候，客户端会询问broker端消费组的消费进度，按照这个进度开始不断往前消费。
 
-这样做有几个好处：
+而broker端只是按照客户端需要而搜索出对应消息即可，这样做有几个好处：
 
 1. 一个消息很可能需要被N个消费组（设计上很可能就是系统）消费，但消息只需要存储一份，消费进度单独记录即可。这给强大的消息堆积能力提供了很好的支持。
 2. 由于消费从哪里消费的决定权一直都是客户端决定，所以只要消息还在，就可以消息，这使得RocketMQ可以支持其他传统消息中间件不支持的回溯消费。
@@ -73,18 +73,19 @@ PushConsumer为了保证消息肯定消费成功，只有使用方明确表示�
     CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp()配合使用，默认是半个小时以前
 
 
-所以，社区中经常有人问我：“为什么我设了`CONSUME_FROM_LAST_OFFSET`，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。
+所以，社区中经常有人问：“为什么我设了`CONSUME_FROM_LAST_OFFSET`，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。
 
 对于老消费组想跳过历史消息可以采用以下两种方法：
 
-1. 代码按照日期做过滤
-2. 启动前，先调整该消费组的消费进度，再开始消费。可以人工使用命令`resetOffsetByTime`，或调用内部的运维接口，祥见`ResetOffsetByTimeCommand.java`
+1. 代码按照日期判断，太老的消息直接return CONSUME_SUCCESS过滤。
+2. 代码判断消息的offset和MAX_OFFSET相差很远，认为是积压了很多，直接return CONSUME_SUCCESS过滤。
+3. 消费者**启动前**，先调整该消费组的消费进度，再开始消费。可以人工使用命令`resetOffsetByTime`，或调用内部的运维接口，祥见`ResetOffsetByTimeCommand.java`
 
-## 消费ACK
+## 消息ACK机制
 
-RocketMQ是以queue为单位是管理消费进度的，以一个consumer offset标记这个这个消费组在这条queue上的消费进度——每个consumer group单独记录某一条queue的消费进度，即以ConsumerGroup+queue为一个纬度。
+RocketMQ是以consumer group+queue为单位是管理消费进度的，以一个consumer offset标记这个这个消费组在这条queue上的消费进度。
 
-如果某消费组出现新消费实例启动的时候，依靠这个组的消费进度，就可以判断第一次是从哪里开始拉取的。
+如果某已存在的消费组出现了新消费实例的时候，依靠这个组的消费进度，就可以判断第一次是从哪里开始拉取的。
 
 每次消息成功后，本地的消费进度会被更新，然后由定时器定时同步到broker，以此持久化消费进度。
 

@@ -53,7 +53,7 @@ titlecase: true       # Converts page and post titles to titlecase
 
 # list each of the sidebar modules you want to include, in the order you want them to appear.
 # To add custom asides, create files in /source/_includes/custom/asides/ and add them to the list like 'custom/asides/custom_aside_name.html'
-default_asides: [asides/recent_posts.html,custom/asides/weibo.html,custom/asides/douban.html,asides/github.html, asides/delicious.html, asides/pinboard.html, asides/googleplus.html ] #add weibo ,douban,
+default_asides: [asides/recent_posts.html,custom/asides/linkedin.html,custom/asides/weibo.html,custom/asides/douban.html,asides/github.html, asides/delicious.html, asides/pinboard.html, asides/googleplus.html ] #add linkedin, weibo ,douban,
 
 
 
@@ -125,6 +125,8 @@ douban_coulumn: 3 # 显示多少列
 douban_display_count: 9 #总共显示
 douban_hidelogo: false # 
 
+# linkedin
+linkedin_user: jaskeylam
 
 #uyan settings
 # comment and share

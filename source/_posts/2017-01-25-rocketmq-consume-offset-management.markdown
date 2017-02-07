@@ -99,9 +99,9 @@ RocketMQ是以consumer group+queue为单位是管理消费进度的，以一个c
 
 在这种设计下，就有消费大量重复的风险。如2101在还没有消费完成的时候消费实例突然退出（机器断电，或者被kill）。这条queue的消费进度还是维持在2101，当queue重新分配给新的实例的时候，新的实例从broker上拿到的消费进度还是维持在2101，这时候就会又从2101开始消费，2102-2200这批消息实际上已经被消费过还是会投递一次。
 
-对于这个场景，RocketMQ暂时无能为力（实上很多重复的场景RocketMQ都是持放弃治疗的态度），所以业务必须要保证消息消费的幂等性，这也是RocketMQ官方多次强调的态度。
+对于这个场景，RocketMQ暂时无能为力，所以业务必须要保证消息消费的幂等性，这也是RocketMQ官方多次强调的态度。
 
-实际上，从源码的角度上看，RocketMQ可能是考虑过这个问题的，所以为了缓解这个问题的影响面，`DefaultMQPushConsumer`中有个配置`consumeConcurrentlyMaxSpan`
+实际上，从源码的角度上看，RocketMQ可能是考虑过这个问题的，截止到3.2.6的版本的源码中，可以看到为了缓解这个问题的影响面，`DefaultMQPushConsumer`中有个配置`consumeConcurrentlyMaxSpan`
 
     
     /**
@@ -113,6 +113,56 @@ RocketMQ是以consumer group+queue为单位是管理消费进度的，以一个c
 这个值默认是2000，当RocketMQ发现本地缓存的消息的最大值-最小值差距大于这个值（2000）的时候，会触发流控——也就是说如果头尾都卡住了部分消息，达到了这个阈值就不再拉取消息。
 
 但作用实际很有限，像刚刚这个例子，2101的消费是死循环，其他消费非常正常的话，是无能为力的。一旦退出，在不人工干预的情况下，2101后所有消息全部重复!
+
+
+### Ack卡进度解决方案
+
+实际上对于卡住进度的场景，可以选择弃车保帅的方案：把消息卡住那些消息，先ack掉，让进度前移。但要保证这条消息不会因此丢失，ack之前要把消息sendBack回去，这样这条卡住的消息就会必然重复，但会解决潜在的大量重复的场景。 这也是我们公司**自己定制**的解决方案。
+
+   部分源码如下：
+
+    class ConsumeRequestWithUnAck implements Runnable {
+        final ConsumeRequest consumeRequest;
+        final long resendAfterIfStillUnAck;//n毫秒没有消费完，就重发
+
+        ConsumeRequestWithUnAck(ConsumeRequest consumeRequest,long resendAfterIfStillUnAck) {
+            this.consumeRequest = consumeRequest;
+            this.resendAfterIfStillUnAck = resendAfterIfStillUnAck;
+        }
+
+        @Override
+        public void run() {
+            //每次消费前，计划延时任务，超时则ack并重发
+            final WeakReference<ConsumeRequest> crReff = new WeakReference<>(this.consumeRequest);
+            ScheduledFuture scheduledFuture=null;
+            if(!ConsumeDispatcher.this.ackAndResendScheduler.isShutdown()) {
+                scheduledFuture= ConsumeDispatcher.this.ackAndResendScheduler.schedule(new ConsumeTooLongChecker(crReff),resendAfterIfStillUnAck,TimeUnit.MILLISECONDS);
+            }
+            try{
+                this.consumeRequest.run();//正常执行并更新offset
+            }
+            finally {
+                if (scheduledFuture != null) scheduledFuture.cancel(false);//消费结束后,取消任务
+            }
+        }
+
+    }
+
+1. 定义了一个装饰器，把原来的ConsumeRequest对象包了一层。
+2. 装饰器中，每条消息消费前都会调度一个调度器，定时触发，触发的时候如果发现消息还存在，就执行sendback并ack的操作。
+
+
+后来RocketMQ显然也发现了这个问题，RocketMQ在3.5.8之后也是采用这样的方案去解决这个问题。只是实现方式上有所不同（事实上我认为RocketMQ的方案还不够完善）
+
+1. 在pushConsumer中 有一个`consumeTimeout`字段（默认15分钟），用于设置最大的消费超时时间。消费前会记录一个消费的开始时间，后面用于比对。
+2. 消费者启动的时候，会定期扫描所有消费的消息，达到这个timeout的那些消息，就会触发sendBack并ack的操作。这里扫描的间隔也是consumeTimeout（单位分钟）的间隔。
+
+
+通过这个逻辑对比我定制的时间，可以看出有几个不太完善的问题：
+
+1. 消费timeout的时间非常不精确。由于扫描的间隔是15分钟，所以实际上触发的时候，消息是有可能卡住了接近30分钟的（15*2）。
+2. 由于定时器一启动就开始调度了，中途这个consumeTimeout再更新也不会生效。
+
 
 
 

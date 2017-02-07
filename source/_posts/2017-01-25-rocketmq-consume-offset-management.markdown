@@ -158,9 +158,84 @@ RocketMQ是以consumer group+queue为单位是管理消费进度的，以一个c
 2. 消费者启动的时候，会定期扫描所有消费的消息，达到这个timeout的那些消息，就会触发sendBack并ack的操作。这里扫描的间隔也是consumeTimeout（单位分钟）的间隔。
 
 
+核心源码如下：
+	
+	//ConsumeMessageConcurrentlyService.java
+    public void start() {
+        this.CleanExpireMsgExecutors.scheduleAtFixedRate(new Runnable() {
+
+            @Override
+            public void run() {
+                cleanExpireMsg();
+            }
+
+        }, this.defaultMQPushConsumer.getConsumeTimeout(), this.defaultMQPushConsumer.getConsumeTimeout(), TimeUnit.MINUTES);
+    }
+	//ConsumeMessageConcurrentlyService.java
+    private void cleanExpireMsg() {
+        Iterator<Map.Entry<MessageQueue, ProcessQueue>> it =
+                this.defaultMQPushConsumerImpl.getRebalanceImpl().getProcessQueueTable().entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<MessageQueue, ProcessQueue> next = it.next();
+            ProcessQueue pq = next.getValue();
+            pq.cleanExpiredMsg(this.defaultMQPushConsumer);
+        }
+    }
+
+	//ProcessQueue.java
+    public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
+        if (pushConsumer.getDefaultMQPushConsumerImpl().isConsumeOrderly()) {
+            return;
+        }
+        
+        int loop = msgTreeMap.size() < 16 ? msgTreeMap.size() : 16;
+        for (int i = 0; i < loop; i++) {
+            MessageExt msg = null;
+            try {
+                this.lockTreeMap.readLock().lockInterruptibly();
+                try {
+                    if (!msgTreeMap.isEmpty() && System.currentTimeMillis() - Long.parseLong(MessageAccessor.getConsumeStartTimeStamp(msgTreeMap.firstEntry().getValue())) > pushConsumer.getConsumeTimeout() * 60 * 1000) {
+                        msg = msgTreeMap.firstEntry().getValue();
+                    } else {
+
+                        break;
+                    }
+                } finally {
+                    this.lockTreeMap.readLock().unlock();
+                }
+            } catch (InterruptedException e) {
+                log.error("getExpiredMsg exception", e);
+            }
+
+            try {
+
+                pushConsumer.sendMessageBack(msg, 3);
+                log.info("send expire msg back. topic={}, msgId={}, storeHost={}, queueId={}, queueOffset={}", msg.getTopic(), msg.getMsgId(), msg.getStoreHost(), msg.getQueueId(), msg.getQueueOffset());
+                try {
+                    this.lockTreeMap.writeLock().lockInterruptibly();
+                    try {
+                        if (!msgTreeMap.isEmpty() && msg.getQueueOffset() == msgTreeMap.firstKey()) {
+                            try {
+                                msgTreeMap.remove(msgTreeMap.firstKey());
+                            } catch (Exception e) {
+                                log.error("send expired msg exception", e);
+                            }
+                        }
+                    } finally {
+                        this.lockTreeMap.writeLock().unlock();
+                    }
+                } catch (InterruptedException e) {
+                    log.error("getExpiredMsg exception", e);
+                }
+            } catch (Exception e) {
+                log.error("send expired msg exception", e);
+            }
+        }
+    }
+
 通过这个逻辑对比我定制的时间，可以看出有几个不太完善的问题：
 
-1. 消费timeout的时间非常不精确。由于扫描的间隔是15分钟，所以实际上触发的时候，消息是有可能卡住了接近30分钟的（15*2）。
+1. 消费timeout的时间非常不精确。由于扫描的间隔是15分钟，所以实际上触发的时候，消息是有可能卡住了接近30分钟（15*2）才被清理。
 2. 由于定时器一启动就开始调度了，中途这个consumeTimeout再更新也不会生效。
 
 

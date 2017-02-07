@@ -2,6 +2,7 @@
 // Add styles here to make changes without digging in too much
 
 .about {
+     display: flex;
      font-style: italic;
      background-color: #FFF;
      padding: 10px;
@@ -24,4 +25,8 @@
      #twitter-widget-1 {
           float: right
      }
+}
+
+.about-desc{
+     padding: 30px 35px
 }

@@ -63,15 +63,17 @@ RocketMQ支持给在发送的时候给topic打tag，同一个topic的消息虽�
 
 RocketMQ中，有很多offset的概念。但通常我们只关心暴露到客户端的offset。一般我们不特指的话，就是指逻辑Message Queue下面的offset。
 
-可以认为一条逻辑的message queue是无限长的数组。一条消息进来下标就会涨1.下标就是offset。
+可以认为一条逻辑的message queue是无限长的数组。一条消息进来下标就会涨1。下标就是offset。
 
-一条message queue中的max offset表示消息的最大offset，即消息最新消息的offset。而min offset则标识现存在的最小offset。
+一条message queue中的max offset表示消息的最大offset。注：这里从源码上看，max_offset并不是最新的那条消息的offset，而是表示最新消息的offset+1。
+
+而min offset则标识现存在的最小offset。
 
 由于消息存储一段时间后，消费会被物理地从磁盘删除，message queue的min offset也就对应增长。这意味着比min offset要小的那些消息已经不在broker上了，无法被消费。
 
 ### 消费进度
 
-又称consumer offset，用于标记Consumer Group在一条逻辑Message Queue上，消息消费到哪里。
+又称consumer offset，用于标记Consumer Group在一条逻辑Message Queue上，消息消费到哪里。注：从源码上看，这个数值是最新消费的那条消息的offset+1。
 
 消费者拉取消息的时候需要指定offset，broker不主动推送消息，而是接受到请求的时候把存储的对应offset的消息返回给客户端。这个offset在成功消费后会更新到内存，并定时持久化。在集群消费模式下，会同步持久化到broker。在广播模式下，会持久化到本地文件。
 

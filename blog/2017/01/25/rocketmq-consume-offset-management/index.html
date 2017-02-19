@@ -9,7 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="RokectMQ——水平扩展及负载均衡详解 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的（RocketMQ有保证消息肯定消费成功的特性（失败则重试）？ 本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的 &hellip;">
+  <meta name="description" content="RokectMQ——水平扩展及负载均衡详解 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的?（RocketMQ有保证消息肯定消费成功的特性,失败则重试）？ 本文将详细解析消息具体是如何ack的， &hellip;">
   <meta name="keywords" content="java , rocketmq, broker, nameserver, filterserver, netty">
 
   <!-- http://t.co/dKP3o1e -->
@@ -89,7 +89,7 @@
   </header>
 
 
-<div class="entry-content"><p><a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的（RocketMQ有保证消息肯定消费成功的特性（失败则重试）？</p>
+<div class="entry-content"><p><a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的?（RocketMQ有保证消息肯定消费成功的特性,失败则重试）？</p>
 
 <p>本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。</p>
 
@@ -127,25 +127,6 @@
 </ol>
 
 
-<h2>消费完后的消息去哪里了？</h2>
-
-<p>消息存储在broker之后，会一直存储在磁盘直到消息文件过期（默认48小时）或磁盘已经达到上限必须释放（85%水位线）的时候，才会批量删除消息文件（CommitLog）。</p>
-
-<p>所以即使消息被消费了，消息也不会立刻被删除。并且，从哪里(offset)消费的决定权一直都是客户端决定。一开始启动的时候，客户端会询问broker端消费组的消费进度，按照这个进度开始不断往前消费。</p>
-
-<p>而broker端只是按照客户端需要而搜索出对应消息即可，这样做有几个好处：</p>
-
-<ol>
-<li>一个消息很可能需要被N个消费组（设计上很可能就是系统）消费，但消息只需要存储一份，消费进度单独记录即可。这给强大的消息堆积能力提供了很好的支持。</li>
-<li>由于消费从哪里消费的决定权一直都是客户端决定，所以只要消息还在，就可以消息，这使得RocketMQ可以支持其他传统消息中间件不支持的回溯消费。</li>
-<li>消息索引服务。只要消息还存在就能被搜索出来。所以可以依靠消息的索引搜索出消息的各种原信息，方便事后排查问题。</li>
-</ol>
-
-
-<p>消息既然一直没有删除，那RocketMQ怎么知道应该投递不重复的消息呢——答案是客户端自身维护，主动告诉broker。</p>
-
-<p>在PushConsumer中，RocketMQ有一条拉取线程，每次拉取到消息之后都会按照消息拉取到的结果来调整下一次应该从哪里拉取，这样就保证了正常情况下，消息只会被投递一次。</p>
-
 <h2>启动的时候从哪里消费</h2>
 
 <p>当新实例启动的时候，PushConsumer会拿到本消费组broker已经记录好的消费进度（consumer offset），按照这个进度发起自己的第一次Pull请求。</p>
@@ -159,14 +140,7 @@ CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp(
 
 <p>所以，社区中经常有人问：“为什么我设了<code>CONSUME_FROM_LAST_OFFSET</code>，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。</p>
 
-<p>对于老消费组想跳过历史消息可以采用以下两种方法：</p>
-
-<ol>
-<li>代码按照日期判断，太老的消息直接return CONSUME_SUCCESS过滤。</li>
-<li>代码判断消息的offset和MAX_OFFSET相差很远，认为是积压了很多，直接return CONSUME_SUCCESS过滤。</li>
-<li>消费者<strong>启动前</strong>，先调整该消费组的消费进度，再开始消费。可以人工使用命令<code>resetOffsetByTime</code>，或调用内部的运维接口，祥见<code>ResetOffsetByTimeCommand.java</code></li>
-</ol>
-
+<p>对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：<a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-clean-commitlog/%20%22RocketMQ%E2%80%94%E2%80%94%E6%B6%88%E6%81%AF%E6%96%87%E4%BB%B6%E8%BF%87%E6%9C%9F%E5%8E%9F%E7%90%86">RocketMQ——消息文件过期原理</a></p>
 
 <h2>消息ACK机制</h2>
 
@@ -182,7 +156,7 @@ CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp(
 
 <p>这钟方式和传统的一条message单独ack的方式有本质的区别。性能上提升的同时，会带来一个潜在的重复问题——由于消费进度只是记录了一个下标，就可能出现拉取了100条消息如 2101-2200的消息，后面99条都消费结束了，只有2101消费一直没有结束的情况。</p>
 
-<p>在这种情况下，RocketMQ为了保证消息肯定被消费成功，消费进度职能维持在2101，直到2101也消费结束了，本地的消费进度才会一下子更新到2200。</p>
+<p>在这种情况下，RocketMQ为了保证消息肯定被消费成功，消费进度职能维持在2101，直到2101也消费结束了，本地的消费进度才能标记2200消费结束了（注：consumerOffset=2201）。</p>
 
 <p>在这种设计下，就有消费大量重复的风险。如2101在还没有消费完成的时候消费实例突然退出（机器断电，或者被kill）。这条queue的消费进度还是维持在2101，当queue重新分配给新的实例的时候，新的实例从broker上拿到的消费进度还是维持在2101，这时候就会又从2101开始消费，2102-2200这批消息实际上已经被消费过还是会投递一次。</p>
 
@@ -414,6 +388,8 @@ var jiathis_config = {data_track_clickback:'true'};
         <a class="basic-alignment left" href="/blog/2016/12/19/rocketmq-rebalance/" title="Previous Post: RocketMQ——水平扩展及负载均衡详解">&laquo; RocketMQ——水平扩展及负载均衡详解</a>
       
       
+        <a class="basic-alignment right" href="/blog/2017/02/16/rocketmq-clean-commitlog/" title="Next Post: RocketMQ——消息文件过期原理">RocketMQ——消息文件过期原理 &raquo;</a>
+      
     </p>
   </footer>
 </article>
@@ -425,6 +401,10 @@ var jiathis_config = {data_track_clickback:'true'};
     <section>
   <h1>最近博文</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017/02/16/rocketmq-clean-commitlog/">RocketMQ——消息文件过期原理</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——消息ACK机制及消费进度管理</a>
@@ -440,10 +420,6 @@ var jiathis_config = {data_track_clickback:'true'};
     
       <li class="post">
         <a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/12/14/rocketmq-component/">RocketMQ——组件</a>
       </li>
     
   </ul>

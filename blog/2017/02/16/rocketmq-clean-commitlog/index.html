@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>RocketMQ——组件 - 薛定谔的风口猪</title>
+  <title>RocketMQ——消息文件过期原理 - 薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="java , rocketmq, broker, nameserver, filterserver">
-  
+  <meta name="description" content="RocketMQ——消息ACK机制及消费进度管理 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实并没有物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。 消费完后的消息去哪里了 &hellip;">
+  <meta name="keywords" content="java , rocketmq, broker, nameserver, filterserver, netty">
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component">
+  <link rel="canonical" href="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -73,7 +73,7 @@
   
   <header>
     
-      <h1 class="entry-title">RocketMQ——组件</h1>
+      <h1 class="entry-title">RocketMQ——消息文件过期原理</h1>
     
     
       <p class="meta">
@@ -82,56 +82,96 @@
 
 
 
-<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:54 pm</span></time>
+<time class='entry-date' datetime='2017-02-16T11:49:23+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>11:49 am</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p><img src="/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+<div class="entry-content"><p><a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a> 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实<strong>并没有</strong>物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。</p>
 
-<p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
+<h2>消费完后的消息去哪里了？</h2>
 
-<p>下面分别介绍三个组件：</p>
+<p>消息的存储是一直存在于CommitLog中的，由于CommitLog是以文件为单位（而非消息）存在的，而且CommitLog的设计是只允许顺序写，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。</p>
 
-<h1>Name Server</h1>
+<p>所以消息被消费了，消息所占据的物理空间也不会立刻被回收。但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
 
-<p>Name Server是RocketMQ的寻址服务。用于把Broker的路由信息做聚合。用户端依靠Name Server决定去获取对应topic的路由信息，从而决定对哪些Broker做连接。</p>
+<h2>什么时候清理物理消息文件？</h2>
 
-<ul>
-<li><p>Name Server是一个几乎无状态的结点，Name Server之间采取share-nothing的设计，互不通信。</p></li>
-<li><p>对于一个Name Server集群列表，客户端连接Name Server的时候，只会选择随机连接一个结点，以做到负载均衡。</p></li>
-<li><p>Name Server所有状态都从Broker上报而来，本身不存储任何状态，所有数据均在内存。</p></li>
-<li><p>如果中途所有Name Server全都挂了，影响到路由信息的更新，不会影响和Broker的通信。</p></li>
-</ul>
+<p>那消息文件到底删不删，什么时候删？</p>
 
+<p>消息存储在CommitLog之后，的确是会被清理的，但是这个清理只会在以下任一条件成立才会批量删除消息文件（CommitLog）：</p>
 
-<h1>Broker</h1>
-
-<p>Broker是处理消息存储，转发等处理的服务器。</p>
-
-<ul>
-<li>Broker以group分开，每个group只允许一个master，若干个slave。</li>
-<li>只有master才能进行写入操作，slave不允许。</li>
-<li>slave从master中同步数据。同步策略取决于master的配置，可以采用同步双写，异步复制两种。</li>
-<li>客户端消费可以从master和slave消费。在默认情况下，消费者都从master消费，在master挂后，客户端由于从Name Server中感知到Broker挂机，就会从slave消费。</li>
-<li>Broker向所有的NameServer结点建立长连接，注册Topic信息。</li>
-</ul>
+<ol>
+<li>消息文件过期（默认48小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
+<li>消息文件过期（默认48小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
+<li>磁盘已经达到必须释放的上限（85%水位线）的时候，则开始批量清理文件（无论是否过期），直到空间充足。</li>
+</ol>
 
 
-<h1>Filter Server（可选）</h1>
+<p>注：若磁盘空间达到危险水位线（默认90%），出于保护自身的目的，broker会拒绝写入服务。</p>
 
-<p>RocketMQ可以允许消费者上传一个Java类给Filter Server进行过滤。</p>
+<h2>这样设计带来的好处</h2>
 
-<ul>
-<li>Filter Server只能起在Broker所在的机器</li>
-<li>可以有若干个Filter Server进程</li>
-<li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
-<li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
-<li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
-<li>使用 Java class上传作为过滤表达式是一个双刃剑——一方面方便了应用的过滤操作且节省网卡资源，另一方面也带来了服务器端的安全风险。这就需要应用来保证过滤代码安全——例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
-</ul>
+<p>消息的物理文件一直存在，消费逻辑只是听客户端的决定而搜索出对应消息进行，这样做，笔者认为，有以下几个好处：</p>
+
+<ol>
+<li><p>一个消息很可能需要被N个消费组（设计上很可能就是系统）消费，但消息只需要存储一份，消费进度单独记录即可。这给强大的消息堆积能力提供了很好的支持——一个消息无需复制N份，就可服务N个消费组。</p></li>
+<li><p>由于消费从哪里消费的决定权一直都是客户端决定，所以只要消息还在，就可以消费到，这使得RocketMQ可以支持其他传统消息中间件不支持的回溯消费。即我可以通过设置消费进度回溯，就可以让我的消费组重新像放快照一样消费历史消息；或者我需要另一个系统也复制历史的数据，只需要另起一个消费组从头消费即可（前提是消息文件还存在）。</p></li>
+<li><p>消息索引服务。只要消息还存在就能被搜索出来。所以可以依靠消息的索引搜索出消息的各种原信息，方便事后排查问题。</p></li>
+</ol>
+
+
+<p>注：在消息清理的时候，由于消息文件默认是1GB，所以在清理的时候其实是在删除一个大文件操作，这对于IO的压力是非常大的，这时候如果有消息写入，写入的耗时会明显变高。这个现象可以在凌晨4点（默认删时间时点）后的附近观察得到。</p>
+
+<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件操作操作相比Ext3有非常明显的提升。</p>
+
+<h2>跳过历史消息的处理</h2>
+
+<p>由于消息本身是没有过期的概念，只有文件才有过期的概念。那么对于很多业务场景——一个消息如果太老，是无需要被消费的，是不合适的。</p>
+
+<p>这种需要跳过历史消息的场景，在RocketMQ要怎么实现呢？</p>
+
+<p>对于一个全新的消费组，PushConsumer默认就是跳过以前的消息而从最尾开始消费的，解析请参看<a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a>相关章节。</p>
+
+<p>但对于已存在的消费组，RocketMQ没有内置的实现，但有以下手段可以解决：</p>
+
+<ol>
+<li><p>自身的消费代码按照日期过滤，太老的消息直接过滤。如：</p>
+
+<pre><code>     @Override
+     public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context) {
+         for(MessageExt msg: msgs){
+             if(System.currentTimeMillis()-msg.getBornTimestamp()&gt;60*1000) {//一分钟之前的认为过期
+                 continue;//过期消息跳过
+             }
+
+             //do consume here
+
+         }
+         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+     }
+</code></pre></li>
+<li><p>自身的消费代码代码判断消息的offset和MAX_OFFSET相差很远，认为是积压了很多，直接return CONSUME_SUCCESS过滤。</p>
+
+<pre><code>     @Override
+     public ConsumeConcurrentlyStatus consumeMessage(//
+         List&lt;MessageExt&gt; msgs, //
+         ConsumeConcurrentlyContext context) {
+         long offset = msgs.get(0).getQueueOffset();
+         String maxOffset = msgs.get(0).getProperty(MessageConst.PROPERTY_MAX_OFFSET);
+         long diff = Long. parseLong(maxOffset) - offset;
+         if (diff &gt; 100000) { //消息堆积了10W情况的特殊处理
+             return ConsumeConcurrentlyStatus. CONSUME_SUCCESS;
+         }
+         //do consume here
+         return ConsumeConcurrentlyStatus. CONSUME_SUCCESS;
+     }
+</code></pre></li>
+<li><p>消费者启动前，先调整该消费组的消费进度，再开始消费。可以人工使用控制台命令resetOffsetByTime把消费进度调整到后面，再启动消费。</p></li>
+<li>原理同3，但使用代码来控制。代码中调用内部的运维接口，具体代码实例祥见<code>ResetOffsetByTimeCommand.java</code>.</li>
+</ol>
 
 </div>
 
@@ -148,7 +188,7 @@
 
 
 
-<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>8:54 pm</span></time>
+<time class='entry-date' datetime='2017-02-16T11:49:23+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>11:49 am</span></time>
       
 
 <span class="categories">
@@ -178,7 +218,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component/" data-via="" data-counturl="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" data-via="" data-counturl="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" >Tweet</a>
   
   
   
@@ -213,10 +253,8 @@ var jiathis_config = {data_track_clickback:'true'};
 
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/" title="Previous Post: 在IntilliJ中运行Maven的Tomcat项目">&laquo; 在IntilliJ中运行Maven的Tomcat项目</a>
+        <a class="basic-alignment left" href="/blog/2017/01/25/rocketmq-consume-offset-management/" title="Previous Post: RocketMQ——消息ACK机制及消费进度管理">&laquo; RocketMQ——消息ACK机制及消费进度管理</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2016/12/15/rocketmq-concept/" title="Next Post: RocketMQ——角色与术语详解">RocketMQ——角色与术语详解 &raquo;</a>
       
     </p>
   </footer>

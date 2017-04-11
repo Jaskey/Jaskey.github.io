@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Json | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/json/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/json/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
+    <link href="https://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
     <updated>2015-07-30T12:18:28+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
+    <id>https://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
     <content type="html"><![CDATA[<p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
 
 <p>以下是具体方法，并带一个例子</p>
@@ -26,7 +26,7 @@
 
 <p>语法：</p>
 
-<pre><code>&lt;script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
+<pre><code>&lt;script type="text/javascript" src="https://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
 </code></pre>
 
 <p>例如： 在 source 中的404.markdown 中 加入：</p>
@@ -71,9 +71,9 @@
   
   <entry>
     <title type="html"><![CDATA[Jackson 操作JSON]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <link href="https://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
     <updated>2015-05-13T21:18:28+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <id>https://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
     <content type="html"><![CDATA[<h2>Maven 支持：</h2>
 
 <pre><code>  &lt;repositories&gt;

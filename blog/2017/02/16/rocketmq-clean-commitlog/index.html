@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog">
+  <link rel="canonical" href="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -93,9 +93,9 @@
 
 <h2>消费完后的消息去哪里了？</h2>
 
-<p>消息的存储是一直存在于CommitLog中的，由于CommitLog是以文件为单位（而非消息）存在的，而且CommitLog的设计是只允许顺序写，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。</p>
+<p>消息的存储是一直存在于CommitLog中的。而由于CommitLog是以文件为单位（而非消息）存在的，CommitLog的设计是只允许顺序写的，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。所以消息被消费了，消息所占据的物理空间并不会立刻被回收。</p>
 
-<p>所以消息被消费了，消息所占据的物理空间也不会立刻被回收。但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
+<p>但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
 
 <h2>什么时候清理物理消息文件？</h2>
 
@@ -104,8 +104,8 @@
 <p>消息存储在CommitLog之后，的确是会被清理的，但是这个清理只会在以下任一条件成立才会批量删除消息文件（CommitLog）：</p>
 
 <ol>
-<li>消息文件过期（默认48小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
-<li>消息文件过期（默认48小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
+<li>消息文件过期（默认72小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
+<li>消息文件过期（默认72小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
 <li>磁盘已经达到必须释放的上限（85%水位线）的时候，则开始批量清理文件（无论是否过期），直到空间充足。</li>
 </ol>
 
@@ -125,7 +125,7 @@
 
 <p>注：在消息清理的时候，由于消息文件默认是1GB，所以在清理的时候其实是在删除一个大文件操作，这对于IO的压力是非常大的，这时候如果有消息写入，写入的耗时会明显变高。这个现象可以在凌晨4点（默认删时间时点）后的附近观察得到。</p>
 
-<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件操作操作相比Ext3有非常明显的提升。</p>
+<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件删除操作相比Ext3有非常明显的提升。</p>
 
 <h2>跳过历史消息的处理</h2>
 
@@ -135,7 +135,7 @@
 
 <p>对于一个全新的消费组，PushConsumer默认就是跳过以前的消息而从最尾开始消费的，解析请参看<a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a>相关章节。</p>
 
-<p>但对于已存在的消费组，RocketMQ没有内置的实现，但有以下手段可以解决：</p>
+<p>但对于已存在的消费组，RocketMQ没有内置的跳过历史消息的实现，但有以下手段可以解决：</p>
 
 <ol>
 <li><p>自身的消费代码按照日期过滤，太老的消息直接过滤。如：</p>
@@ -218,7 +218,7 @@
 	
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" data-via="" data-counturl="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" data-via="" data-counturl="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" >Tweet</a>
   
   
   
@@ -301,7 +301,7 @@ var jiathis_config = {data_track_clickback:'true'};
   <ul id="weibo">
     <li>
 		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
-				src="http://widget.weibo.com/weiboshow/index.php?
+				src="https://widget.weibo.com/weiboshow/index.php?
 				language=&
 				width=0&
 				height=550&

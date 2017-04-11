@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Memcached | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/memcached/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/memcached/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[快速入门Memcached]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/10/26/get-started-with-memcached/"/>
+    <link href="https://Jaskey.github.io/blog/2014/10/26/get-started-with-memcached/"/>
     <updated>2014-10-26T00:41:53+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/10/26/get-started-with-memcached</id>
+    <id>https://Jaskey.github.io/blog/2014/10/26/get-started-with-memcached</id>
     <content type="html"><![CDATA[<p>最近学习Memcahced,使用了一天时间搭建了memcached的集群，并使用memcached的客户端<code>spymemcached</code>成功访问到集群。今天整理下学习的笔记。</p>
 
 <h2>Linux下安装Memcached</h2>

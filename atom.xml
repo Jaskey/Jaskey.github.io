@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,16 +15,16 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息文件过期原理]]></title>
-    <link href="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
+    <link href="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
     <updated>2017-02-16T11:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
+    <id>https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a> 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实<strong>并没有</strong>物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。</p>
 
 <h2>消费完后的消息去哪里了？</h2>
 
-<p>消息的存储是一直存在于CommitLog中的，由于CommitLog是以文件为单位（而非消息）存在的，而且CommitLog的设计是只允许顺序写，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。</p>
+<p>消息的存储是一直存在于CommitLog中的。而由于CommitLog是以文件为单位（而非消息）存在的，CommitLog的设计是只允许顺序写的，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。所以消息被消费了，消息所占据的物理空间并不会立刻被回收。</p>
 
-<p>所以消息被消费了，消息所占据的物理空间也不会立刻被回收。但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
+<p>但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
 
 <h2>什么时候清理物理消息文件？</h2>
 
@@ -33,8 +33,8 @@
 <p>消息存储在CommitLog之后，的确是会被清理的，但是这个清理只会在以下任一条件成立才会批量删除消息文件（CommitLog）：</p>
 
 <ol>
-<li>消息文件过期（默认48小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
-<li>消息文件过期（默认48小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
+<li>消息文件过期（默认72小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
+<li>消息文件过期（默认72小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
 <li>磁盘已经达到必须释放的上限（85%水位线）的时候，则开始批量清理文件（无论是否过期），直到空间充足。</li>
 </ol>
 
@@ -54,7 +54,7 @@
 
 <p>注：在消息清理的时候，由于消息文件默认是1GB，所以在清理的时候其实是在删除一个大文件操作，这对于IO的压力是非常大的，这时候如果有消息写入，写入的耗时会明显变高。这个现象可以在凌晨4点（默认删时间时点）后的附近观察得到。</p>
 
-<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件操作操作相比Ext3有非常明显的提升。</p>
+<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件删除操作相比Ext3有非常明显的提升。</p>
 
 <h2>跳过历史消息的处理</h2>
 
@@ -64,7 +64,7 @@
 
 <p>对于一个全新的消费组，PushConsumer默认就是跳过以前的消息而从最尾开始消费的，解析请参看<a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a>相关章节。</p>
 
-<p>但对于已存在的消费组，RocketMQ没有内置的实现，但有以下手段可以解决：</p>
+<p>但对于已存在的消费组，RocketMQ没有内置的跳过历史消息的实现，但有以下手段可以解决：</p>
 
 <ol>
 <li><p>自身的消费代码按照日期过滤，太老的消息直接过滤。如：</p>
@@ -107,9 +107,9 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息ACK机制及消费进度管理]]></title>
-    <link href="http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
+    <link href="https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
     <updated>2017-01-25T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
+    <id>https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的?（RocketMQ有保证消息肯定消费成功的特性,失败则重试）？</p>
 
 <p>本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。</p>
@@ -173,7 +173,7 @@ CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp(
 
 <p>但是每次记录消费进度的时候，只会把一批消息中最小的offset值为消费进度值，如下图：</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/rocketmq-ack.png" title="message ack" alt="message ack" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/rocketmq-ack.png" title="message ack" alt="message ack" /></p>
 
 <p>这钟方式和传统的一条message单独ack的方式有本质的区别。性能上提升的同时，会带来一个潜在的重复问题——由于消费进度只是记录了一个下标，就可能出现拉取了100条消息如 2101-2200的消息，后面99条都消费结束了，只有2101消费一直没有结束的情况。</p>
 
@@ -331,9 +331,9 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——水平扩展及负载均衡详解]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
+    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
     <content type="html"><![CDATA[<p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
 
 <h2>Broker端水平扩展</h2>
@@ -358,13 +358,13 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>具体如下图：</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
 
 <h2>Producer</h2>
 
 <p>Producer端，每个实例在发消息的时候，默认会轮询所有的message queue发送，以达到让消息平均落在不同的queue上。而由于queue可以散落在不同的broker，所以消息就发送到不同的broker下，如下图：</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
 
 <h2>Consumer负载均衡</h2>
 
@@ -376,11 +376,11 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>默认的分配算法是AllocateMessageQueueAveragely，如下图：</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
 
 <p>还有另外一种平均的算法是AllocateMessageQueueAveragelyByCircle，也是平均分摊每一条queue，只是以环状轮流分queue的形式，如下图：</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
 
 <p>需要注意的是，集群模式下，queue都是只允许分配只一个实例，这是由于如果多个实例同时消费一个queue的消息，由于拉取哪些消息是consumer主动控制的，那样会导致同一个消息在不同的实例下被消费多次，所以算法上都是一个queue只分给一个consumer实例，一个consumer实例可以允许同时分到不同的queue。</p>
 
@@ -394,15 +394,15 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——通信协议]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
+    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
     <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
 
 <p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
@@ -411,7 +411,7 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>协议分为以下四部分：</p>
 
-<p><img src="http://Jaskey.github.io/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
+<p><img src="https://Jaskey.github.io/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
 
 <p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
 
@@ -926,9 +926,9 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——角色与术语详解]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
     <updated>2016-12-15T15:48:01+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
+    <id>https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
     <content type="html"><![CDATA[<p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
 
 <p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>
@@ -1051,10 +1051,10 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——组件]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/14/rocketmq-component/"/>
     <updated>2016-12-14T20:54:20+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/14/rocketmq-component</id>
-    <content type="html"><![CDATA[<p><img src="http://Jaskey.github.io/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+    <id>https://Jaskey.github.io/blog/2016/12/14/rocketmq-component</id>
+    <content type="html"><![CDATA[<p><img src="https://Jaskey.github.io/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
 
 <p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
 
@@ -1103,28 +1103,28 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[在IntilliJ中运行Maven的Tomcat项目]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/"/>
+    <link href="https://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/"/>
     <updated>2016-04-15T16:45:28+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij</id>
+    <id>https://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij</id>
     <content type="html"><![CDATA[<p>对于一个Maven项目，如果又是一个tomcat项目，在运行tomcat之前应该要进行Maven的构建。</p>
 
 <p>以下是步骤：</p>
 
 <p>1.新建一个Maven Run/Debug configuration:</p>
 
-<p> <img src="http://Jaskey.github.io/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
+<p> <img src="https://Jaskey.github.io/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
 
 <p>2.在Tomcat Run/Debug Configuration中新增#1的阶段在&#8221;Before Launch&#8221;中</p>
 
-<p> <img src="http://Jaskey.github.io/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
+<p> <img src="https://Jaskey.github.io/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
+    <link href="https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
     <updated>2016-04-05T15:15:48+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
+    <id>https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
     <content type="html"><![CDATA[<p>你很可能根据<a href="https://spring.io/guides/gs/rest-service/" title="官方教程">https://spring.io/guides/gs/rest-service/</a>搭起了一个Spring的Rest服务，然后打包成了jar包，不需要容器就可以在生成环境下通过运行jar包启动一个Web服务。</p>
 
 <p>但这样的服务怎么样正确的停止呢？或许你只是简单的<code>kill -9</code>对应的进程，但实际上，有更优雅的方式。</p>
@@ -1207,9 +1207,9 @@ management.address=127.0.0.1
   
   <entry>
     <title type="html"><![CDATA[通过VM参数指定本地log4j配置文件,Spring Boot]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
+    <link href="https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
     <updated>2016-03-21T19:20:09+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
+    <id>https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
     <content type="html"><![CDATA[<p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
 
 <p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
@@ -1227,9 +1227,9 @@ management.address=127.0.0.1
   
   <entry>
     <title type="html"><![CDATA[避免写出不走索引的SQL, MySQL]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
+    <link href="https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
     <updated>2016-01-19T20:24:16+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
+    <id>https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
     <content type="html"><![CDATA[<p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
 
 <p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
@@ -1303,9 +1303,9 @@ select * from dept where deptno=45
   
   <entry>
     <title type="html"><![CDATA[Git中只merge部分commit]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
+    <link href="https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
     <updated>2015-12-22T16:12:38+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
+    <id>https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
     <content type="html"><![CDATA[<h2>cherry-pick</h2>
 
 <p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
@@ -1351,9 +1351,9 @@ select * from dept where deptno=45
   
   <entry>
     <title type="html"><![CDATA[CSS实现垂直居中]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
+    <link href="https://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
     <updated>2015-08-04T16:49:40+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
+    <id>https://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
     <content type="html"><![CDATA[<p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
 
 <p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
@@ -1389,7 +1389,7 @@ childElement{
 <p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
 
 <p>浏览器支持如下：
-<img src="http://Jaskey.github.io/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
+<img src="https://Jaskey.github.io/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
 
 <p>样式：</p>
 
@@ -1412,9 +1412,9 @@ childElement{
   
   <entry>
     <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
+    <link href="https://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
     <updated>2015-07-30T12:18:28+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
+    <id>https://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
     <content type="html"><![CDATA[<p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
 
 <p>以下是具体方法，并带一个例子</p>
@@ -1423,7 +1423,7 @@ childElement{
 
 <p>语法：</p>
 
-<pre><code>&lt;script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
+<pre><code>&lt;script type="text/javascript" src="https://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
 </code></pre>
 
 <p>例如： 在 source 中的404.markdown 中 加入：</p>
@@ -1472,9 +1472,9 @@ childElement{
   
   <entry>
     <title type="html"><![CDATA[Jackson 操作JSON]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <link href="https://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
     <updated>2015-05-13T21:18:28+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <id>https://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
     <content type="html"><![CDATA[<h2>Maven 支持：</h2>
 
 <pre><code>  &lt;repositories&gt;
@@ -1554,9 +1554,9 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
   
   <entry>
     <title type="html"><![CDATA[修改IntelliJ的快捷键中的CTRL+Y为Redo操作]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut/"/>
+    <link href="https://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut/"/>
     <updated>2015-05-07T18:02:57+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut</id>
+    <id>https://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut</id>
     <content type="html"><![CDATA[<p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
 
 <p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
@@ -1577,9 +1577,9 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
   
   <entry>
     <title type="html"><![CDATA[Python中用dictionary操作SQL Select, Insert]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
+    <link href="https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
     <updated>2015-05-07T16:19:49+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
+    <id>https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
     <content type="html"><![CDATA[<p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
 
 <p>首先，连接数据库</p>
@@ -1624,9 +1624,9 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
   
   <entry>
     <title type="html"><![CDATA[Insert or Update操作，MySQL]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/"/>
+    <link href="https://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/"/>
     <updated>2015-05-05T16:46:59+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql</id>
+    <id>https://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql</id>
     <content type="html"><![CDATA[<p>如果需要执行操作如：“插入一行记录，若存在，则更新”的操作，在MySQL中，不需要使用Exists也不需要分两次语句执行，可以直接使用如下语句：</p>
 
 <pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
@@ -1649,9 +1649,9 @@ ON DUPLICATE KEY UPDATE `col1`=values(col1),
   
   <entry>
     <title type="html"><![CDATA[JavaScript实现私有方法]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/03/04/js-private-methods/"/>
+    <link href="https://Jaskey.github.io/blog/2015/03/04/js-private-methods/"/>
     <updated>2015-03-04T15:06:11+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/03/04/js-private-methods</id>
+    <id>https://Jaskey.github.io/blog/2015/03/04/js-private-methods</id>
     <content type="html"><![CDATA[<p>JavaScript的所有成员（属性+方法）都是公有的，但是我们有方法模拟出类似于OOP一样的私有方法。</p>
 
 <p>以下使用例子<code>Person</code>，假如我们需要一个<code>toStr</code>的私有方法，只能在Person内部才能访问。
@@ -1849,9 +1849,9 @@ p.publicMethod();
   
   <entry>
     <title type="html"><![CDATA[修改octopress的时间格式]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
+    <link href="https://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
     <updated>2015-02-16T17:59:19+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
+    <id>https://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
     <content type="html"><![CDATA[<p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
 
 <p><code>date_format: "%F %a"       #2012-01-01</code></p>
@@ -1893,9 +1893,9 @@ p.publicMethod();
   
   <entry>
     <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>
-    <link href="http://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
+    <link href="https://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
     <updated>2015-02-16T16:39:20+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
+    <id>https://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
     <content type="html"><![CDATA[<p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
 
 <h2>display: inline</h2>
@@ -1942,15 +1942,15 @@ p.publicMethod();
 
 <p><strong>diplay:inline</strong></p>
 
-<p><img src="http://Jaskey.github.io/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
+<p><img src="https://Jaskey.github.io/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
 
 <p><strong>display:block</strong></p>
 
-<p><img src="http://Jaskey.github.io/images/css/display-block.png" title="display:block" alt="display:block" /></p>
+<p><img src="https://Jaskey.github.io/images/css/display-block.png" title="display:block" alt="display:block" /></p>
 
 <p><strong>display:inline-block</strong></p>
 
-<p><img src="http://Jaskey.github.io/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
+<p><img src="https://Jaskey.github.io/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
 
 <p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以正常的设置高度和宽度等属性.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
 

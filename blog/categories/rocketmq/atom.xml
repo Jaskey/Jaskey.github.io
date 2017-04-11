@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Rocketmq | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/rocketmq/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/rocketmq/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,16 +15,16 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息文件过期原理]]></title>
-    <link href="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
+    <link href="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
     <updated>2017-02-16T11:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
+    <id>https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a> 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实<strong>并没有</strong>物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。</p>
 
 <h2>消费完后的消息去哪里了？</h2>
 
-<p>消息的存储是一直存在于CommitLog中的，由于CommitLog是以文件为单位（而非消息）存在的，而且CommitLog的设计是只允许顺序写，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。</p>
+<p>消息的存储是一直存在于CommitLog中的。而由于CommitLog是以文件为单位（而非消息）存在的，CommitLog的设计是只允许顺序写的，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。所以消息被消费了，消息所占据的物理空间并不会立刻被回收。</p>
 
-<p>所以消息被消费了，消息所占据的物理空间也不会立刻被回收。但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
+<p>但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
 
 <h2>什么时候清理物理消息文件？</h2>
 
@@ -33,8 +33,8 @@
 <p>消息存储在CommitLog之后，的确是会被清理的，但是这个清理只会在以下任一条件成立才会批量删除消息文件（CommitLog）：</p>
 
 <ol>
-<li>消息文件过期（默认48小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
-<li>消息文件过期（默认48小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
+<li>消息文件过期（默认72小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
+<li>消息文件过期（默认72小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
 <li>磁盘已经达到必须释放的上限（85%水位线）的时候，则开始批量清理文件（无论是否过期），直到空间充足。</li>
 </ol>
 
@@ -54,7 +54,7 @@
 
 <p>注：在消息清理的时候，由于消息文件默认是1GB，所以在清理的时候其实是在删除一个大文件操作，这对于IO的压力是非常大的，这时候如果有消息写入，写入的耗时会明显变高。这个现象可以在凌晨4点（默认删时间时点）后的附近观察得到。</p>
 
-<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件操作操作相比Ext3有非常明显的提升。</p>
+<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件删除操作相比Ext3有非常明显的提升。</p>
 
 <h2>跳过历史消息的处理</h2>
 
@@ -64,7 +64,7 @@
 
 <p>对于一个全新的消费组，PushConsumer默认就是跳过以前的消息而从最尾开始消费的，解析请参看<a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a>相关章节。</p>
 
-<p>但对于已存在的消费组，RocketMQ没有内置的实现，但有以下手段可以解决：</p>
+<p>但对于已存在的消费组，RocketMQ没有内置的跳过历史消息的实现，但有以下手段可以解决：</p>
 
 <ol>
 <li><p>自身的消费代码按照日期过滤，太老的消息直接过滤。如：</p>
@@ -107,9 +107,9 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息ACK机制及消费进度管理]]></title>
-    <link href="http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
+    <link href="https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
     <updated>2017-01-25T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
+    <id>https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的?（RocketMQ有保证消息肯定消费成功的特性,失败则重试）？</p>
 
 <p>本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。</p>
@@ -331,9 +331,9 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——水平扩展及负载均衡详解]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
+    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
     <content type="html"><![CDATA[<p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
 
 <h2>Broker端水平扩展</h2>
@@ -400,9 +400,9 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——通信协议]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
+    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
     <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
 
 <p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
@@ -756,9 +756,9 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——角色与术语详解]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
     <updated>2016-12-15T15:48:01+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
+    <id>https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
     <content type="html"><![CDATA[<p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
 
 <p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>

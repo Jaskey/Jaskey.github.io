@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Session | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/session/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/session/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Cookie 与 Session的区别]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/"/>
+    <link href="https://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/"/>
     <updated>2014-09-24T18:20:05+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions</id>
+    <id>https://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions</id>
     <content type="html"><![CDATA[<p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
 
 <p>其实不是。</p>

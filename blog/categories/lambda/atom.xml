@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Lambda | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/lambda/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/lambda/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[为什么java8引进了Lambda表达式]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
+    <link href="https://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
     <updated>2014-09-24T18:58:45+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
+    <id>https://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
     <content type="html"><![CDATA[<p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
 
 <p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>

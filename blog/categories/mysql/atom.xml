@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Mysql | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/mysql/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/mysql/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[避免写出不走索引的SQL, MySQL]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
+    <link href="https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
     <updated>2016-01-19T20:24:16+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
+    <id>https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
     <content type="html"><![CDATA[<p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
 
 <p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>

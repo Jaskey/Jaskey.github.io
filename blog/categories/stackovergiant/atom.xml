@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Stackovergiant | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/stackovergiant/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2017-02-19T23:04:37+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/stackovergiant/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2017-04-11T22:44:17+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[什么时候应该使用“静态类”而不使用单例？]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
+    <link href="https://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class/"/>
     <updated>2014-09-24T20:26:02+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
+    <id>https://Jaskey.github.io/blog/2014/09/24/when-to-use-static-class</id>
     <content type="html"><![CDATA[<p>经常我们都会使用单例，而有时候我们又会贪图方便而使用一个类然后全部都使用静态方法。那么，到底什么时候我们才应该使用这种都是静态方法的类呢(注：java没有静态类)？</p>
 
 <ol>
@@ -43,9 +43,9 @@
   
   <entry>
     <title type="html"><![CDATA[为什么java8引进了Lambda表达式]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
+    <link href="https://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda/"/>
     <updated>2014-09-24T18:58:45+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
+    <id>https://Jaskey.github.io/blog/2014/09/24/why-java8-introduces-lamda</id>
     <content type="html"><![CDATA[<p>我们借用官方文档的例子：<a href="http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1">http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1</a></p>
 
 <p>看看Lambda 怎么样让我们的代码更具有可读性，而且更为简洁。</p>
@@ -123,9 +123,9 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
   
   <entry>
     <title type="html"><![CDATA[Cookie 与 Session的区别]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/"/>
+    <link href="https://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions/"/>
     <updated>2014-09-24T18:20:05+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions</id>
+    <id>https://Jaskey.github.io/blog/2014/09/24/difference-between-cookies-and-sessions</id>
     <content type="html"><![CDATA[<p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
 
 <p>其实不是。</p>

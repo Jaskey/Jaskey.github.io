@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Css | 薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/blog/categories/css/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/blog/categories/css/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[CSS实现垂直居中]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
+    <link href="http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
     <updated>2015-08-04T16:49:40+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
+    <id>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
     <content type="html"><![CDATA[<p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
 
 <p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
@@ -76,9 +76,9 @@ childElement{
   
   <entry>
     <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>
-    <link href="https://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
     <updated>2015-02-16T16:39:20+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
+    <id>http://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
     <content type="html"><![CDATA[<p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
 
 <h2>display: inline</h2>

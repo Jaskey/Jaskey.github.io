@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Octopress | 薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/blog/categories/octopress/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/blog/categories/octopress/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[修改octopress的时间格式]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
+    <link href="http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
     <updated>2015-02-16T17:59:19+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
+    <id>http://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
     <content type="html"><![CDATA[<p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
 
 <p><code>date_format: "%F %a"       #2012-01-01</code></p>
@@ -59,9 +59,9 @@
   
   <entry>
     <title type="html"><![CDATA[如何在两台机器上使用octopress]]></title>
-    <link href="https://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/"/>
+    <link href="http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines/"/>
     <updated>2014-10-17T00:55:09+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines</id>
+    <id>http://Jaskey.github.io/blog/2014/10/17/how-to-write-octopress-in-two-machines</id>
     <content type="html"><![CDATA[<p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
 
 <h2>准备工作：</h2>

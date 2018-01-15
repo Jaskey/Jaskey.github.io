@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="https://Jaskey.github.io/posts/2">
+  <link rel="canonical" href="http://Jaskey.github.io/posts/2">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -76,6 +76,142 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/">通过VM参数指定本地log4j配置文件,Spring Boot</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-03-21T19:20:09+08:00'><span class='date'>2016-03-21 Mon</span> <span class='time'>19:20</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
+
+<p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
+
+<p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，若希望通过VM参数去修改此文件，按照之前的参数<code>-Dlog4j.configuration</code>(非Spring Boot项目请看这里<a href="http://jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a>)，在Spring Boot的项目中并不生效。</p>
+
+<p>若需要指定另外的文件，需要用Spring Boot指定的配置：<code>-Dlogging.config</code>如</p>
+
+<pre><code>-Dlogging.config=D:\project\git_repo\prome-data\src\main\resources\log4j-debug.properties
+</code></pre>
+
+<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/01/19/mysql-bad-sql-with-no-index/">避免写出不走索引的SQL, MySQL</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-01-19T20:24:16+08:00'><span class='date'>2016-01-19 Tue</span> <span class='time'>20:24</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
+
+<p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
+
+<h3>索引列参与计算</h3>
+
+<p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
+
+<pre><code>SELECT `sname` FROM `t_stu` WHERE `age`=20;-- 会使用索引
+SELECT `sname` FROM `t_stu` WHERE `age`+10=30;-- 不会使用索引！！因为所有索引列参与了计算
+SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
+</code></pre>
+
+<p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
+
+<h3>索引列使用了函数</h3>
+
+<p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
+
+<pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
+SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
+</code></pre>
+
+<h3>索引列使用了Like %XXX</h3>
+
+<pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
+SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
+</code></pre>
+
+<p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>
+
+<pre><code>SELECT * FROM `table` WHERE `reverse_email` LIKE REVERSE('%.com'); -- 走索引
+</code></pre>
+
+<p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
+
+<p>同样的，索引列上使用正则表达式也不会走索引。</p>
+
+<h3>字符串列与数字直接比较</h3>
+
+<p>这是一个坑，假设有一张表,里面的a列是一个<strong>字符char类型</strong>,且a上建立了索引,你用它与数字类型做比较判断的话：</p>
+
+<pre><code> CREATE TABLE `t1` (`a` char(10));
+
+ SELECT * FROM `t1` WHERE `a`='1' -- 走索引
+ SELECT * FROM `t2` WHERE `a`=1 -- 字符串和数字比较，不走索引！
+</code></pre>
+
+<p>但是如果那个表那个列是一个数字类型，拿来和字符类型的做比较，则不会影响到使用索引</p>
+
+<pre><code> CREATE TABLE `t2` (`b` int);
+
+ SELECT * FROM `t2` WHERE `b`='1' -- 虽然b是数字类型，和'1'比较依然走索引
+</code></pre>
+
+<p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
+
+<h3>尽量避免 OR 操作</h3>
+
+<pre><code>select * from dept where dname='jaskey' or loc='bj' or deptno=45 --如果条件中有or,即使其中有条件带索引也不会使用。换言之,就是要求使用的所有字段,都必须建立索引
+</code></pre>
+
+<p>所以除非每个列都建立了索引，否则不建议使用OR，在多列OR中，可以考虑用UNION 替换</p>
+
+<pre><code>select * from dept where dname='jaskey' union
+select * from dept where loc='bj' union
+select * from dept where deptno=45
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a></h1>
     
     
@@ -85,7 +221,7 @@
 
 
 
-<time class='entry-date' datetime='2015-12-22T16:12:38+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2015</span></span> <span class='time'>4:12 pm</span></time>
+<time class='entry-date' datetime='2015-12-22T16:12:38+08:00'><span class='date'>2015-12-22 Tue</span> <span class='time'>16:12</span></time>
         
       </p>
     
@@ -139,7 +275,7 @@
 
 
 
-<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:49 pm</span></time>
+<time class='entry-date' datetime='2015-08-04T16:49:40+08:00'><span class='date'>2015-08-04 Tue</span> <span class='time'>16:49</span></time>
         
       </p>
     
@@ -220,7 +356,7 @@ childElement{
 
 
 
-<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:18 pm</span></time>
+<time class='entry-date' datetime='2015-07-30T12:18:28+08:00'><span class='date'>2015-07-30 Thu</span> <span class='time'>12:18</span></time>
         
       </p>
     
@@ -300,7 +436,7 @@ childElement{
 
 
 
-<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:18 pm</span></time>
+<time class='entry-date' datetime='2015-05-13T21:18:28+08:00'><span class='date'>2015-05-13 Wed</span> <span class='time'>21:18</span></time>
         
       </p>
     
@@ -402,7 +538,7 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
 
 
-<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:02 pm</span></time>
+<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>18:02</span></time>
         
       </p>
     
@@ -445,7 +581,7 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
 
 
-<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:19 pm</span></time>
+<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>16:19</span></time>
         
       </p>
     
@@ -512,7 +648,7 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
 
 
 
-<time class='entry-date' datetime='2015-05-05T16:46:59+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:46 pm</span></time>
+<time class='entry-date' datetime='2015-05-05T16:46:59+08:00'><span class='date'>2015-05-05 Tue</span> <span class='time'>16:46</span></time>
         
       </p>
     
@@ -557,7 +693,7 @@ ON DUPLICATE KEY UPDATE `col1`=values(col1),
 
 
 
-<time class='entry-date' datetime='2015-03-04T15:06:11+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:06 pm</span></time>
+<time class='entry-date' datetime='2015-03-04T15:06:11+08:00'><span class='date'>2015-03-04 Wed</span> <span class='time'>15:06</span></time>
         
       </p>
     
@@ -763,157 +899,6 @@ p.publicMethod();
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/02/16/octopress-modify-date-format/">修改octopress的时间格式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-02-16T17:59:19+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:59 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
-
-<p><code>date_format: "%F %a"       #2012-01-01</code></p>
-
-<p>后来在StackOverflow上提了一个问题找到了答案：</p>
-
-<ol>
-<li><p>安装Octopress Date format：</p>
-
-<pre><code> gem install octopress-date-format
-</code></pre></li>
-<li><p>在<code>_config.yml</code>中加入：</p>
-
-<pre><code> gems:
-     - octopress-date-format
-</code></pre></li>
-<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
-
-<pre><code> date_format: 'ordinal' # July 3rd, 2014
- time_format: '%-I:%M %P'   # 2:08 pm
-</code></pre></li>
-</ol>
-
-
-<p>我们可以改成:</p>
-
-<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
-    time_format: "%H:%M"     # 24 hour time
-</code></pre>
-
-<p>最后生成页面，大功告成：</p>
-
-<pre><code>    rake generate
-</code></pre>
-
-<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/02/16/css-display-properties/">CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217;</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-02-16T16:39:20+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:39 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
-
-<h2>display: inline</h2>
-
-<ol>
-<li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
-<li>margin-top/bottommargin-top/bottom 失效.</li>
-<li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
-<li><strong>不能</strong>设置<code>width</code>或者<code>height</code></li>
-</ol>
-
-
-<p>inline的元素有:</p>
-
-<p><code>&lt;span&gt;``&lt;a&gt;</code></p>
-
-<h2>display: block</h2>
-
-<ol>
-<li>在block后强制换行</li>
-<li>可以设置<code>width</code>或者<code>height</code></li>
-<li>padding,margin表现正常</li>
-</ol>
-
-
-<p>block的元素有:</p>
-
-<p><code>&lt;p&gt;``&lt;div&gt;``&lt;h1&gt;</code></p>
-
-<h2>display: inline-block</h2>
-
-<ol>
-<li>像<code>inline</code>一样,允许元素挨在同一行,</li>
-<li>可以设置<code>width</code>或者<code>height</code></li>
-<li>像<code>block</code>一样,padding,margin表现正常</li>
-</ol>
-
-
-<h2>例子</h2>
-
-<p>以下几张图展现几个不同的<code>display效果</code>:</p>
-
-<p>假如我们在div的一大串文字中,嵌入了一个<code>&lt;span&gt;</code>的文字, 通过设置span的不同<code>display</code>,将有以下效果:</p>
-
-<p><strong>diplay:inline</strong></p>
-
-<p><img src="/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
-
-<p><strong>display:block</strong></p>
-
-<p><img src="/images/css/display-block.png" title="display:block" alt="display:block" /></p>
-
-<p><strong>display:inline-block</strong></p>
-
-<p><img src="/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
-
-<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以正常的设置高度和宽度等属性.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
-
-<p><a href="http://jsfiddle.net/Mta2b/" title="demo链接">demo链接</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -931,6 +916,14 @@ p.publicMethod();
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2018/01/15/rabbitmq-note/">RabbitMQ常用命令与配置</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/06/13/rocketmq-client-config/">RocketMQ 客户端配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/02/16/rocketmq-clean-commitlog/">RocketMQ——消息文件过期原理</a>
       </li>
     
@@ -942,19 +935,22 @@ p.publicMethod();
         <a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2016/12/19/rocketmq-network-protocol/">RocketMQ——通信协议</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a>
-      </li>
-    
   </ul>
 </section>
 
 <section>
     <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="vertical" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a></div>
+</section>
+
+
+<section>
+  <h1>StackOverflow</h1>
+  <a href="http://stackoverflow.com/users/">
+	<img src="http://stackoverflow.com/users/flair/2087628.png" width="208" height="58" 
+		 alt="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers" 
+		 title="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers"
+	>
+  </a>
 </section>
 
 
@@ -1038,7 +1034,7 @@ p.publicMethod();
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2017 - Jaskey Lam -
+  Copyright &copy; 2018 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

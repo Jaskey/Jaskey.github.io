@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Jvm | 薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/blog/categories/jvm/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/blog/categories/jvm/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[JVM垃圾回收算法]]></title>
-    <link href="https://Jaskey.github.io/blog/2014/10/10/gc-algorithm/"/>
+    <link href="http://Jaskey.github.io/blog/2014/10/10/gc-algorithm/"/>
     <updated>2014-10-10T17:09:51+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2014/10/10/gc-algorithm</id>
+    <id>http://Jaskey.github.io/blog/2014/10/10/gc-algorithm</id>
     <content type="html"><![CDATA[<p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
 
 <ul>

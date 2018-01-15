@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Git | 薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/blog/categories/git/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/blog/categories/git/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Git中只merge部分commit]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
+    <link href="http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
     <updated>2015-12-22T16:12:38+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
+    <id>http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
     <content type="html"><![CDATA[<h2>cherry-pick</h2>
 
 <p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
@@ -63,9 +63,9 @@
   
   <entry>
     <title type="html"><![CDATA[Untrace .gitignore中已经被commit的文件]]></title>
-    <link href="https://Jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed/"/>
+    <link href="http://Jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed/"/>
     <updated>2014-12-03T11:35:01+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed</id>
+    <id>http://Jaskey.github.io/blog/2014/12/03/ignore-files-that-have-already-been-committed</id>
     <content type="html"><![CDATA[<p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
 
 <ol>
@@ -89,9 +89,9 @@
   
   <entry>
     <title type="html"><![CDATA[在windows上使用_netrc文件让Git记住用户名和密码]]></title>
-    <link href="https://Jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/"/>
+    <link href="http://Jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password/"/>
     <updated>2014-11-28T16:58:21+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password</id>
+    <id>http://Jaskey.github.io/blog/2014/11/28/use-netrc-file-to-save-user-name-and-password</id>
     <content type="html"><![CDATA[<p>每次写octopress博客的git push 和 rake deploy 都要问一次用户名密码，真的非常烦。以下是一个简单的方法让git记住用户名和密码：</p>
 
 <ul>
@@ -119,9 +119,9 @@ password cnblogs_pwd
   
   <entry>
     <title type="html"><![CDATA[Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案]]></title>
-    <link href="https://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/"/>
+    <link href="http://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/"/>
     <updated>2014-11-23T23:10:43+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411</id>
+    <id>http://Jaskey.github.io/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411</id>
     <content type="html"><![CDATA[<p>有时候git push 会报类似的错误，如在BAE上push一个项目较大的时候，可能就会报此错误。由于遇到很多次，今天记录下解决方法：</p>
 
 <p>默认情况下，Git设置了HTTP操作的最大值为一MB，所以当你push代码的时候如果超过这个值，则可能发生错误。</p>

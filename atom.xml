@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -14,10 +14,1232 @@
 
   
   <entry>
+    <title type="html"><![CDATA[RabbitMQ常用命令与配置]]></title>
+    <link href="http://Jaskey.github.io/blog/2018/01/15/rabbitmq-note/"/>
+    <updated>2018-01-15T14:56:56+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2018/01/15/rabbitmq-note</id>
+    <content type="html"><![CDATA[<p>以下记录RabbitMQ常用的运维命令和配置</p>
+
+<hr />
+
+<h1>常用命令</h1>
+
+<h3>启动进程：</h3>
+
+<pre><code>sbin/rabbitmq-server -detached
+</code></pre>
+
+<h3>关闭进程：</h3>
+
+<pre><code>sbin/rabbitmqctl stop
+</code></pre>
+
+<h3>创建账号：</h3>
+
+<pre><code>sbin/rabbitmqctl add_user admin ${mq_password}
+sbin/rabbitmqctl set_user_tags admin administrator
+sbin/rabbitmqctl set_permissions -p '/' admin '.*' '.*' '.*'
+</code></pre>
+
+<h3>启动监控：</h3>
+
+<pre><code>#启动监控后，可以用http访问控制台 ip:监控端口（默认原端口+10000）
+sbin/rabbitmq-plugins enable rabbitmq_management
+</code></pre>
+
+<h3>加入集群：</h3>
+
+<pre><code>#要先停止应用
+sbin/rabbitmqctl stop_app
+#加入集群，cluster_name为之前启动的那个集群名称，通常为环境变量文件中配置的RABBITMQ_NODE_IP_ADDRESS
+sbin/rabbitmqctl join_cluster ${cluster_name}
+#再次启动应用    
+sbin/rabbitmqctl start_app
+</code></pre>
+
+<p>命令文档：<a href="https://www.rabbitmq.com/rabbitmqctl.8.html">https://www.rabbitmq.com/rabbitmqctl.8.html</a></p>
+
+<hr />
+
+<h1>配置文件</h1>
+
+<p>rabbitmq-env.conf</p>
+
+<pre><code>RABBITMQ_NODE_IP_ADDRESS= //IP地址，空串bind所有地址，指定地址bind指定网络接口
+RABBITMQ_NODE_PORT=       //TCP端口号，默认是5672
+RABBITMQ_NODENAME=        //节点名称。默认是rabbit
+RABBITMQ_CONFIG_FILE= //配置文件路径 ，即rabbitmq.config文件路径
+RABBITMQ_MNESIA_BASE=     //mnesia所在路径
+RABBITMQ_LOG_BASE=        //日志所在路径
+RABBITMQ_PLUGINS_DIR=     //插件所在路径
+</code></pre>
+
+<p>rabbitmq.config</p>
+
+<pre><code>tcp_listerners    #设置rabbimq的监听端口，默认为[5672]。
+disk_free_limit     #磁盘低水位线，若磁盘容量低于指定值则停止接收数据，默认值为{mem_relative, 1.0},即与内存相关联1：1，也可定制为多少byte.
+vm_memory_high_watermark    #设置内存低水位线，若低于该水位线，则开启流控机制，默认值是0.4，即内存总量的40%。
+hipe_compile     #将部分rabbimq代码用High Performance Erlang compiler编译，可提升性能，该参数是实验性，若出现erlang vm segfaults，应关掉。
+force_fine_statistics    #该参数属于rabbimq_management，若为true则进行精细化的统计，但会影响性能。
+frame_max     #包大小，若包小则低延迟，若包则高吞吐，默认是131072=128K。
+heartbeat     #客户端与服务端心跳间隔，设置为0则关闭心跳，默认是600秒。
+</code></pre>
+
+<h1>一台机器启动多个实例</h1>
+
+<p>以上如果希望一个机器中启动多个实例，简单需要配置的地方仅有</p>
+
+<p>rabbitmq-env.conf：</p>
+
+<pre><code>#改个名字
+RABBITMQ_NODENAME=your_new_node_name
+#改个端口    
+RABBITMQ_NODE_PORT=5673
+</code></pre>
+
+<p>rabbitmq.config:</p>
+
+<pre><code>%tcp 监听端口对应修改%
+{tcp_listeners, [5673]},
+</code></pre>
+
+<p>rabbitmq_management下面的监听端口对应修改，建议原端口加10000保持与原来默认的统一</p>
+
+<pre><code>{listener, [{port,     15673}]}
+</code></pre>
+
+<p>文档：<a href="http://www.rabbitmq.com/configure.html#configuration-file">http://www.rabbitmq.com/configure.html#configuration-file</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[RocketMQ 客户端配置]]></title>
+    <link href="http://Jaskey.github.io/blog/2017/06/13/rocketmq-client-config/"/>
+    <updated>2017-06-13T14:56:56+08:00</updated>
+    <id>http://Jaskey.github.io/blog/2017/06/13/rocketmq-client-config</id>
+    <content type="html"><![CDATA[<p>RocketMQ的客户端和服务端采取完全不一样的配置机制，客户端没有配置文件，所有的配置选项需要开发者使用对应的配置的setter进行设置。</p>
+
+<p>注： 以下带 * 的，表示为重要参数。</p>
+
+<hr />
+
+<h1>ClientConfig</h1>
+
+<p>RocketMQ的Producer（<code>DefaultMQProducer</code>）和Consumer(<code>DefaultMQPushConsumer</code>，<code>DefaultMQPullConsumer</code>)，甚至运维相关的的admin类（<code>DefaultMQAdminExt</code>）都继承自ClientConfig。这意味着，其中的配置无论Producer还是Consumer都可以进行设置，其中大部分都是公用的配置（但由于设计的问题，有些配置只会对消费或生产生效）。</p>
+
+<h3>namesrvAddr*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NameServer的地址列表，若是集群，用<code>;</code>作为地址的分隔符。 </td>
+<td>-D系统参数<code>rocketmq.namesrv.addr</code>或环境变量<code>NAMESRV_ADDR</code> </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>无论生产者还是消费者，只要是客户端需要和服务器broker进行操作，就需要依赖Name Server进行服务发现。具体请看：<a href="http://jaskey.github.io/blog/2016/12/14/rocketmq-component/" title="RocketMQ——组件">RocketMQ——组件</a></p>
+
+<h3>instanceName*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NameServer的地址列表，若是集群，用<code>;</code>作为地址的分隔符。 </td>
+<td>从-D系统参数<code>rocketmq.client.name</code>获取，否则就是<code>DEFAULT</code></td>
+</tr>
+</tbody>
+</table>
+
+
+<p>这个值虽然默认写是<code>DEFAULT</code>，但在启动的时候，如果我们没有显示修改还是维持其<code>DEFAULT</code>的话，RocketMQ会更新为当前的进程号：</p>
+
+<pre><code>public void changeInstanceNameToPID() {
+    if (this.instanceName.equals("DEFAULT")) {
+        this.instanceName = String.valueOf(UtilAll.getPid());
+    }
+}
+</code></pre>
+
+<p>RocketMQ用一个叫<strong>ClientID</strong>的概念，来唯一标记一个客户端实例，一个客户端实例对于Broker而言会开辟一个Netty的客户端实例。 而ClientID是由ClientIP+InstanceName构成，故如果一个进程中多个实例（无论Producer还是Consumer）ClientIP和InstanceName都一样,他们将公用一个内部实例（同一套网络连接，线程资源等）</p>
+
+<p>此外，此ClientID在对于Consumer负载均衡的时候起到唯一标识的作用，一旦多个实例（无论不同进程、不通机器、还是同一进程）的多个Consumer实例有一样的ClientID，负载均衡的时候必然RocketMQ任然会把两个实例当作一个client（因为同样一个clientID）。 故为了避免不必要的问题，ClientIP+instance Name的组合建议唯一，除非有意需要共用连接、资源。</p>
+
+<h3>clientIP</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户端IP</td>
+<td><code>RemotingUtil.getLocalAddress()</code> </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>这个值有两个用处：
+1. 对于默认的<code>instanceName</code>（后面说明），如果没有显示设置，会使用ip+进程号，其中的ip便是这里的配置值
+2. 对于Producer发送消息的时候，消息本身会存储本值到<code>bornHost</code>，用于标记消息从哪台机器产生的</p>
+
+<h3>clientCallbackExecutorThreads</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户端通信层接收到网络请求的时候，处理器的核数</td>
+<td><code>Runtime.getRuntime().availableProcessors()</code></td>
+</tr>
+</tbody>
+</table>
+
+
+<p>虽然大部分指令的发起方是客户端而处理方是broker/NameServer端，但客户端有时候也需要处理远端对发送给自己的命令，最常见的是一些运维指令如<code>GET_CONSUMER_RUNNING_INFO</code>，或者消费实例上线/下线的推送指令<code>NOTIFY_CONSUMER_IDS_CHANGED</code>，这些指令的处理都在一个线程池处理，<code>clientCallbackExecutorThreads</code>控制这个线程池的核数。</p>
+
+<h3>pollNameServerInterval*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>轮询从NameServer获取路由信息的时间间隔</td>
+<td>30000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>客户端依靠NameServer做服务发现（具体请看：<a href="http://jaskey.github.io/blog/2016/12/14/rocketmq-component/" title="RocketMQ——组件">RocketMQ——组件</a>），这个间隔决定了新服务上线/下线，客户端最长多久能探测得到。默认是30秒，就是说如果做broker扩容，最长需要30秒客户端才能感知得到新broker的存在。</p>
+
+<h3>heartbeatBrokerInterval*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>定期发送注册心跳到broker的间隔</td>
+<td>30000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>客户端依靠心跳告诉broker“我是谁（clientID，ConsumerGroup/ProducerGroup）”，“自己是订阅了什么topic&#8221;，&#8221;要发送什么topic&#8221;。以此，broker会记录并维护这些信息。客户端如果动态更新这些信息，最长则需要这个心跳周期才能告诉broker。</p>
+
+<h3>persistConsumerOffsetInterval*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>作用于Consumer，持久化消费进度的间隔</td>
+<td>5000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>RocketMQ采取的是定期批量ack的机制以持久化消费进度。也就是说每次消费消息结束后，并不会立刻ack，而是定期的集中的更新进度。 由于持久化不是立刻持久化的，所以如果消费实例突然退出（如断点）、或者触发了负载均衡分consue queue重排，有可能会有已经消费过的消费进度没有及时更新而导致重新投递。故本配置值越小，重复的概率越低，但同时也会增加网络通信的负担。</p>
+
+<h3>vipChannelEnabled</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>是否启用vip netty通道以发送消息</td>
+<td>-D com.rocketmq.sendMessageWithVIPChannel参数的值，若无则是true</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>broker的netty server会起两个通信服务。两个服务除了服务的端口号不一样，其他都一样。其中一个的端口（配置端口-2）作为vip通道，客户端可以启用本设置项把发送消息此vip通道。</p>
+
+<hr />
+
+<h2>DefaultMQProducer</h2>
+
+<p>所有的消息发送都通过DefaultMQProducer作为入口，以下介绍一下单独属于DefaultMQProducer的一些配置项。</p>
+
+<h3>producerGroup*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>生产组的名称，一类Producer的标识</td>
+<td>DEFAULT_PRODUCER</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>详见 <a href="http://jaskey.github.io/blog/2016/12/15/rocketmq-concept/" title="RocketMQ——角色与术语详解">RocketMQ——角色与术语详解</a></p>
+
+<h3>createTopicKey</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>发送消息的时候，如果没有找到topic，若想自动创建该topic，需要一个key topic，这个值即是key topic的值</td>
+<td>TBW102</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>这是RocketMQ设计非常晦涩的一个概念，整体的逻辑是这样的：</p>
+
+<ul>
+<li>生产者正常的发送消息，都是需要topic<strong>预先</strong>创建好的</li>
+<li>但是RocketMQ服务端是支持，发送消息的时候，如果topic不存在，在发送的同时自动创建该topic</li>
+<li>支持的前提是broker 的配置打开<code>autoCreateTopicEnable=true</code></li>
+<li><code>autoCreateTopicEnable=true</code>后，broker会创建一个<code>TBW102</code>的topic，这个就是我们讲的默认的key topic</li>
+</ul>
+
+
+<p>自动构建topic（以下成为T）的过程：</p>
+
+<ol>
+<li>Producer发送的时候如果发现该T不存在，就会配置有Producer配置的key topic的那个broker发送消息</li>
+<li>broker校验客户端的topic key是否在broker存在，且校验其权限最后一位是否是1（topic权限总共有3位，按位存储，分别是读、写、支持自动创建）</li>
+<li>若权限校验通过，先在该broker把T创建，并且权限就是key topic除去最后一位的权限。</li>
+</ol>
+
+
+<p>为了方便理解，以下贴出broker的具体源码并加入部分注释：</p>
+
+<pre><code>                TopicConfig defaultTopicConfig = this.topicConfigTable.get(defaultTopic);//key topic的配置信息
+                if (defaultTopicConfig != null) {//key topic 存在
+                    if (defaultTopic.equals(MixAll.DEFAULT_TOPIC)) {
+                        if (!this.brokerController.getBrokerConfig().isAutoCreateTopicEnable()) {
+                            defaultTopicConfig.setPerm(PermName.PERM_READ | PermName.PERM_WRITE);
+                        }
+                    }
+
+                    if (PermName.isInherited(defaultTopicConfig.getPerm())) {//检验权限，如果允许自动创建
+                        topicConfig = new TopicConfig(topic);//创建topic
+
+                        int queueNums =
+                            clientDefaultTopicQueueNums &gt; defaultTopicConfig.getWriteQueueNums() ? defaultTopicConfig
+                                .getWriteQueueNums() : clientDefaultTopicQueueNums;
+
+                        if (queueNums &lt; 0) {
+                            queueNums = 0;
+                        }
+
+                        topicConfig.setReadQueueNums(queueNums);
+                        topicConfig.setWriteQueueNums(queueNums);
+                        int perm = defaultTopicConfig.getPerm();
+                        perm &amp;= ~PermName.PERM_INHERIT;//权限按照key topic的来
+                        topicConfig.setPerm(perm);
+                        topicConfig.setTopicSysFlag(topicSysFlag);
+                        topicConfig.setTopicFilterType(defaultTopicConfig.getTopicFilterType());
+                    } else {//权限校验不过，自动创建失败
+                        LOG.warn("Create new topic failed, because the default topic[{}] has no perm [{}] producer:[{}]",
+                                defaultTopic, defaultTopicConfig.getPerm(), remoteAddress);
+                    }
+                } else {//key topic不存在，创建失败
+                    LOG.warn("Create new topic failed, because the default topic[{}] not exist. producer:[{}]", defaultTopic, remoteAddress);
+                }
+
+             ...//把创建的topic维护起来
+</code></pre>
+
+<p>总的来说，这个功能设计出来比较晦涩，而从运维的角度上看，topic在大部分场景下也应该预创建，故本特性没有必要的话，也不会用到，这个配置也没有必要特殊的设置。</p>
+
+<p>关于这个TBW102非常不直观的问题，我已经提了issue ：<a href="https://issues.apache.org/jira/browse/ROCKETMQ-223">https://issues.apache.org/jira/browse/ROCKETMQ-223</a></p>
+
+<h3>defaultTopicQueueNums</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自动创建topic的话，默认queue数量是多少</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>sendMsgTimeout</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>默认的发送超时时间</td>
+<td>3000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>若发送的时候不显示指定timeout，则使用此设置的值作为超时时间。</p>
+
+<p>对于异步发送，超时后会进入回调的<code>onException</code>，对于同步发送，超时则会得到一个<code>RemotingTimeoutException</code>。</p>
+
+<h3>compressMsgBodyOverHowmuch</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消息body需要压缩的阈值</td>
+<td>1024 * 4，4K</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>retryTimesWhenSendFailed</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>同步发送失败的话，rocketmq内部重试多少次</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>retryTimesWhenSendAsyncFailed</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>异步发送失败的话，rocketmq内部重试多少次</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>retryAnotherBrokerWhenNotStoreOK</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>发送的结果如果不是SEND_OK状态，是否当作失败处理而尝试重发</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>发送结果总共有4钟：</p>
+
+<pre><code>SEND_OK, //状态成功，无论同步还是存储
+FLUSH_DISK_TIMEOUT, // broker刷盘策略为同步刷盘（SYNC_FLUSH）的话时候，等待刷盘的时候超时
+FLUSH_SLAVE_TIMEOUT, // master role采取同步复制策略（SYNC_MASTER）的时候，消息尝试同步到slave超时
+SLAVE_NOT_AVAILABLE, //slave不可用
+</code></pre>
+
+<p>注：从源码上看，此配置项只对同步发送有效，异步、oneway（由于无法获取结果，肯定无效）均无效</p>
+
+<h3>retryAnotherBrokerWhenNotStoreOK</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户端验证，允许发送的最大消息体大小</td>
+<td>1024 * 1024 * 4，4M</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>若超过此大小，会得到一个响应码13（MESSAGE_ILLEGAL）的<code>MQClientException</code>异常</p>
+
+<hr />
+
+<h2>TransactionMQProducer</h2>
+
+<p>事务生产者，截至至4.1，由于暂时事务回查功能缺失，整体并不完全可用，配置暂时忽略，等后面功能完善后补上。</p>
+
+<p><a href="https://issues.apache.org/jira/browse/ROCKETMQ-123">https://issues.apache.org/jira/browse/ROCKETMQ-123</a></p>
+
+<hr />
+
+<h2>DefaultMQPushConsumer</h2>
+
+<p>最常用的消费者，使用push模式（长轮询），封装了各种拉取的方法和返回结果的判断。下面介绍其配置。</p>
+
+<h3>consumerGroup*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费组的名称，用于标识一类消费者</td>
+<td>无默认值，必设</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>详见 <a href="http://jaskey.github.io/blog/2016/12/15/rocketmq-concept/" title="RocketMQ——角色与术语详解">RocketMQ——角色与术语详解</a></p>
+
+<h3>messageModel*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费模式</td>
+<td>MessageModel.CLUSTERING</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可选值有两个：</p>
+
+<ol>
+<li>CLUSTERING //集群消费模式</li>
+<li>BROADCASTING //广播消费模式</li>
+</ol>
+
+
+<p>两种模式的区别详见：<a href="http://jaskey.github.io/blog/2016/12/15/rocketmq-concept/" title="RocketMQ——角色与术语详解">RocketMQ——角色与术语详解</a></p>
+
+<h3>consumeFromWhere*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费点策略</td>
+<td>ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可选值有两个：</p>
+
+<ol>
+<li>CONSUME_FROM_LAST_OFFSET //队列尾消费</li>
+<li>CONSUME_FROM_FIRST_OFFSET //队列头消费</li>
+<li>CONSUME_FROM_TIMESTAMP //按照日期选择某个位置消费</li>
+</ol>
+
+
+<p>注：此策略只生效于新在线测consumer group，如果是老的已存在的consumer group，都降按照已经持久化的consume offset进行消费</p>
+
+<p>具体说明祥见： <a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a></p>
+
+<h3>consumeTimestamp:</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CONSUME_FROM_LAST_OFFSET的时候使用，从哪个时间点开始消费</td>
+<td>半小时前</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>格式为yyyyMMddhhmmss 如 20131223171201</p>
+
+<h3>allocateMessageQueueStrategy*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>负载均衡策略算法</td>
+<td>AllocateMessageQueueAveragely（取模平均分配）</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>这个算法可以自行扩展以使用自定义的算法，目前有以下算法可以使用</p>
+
+<ul>
+<li>AllocateMessageQueueAveragely  //取模平均</li>
+<li>AllocateMessageQueueAveragelyByCircle //环形平均</li>
+<li>AllocateMessageQueueByConfig // 按照配置，传入听死的messageQueueList</li>
+<li>AllocateMessageQueueByMachineRoom //按机房，从源码上看，必须和阿里的某些broker命名一致才行</li>
+<li>AllocateMessageQueueConsistentHash //一致性哈希算法，本人于4.1提交的特性。用于解决“惊群效应”。</li>
+</ul>
+
+
+<p>需要自行扩展的算法的，需要实现<code>org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueStrategy</code></p>
+
+<p>具体分配consume queue的过程祥见： <a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RocketMQ——水平扩展及负载均衡详解">RocketMQ——水平扩展及负载均衡详解</a></p>
+
+<h3>subscription</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>订阅关系（topic->sub expression）</td>
+<td>{}</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>不建议设置，订阅topic建议直接调用<code>subscribe</code>接口</p>
+
+<h3>messageListener</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消息处理监听器（回调）</td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>不建议设置，注册监听的时候应调用<code>registerMessageListener</code></p>
+
+<h3>offsetStore</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消息消费进度存储器 </td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>不建议设置，<code>offsetStore</code> 有两个策略：<code>LocalFileOffsetStore</code> 和 <code>RemoteBrokerOffsetStore</code>。</p>
+
+<p>若没有显示设置的情况下，广播模式将使用<code>LocalFileOffsetStore</code>，集群模式将使用<code>RemoteBrokerOffsetStore</code>，不建议修改。</p>
+
+<h3>consumeThreadMin*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费线程池的core size</td>
+<td>20</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>PushConsumer会内置一个消费线程池，这个配置控制此线程池的core size</p>
+
+<h3>consumeThreadMax*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费线程池的max size</td>
+<td>64</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>PushConsumer会内置一个消费线程池，这个配置控制此线程池的max size</p>
+
+<h3>adjustThreadPoolNumsThreshold</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>动态扩线程核数的消费堆积阈值</td>
+<td>1000</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>相关功能以废弃，不建议设置</p>
+
+<h3>consumeConcurrentlyMaxSpan</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>并发消费下，单条consume queue队列允许的最大offset跨度，达到则触发流控</td>
+<td>2000</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>注：只对并发消费（<code>ConsumeMessageConcurrentlyService</code>）生效</p>
+
+<p>更多分析祥见： <a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a></p>
+
+<h3>pullThresholdForQueue</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>consume queue流控的阈值</td>
+<td>1000</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>每条consume queue的消息拉取下来后会缓存到本地，消费结束会删除。当累积达到一个阈值后，会触发该consume queue的流控。</p>
+
+<p>更多分析祥见： <a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a></p>
+
+<p>截至到4.1，流控级别只能针对consume queue级别，针对topic级别的流控已经提了issue: <a href="https://issues.apache.org/jira/browse/ROCKETMQ-106">https://issues.apache.org/jira/browse/ROCKETMQ-106</a></p>
+
+<h3>pullInterval*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>拉取的间隔</td>
+<td>0，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>由于RocketMQ采取的pull的方式进行消息投递，每此会发起一个异步pull请求，得到请求后会再发起下次请求，这个间隔默认是0，表示立刻再发起。在间隔为0的场景下，消息投递的及时性几乎等同用Push实现的机制。</p>
+
+<h3>pullBatchSize*</h3>
+
+<p>f
+| 配置说明 | 默认值 |
+| &mdash;&mdash;| &mdash;&mdash; |
+|一次最大拉取的批量大小|32|</p>
+
+<p>每次发起pull请求到broker，客户端需要指定一个最大batch size，表示这次拉取消息最多批量拉取多少条。</p>
+
+<h3>consumeMessageBatchMaxSize</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>批量消费的最大消息条数</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>你可能发现了，RocketMQ的注册监听器回调的回调方法签名是类似这样的：</p>
+
+<pre><code>ConsumeConcurrentlyStatus consumeMessage(final List&lt;MessageExt&gt; msgs, final ConsumeConcurrentlyContext context);
+</code></pre>
+
+<p>里面的消息是一个集合List而不是单独的msg，这个<code>consumeMessageBatchMaxSize</code>就是控制这个集合的最大大小。</p>
+
+<p>而由于拉取到的一批消息会立刻拆分成N（取决于consumeMessageBatchMaxSize）批消费任务，所以集合中msgs的最大大小是<code>consumeMessageBatchMaxSize</code>和<code>pullBatchSize</code>的较小值。</p>
+
+<h3>postSubscriptionWhenPull</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每次拉取的时候是否更新订阅关系</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>从源码上看，这个值若是true,且不是class fliter模式，则每次拉取的时候会把subExpression带上到pull的指令中，broker发现这个指令会根据这个上传的表达式重新build出注册数据，而不是直接使用读取的缓存数据。</p>
+
+<h3>maxReconsumeTimes</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一个消息如果消费失败的话，最多重新消费多少次才投递到死信队列</td>
+<td>-1</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>注，这个值默认值虽然是-1，但是实际使用的时候默认并不是-1。按照消费是并行还是串行消费有所不同的默认值。</p>
+
+<p>并行：默认16次</p>
+
+<p>串行：默认无限大（Interge.MAX_VALUE）。由于顺序消费的特性必须等待前面的消息成功消费才能消费后面的，默认无限大即一直不断消费直到消费完成。</p>
+
+<h3>suspendCurrentQueueTimeMillis</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>串行消费使用，如果返回<code>ROLLBACK</code>或者<code>SUSPEND_CURRENT_QUEUE_A_MOMENT</code>，再次消费的时间间隔</td>
+<td>1000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>注：如果消费回调中对<code>ConsumeOrderlyContext</code>中的<code>suspendCurrentQueueTimeMillis</code>进行过设置，则使用用户设置的值作为消费间隔。</p>
+
+<h3>consumeTimeout</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费的最长超时时间</td>
+<td>15，<strong> 单位分钟 </strong></td>
+</tr>
+</tbody>
+</table>
+
+
+<p>如果消费超时，RocketMQ会等同于消费失败来处理，更多分析祥见： <a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a></p>
+
+<hr />
+
+<h2>DefaultMQPullConsumer</h2>
+
+<p>采取主动调用Pull接口的模式的消费者，主动权更大，但是使用难度也相对更大。以下介绍其配置，部分配置和PushConsumer一致。</p>
+
+<h3>consumerGroup*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费组的名称，用于标识一类消费者</td>
+<td>无默认值，必设</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>详见 <a href="http://jaskey.github.io/blog/2016/12/15/rocketmq-concept/" title="RocketMQ——角色与术语详解">RocketMQ——角色与术语详解</a></p>
+
+<h3>registerTopics*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费者需要监听的topic</td>
+<td>空集合</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>由于没有subscribe接口，用户需要自己把想要监听的topic设置到此集合中，RocketMQ内部会依靠此来发送对应心跳数据。</p>
+
+<h3>messageModel*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消费模式</td>
+<td>MessageModel.CLUSTERING</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可选值有两个：</p>
+
+<ol>
+<li>CLUSTERING //集群消费模式</li>
+<li>BROADCASTING //广播消费模式</li>
+</ol>
+
+
+<p>两种模式的区别详见：<a href="http://jaskey.github.io/blog/2016/12/15/rocketmq-concept/" title="RocketMQ——角色与术语详解">RocketMQ——角色与术语详解</a></p>
+
+<h3>allocateMessageQueueStrategy*</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>负载均衡策略算法</td>
+<td>AllocateMessageQueueAveragely（取模平均分配）</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>见DefaultPushConsumer的说明</p>
+
+<h3>offsetStore</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消息消费进度存储器 </td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>不建议设置，<code>offsetStore</code> 有两个策略：<code>LocalFileOffsetStore</code> 和 <code>RemoteBrokerOffsetStore</code>。</p>
+
+<p>若没有显示设置的情况下，广播模式将使用<code>LocalFileOffsetStore</code>，集群模式将使用<code>RemoteBrokerOffsetStore</code>，不建议修改。</p>
+
+<h3>maxReconsumeTimes</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>调用<code>sendMessageBack</code>的时候，如果发现重新消费超过这个配置的值，则投递到死信队列</td>
+<td>16</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>由于PullConsumer没有管理消费的线程池和管理器，需要用户自己处理各种消费结果和拉取结果，故需要投递到重试队列或死信队列的时候需要显示调用<code>sendMessageBack</code>。</p>
+
+<p>回传消息的时候会带上maxReconsumeTimes的值，broker发现此消息已经消费超过此值，则投递到死信队列，否则投递到重试队列。此逻辑和<code>DefaultPushConsumer</code>是一致的，只是PushConsumer无需用户显示调用。</p>
+
+<h3>brokerSuspendMaxTimeMillis</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker在长轮询下，连接最长挂起的时间</td>
+<td>20*1000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>长轮询具体逻辑不在本文论述，且RocketMQ不建议修改此值。</p>
+
+<h3>consumerTimeoutMillisWhenSuspend</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker在长轮询下，客户端等待broker响应的最长等待超时时间</td>
+<td>30*1000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>长轮询具体逻辑不在本文论述，且RocketMQ不建议修改此值，此值一定要大于<code>brokerSuspendMaxTimeMillis</code></p>
+
+<h3>consumerPullTimeoutMillis</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pull的socket 超时时间</td>
+<td>10*1000，单位毫秒</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>虽然注释上说是socket超时时间，但是从源码上看，此值的设计是不启动长轮询也不指定timeout的情况下，拉取的超时时间。</p>
+
+<h3>messageQueueListener</h3>
+
+<table>
+<thead>
+<tr>
+<th> 配置说明 </th>
+<th> 默认值 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>负载均衡consume queue分配变化的通知监听器</td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>由于pull操作需要用户自己去触发，故如果负载均衡发生变化，要有方法告知用户现在分到的新consume queue是什么。使用方可以实现此接口以达到此目的：</p>
+
+<pre><code>/**
+ * A MessageQueueListener is implemented by the application and may be specified when a message queue changed
+ */
+public interface MessageQueueListener {
+/**
+ * @param topic message topic
+ * @param mqAll all queues in this message topic
+ * @param mqDivided collection of queues,assigned to the current consumer
+ */
+void messageQueueChanged(final String topic, final Set&lt;MessageQueue&gt; mqAll,final Set&lt;MessageQueue&gt; mqDivided);
+}
+</code></pre>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[RocketMQ——消息文件过期原理]]></title>
-    <link href="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
+    <link href="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
     <updated>2017-02-16T11:49:23+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
+    <id>http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a> 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实<strong>并没有</strong>物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。</p>
 
 <h2>消费完后的消息去哪里了？</h2>
@@ -107,9 +1329,9 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息ACK机制及消费进度管理]]></title>
-    <link href="https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
+    <link href="http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
     <updated>2017-01-25T20:49:23+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
+    <id>http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的?（RocketMQ有保证消息肯定消费成功的特性,失败则重试）？</p>
 
 <p>本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。</p>
@@ -173,7 +1395,7 @@ CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp(
 
 <p>但是每次记录消费进度的时候，只会把一批消息中最小的offset值为消费进度值，如下图：</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/rocketmq-ack.png" title="message ack" alt="message ack" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/rocketmq-ack.png" title="message ack" alt="message ack" /></p>
 
 <p>这钟方式和传统的一条message单独ack的方式有本质的区别。性能上提升的同时，会带来一个潜在的重复问题——由于消费进度只是记录了一个下标，就可能出现拉取了100条消息如 2101-2200的消息，后面99条都消费结束了，只有2101消费一直没有结束的情况。</p>
 
@@ -331,9 +1553,9 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——水平扩展及负载均衡详解]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
+    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
+    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
     <content type="html"><![CDATA[<p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
 
 <h2>Broker端水平扩展</h2>
@@ -358,13 +1580,13 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>具体如下图：</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/broker-loadbalance.png" title="broker负载均衡" alt="broker负载均衡" /></p>
 
 <h2>Producer</h2>
 
 <p>Producer端，每个实例在发消息的时候，默认会轮询所有的message queue发送，以达到让消息平均落在不同的queue上。而由于queue可以散落在不同的broker，所以消息就发送到不同的broker下，如下图：</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/producer-loadbalance.png" title="生产者负载均衡" alt="生产者负载均衡" /></p>
 
 <h2>Consumer负载均衡</h2>
 
@@ -376,11 +1598,11 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>默认的分配算法是AllocateMessageQueueAveragely，如下图：</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/consumer-loadbalance1.png" title="消费者负载均衡1" alt="消费者负载均衡1" /></p>
 
 <p>还有另外一种平均的算法是AllocateMessageQueueAveragelyByCircle，也是平均分摊每一条queue，只是以环状轮流分queue的形式，如下图：</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/consumer-loadbalance2.png" title="消费者负载均衡2" alt="消费者负载均衡2" /></p>
 
 <p>需要注意的是，集群模式下，queue都是只允许分配只一个实例，这是由于如果多个实例同时消费一个queue的消息，由于拉取哪些消息是consumer主动控制的，那样会导致同一个消息在不同的实例下被消费多次，所以算法上都是一个queue只分给一个consumer实例，一个consumer实例可以允许同时分到不同的queue。</p>
 
@@ -394,15 +1616,15 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——通信协议]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
+    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
+    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
     <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
 
 <p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
@@ -411,7 +1633,7 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 
 <p>协议分为以下四部分：</p>
 
-<p><img src="https://Jaskey.github.io/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
+<p><img src="http://Jaskey.github.io/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
 
 <p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
 
@@ -926,9 +2148,9 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——角色与术语详解]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
+    <link href="http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
     <updated>2016-12-15T15:48:01+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
+    <id>http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
     <content type="html"><![CDATA[<p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
 
 <p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>
@@ -1051,10 +2273,10 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——组件]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/12/14/rocketmq-component/"/>
+    <link href="http://Jaskey.github.io/blog/2016/12/14/rocketmq-component/"/>
     <updated>2016-12-14T20:54:20+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/12/14/rocketmq-component</id>
-    <content type="html"><![CDATA[<p><img src="https://Jaskey.github.io/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+    <id>http://Jaskey.github.io/blog/2016/12/14/rocketmq-component</id>
+    <content type="html"><![CDATA[<p><img src="http://Jaskey.github.io/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
 
 <p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
 
@@ -1103,28 +2325,28 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[在IntilliJ中运行Maven的Tomcat项目]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/"/>
+    <link href="http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/"/>
     <updated>2016-04-15T16:45:28+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij</id>
+    <id>http://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij</id>
     <content type="html"><![CDATA[<p>对于一个Maven项目，如果又是一个tomcat项目，在运行tomcat之前应该要进行Maven的构建。</p>
 
 <p>以下是步骤：</p>
 
 <p>1.新建一个Maven Run/Debug configuration:</p>
 
-<p> <img src="https://Jaskey.github.io/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
+<p> <img src="http://Jaskey.github.io/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
 
 <p>2.在Tomcat Run/Debug Configuration中新增#1的阶段在&#8221;Before Launch&#8221;中</p>
 
-<p> <img src="https://Jaskey.github.io/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
+<p> <img src="http://Jaskey.github.io/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
+    <link href="http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
     <updated>2016-04-05T15:15:48+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
+    <id>http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
     <content type="html"><![CDATA[<p>你很可能根据<a href="https://spring.io/guides/gs/rest-service/" title="官方教程">https://spring.io/guides/gs/rest-service/</a>搭起了一个Spring的Rest服务，然后打包成了jar包，不需要容器就可以在生成环境下通过运行jar包启动一个Web服务。</p>
 
 <p>但这样的服务怎么样正确的停止呢？或许你只是简单的<code>kill -9</code>对应的进程，但实际上，有更优雅的方式。</p>
@@ -1207,9 +2429,9 @@ management.address=127.0.0.1
   
   <entry>
     <title type="html"><![CDATA[通过VM参数指定本地log4j配置文件,Spring Boot]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
+    <link href="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
     <updated>2016-03-21T19:20:09+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
+    <id>http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
     <content type="html"><![CDATA[<p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
 
 <p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
@@ -1227,9 +2449,9 @@ management.address=127.0.0.1
   
   <entry>
     <title type="html"><![CDATA[避免写出不走索引的SQL, MySQL]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
+    <link href="http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
     <updated>2016-01-19T20:24:16+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
+    <id>http://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
     <content type="html"><![CDATA[<p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
 
 <p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
@@ -1303,9 +2525,9 @@ select * from dept where deptno=45
   
   <entry>
     <title type="html"><![CDATA[Git中只merge部分commit]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
+    <link href="http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
     <updated>2015-12-22T16:12:38+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
+    <id>http://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
     <content type="html"><![CDATA[<h2>cherry-pick</h2>
 
 <p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
@@ -1351,9 +2573,9 @@ select * from dept where deptno=45
   
   <entry>
     <title type="html"><![CDATA[CSS实现垂直居中]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
+    <link href="http://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
     <updated>2015-08-04T16:49:40+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
+    <id>http://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
     <content type="html"><![CDATA[<p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
 
 <p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
@@ -1389,7 +2611,7 @@ childElement{
 <p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
 
 <p>浏览器支持如下：
-<img src="https://Jaskey.github.io/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
+<img src="http://Jaskey.github.io/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
 
 <p>样式：</p>
 
@@ -1412,9 +2634,9 @@ childElement{
   
   <entry>
     <title type="html"><![CDATA[Octopress 博文中引入javascript文件/HTML文件]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
+    <link href="http://Jaskey.github.io/blog/2015/07/30/TEST-include/"/>
     <updated>2015-07-30T12:18:28+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
+    <id>http://Jaskey.github.io/blog/2015/07/30/TEST-include</id>
     <content type="html"><![CDATA[<p><code>.markdown</code>文件中是可以引入javascript甚至是html文件的，这样以后博文里面插入代码运行结果写demo就很方便了。</p>
 
 <p>以下是具体方法，并带一个例子</p>
@@ -1423,7 +2645,7 @@ childElement{
 
 <p>语法：</p>
 
-<pre><code>&lt;script type="text/javascript" src="https://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
+<pre><code>&lt;script type="text/javascript" src="http://Jaskey.github.io/path/to/file.js"&gt;&lt;/script&gt;
 </code></pre>
 
 <p>例如： 在 source 中的404.markdown 中 加入：</p>
@@ -1472,9 +2694,9 @@ childElement{
   
   <entry>
     <title type="html"><![CDATA[Jackson 操作JSON]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
+    <link href="http://Jaskey.github.io/blog/2015/05/13/jackson-json/"/>
     <updated>2015-05-13T21:18:28+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
+    <id>http://Jaskey.github.io/blog/2015/05/13/jackson-json</id>
     <content type="html"><![CDATA[<h2>Maven 支持：</h2>
 
 <pre><code>  &lt;repositories&gt;
@@ -1554,9 +2776,9 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
   
   <entry>
     <title type="html"><![CDATA[修改IntelliJ的快捷键中的CTRL+Y为Redo操作]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut/"/>
+    <link href="http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut/"/>
     <updated>2015-05-07T18:02:57+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut</id>
+    <id>http://Jaskey.github.io/blog/2015/05/07/change-intelij-short-cut</id>
     <content type="html"><![CDATA[<p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
 
 <p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
@@ -1577,9 +2799,9 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
   
   <entry>
     <title type="html"><![CDATA[Python中用dictionary操作SQL Select, Insert]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
+    <link href="http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
     <updated>2015-05-07T16:19:49+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
+    <id>http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
     <content type="html"><![CDATA[<p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
 
 <p>首先，连接数据库</p>
@@ -1624,9 +2846,9 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
   
   <entry>
     <title type="html"><![CDATA[Insert or Update操作，MySQL]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/"/>
+    <link href="http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/"/>
     <updated>2015-05-05T16:46:59+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql</id>
+    <id>http://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql</id>
     <content type="html"><![CDATA[<p>如果需要执行操作如：“插入一行记录，若存在，则更新”的操作，在MySQL中，不需要使用Exists也不需要分两次语句执行，可以直接使用如下语句：</p>
 
 <pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
@@ -1649,9 +2871,9 @@ ON DUPLICATE KEY UPDATE `col1`=values(col1),
   
   <entry>
     <title type="html"><![CDATA[JavaScript实现私有方法]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/03/04/js-private-methods/"/>
+    <link href="http://Jaskey.github.io/blog/2015/03/04/js-private-methods/"/>
     <updated>2015-03-04T15:06:11+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/03/04/js-private-methods</id>
+    <id>http://Jaskey.github.io/blog/2015/03/04/js-private-methods</id>
     <content type="html"><![CDATA[<p>JavaScript的所有成员（属性+方法）都是公有的，但是我们有方法模拟出类似于OOP一样的私有方法。</p>
 
 <p>以下使用例子<code>Person</code>，假如我们需要一个<code>toStr</code>的私有方法，只能在Person内部才能访问。
@@ -1844,117 +3066,6 @@ p.printInfo();
 p.publicMethod();
 //p._(toStr)();//toStr is not defined
 </code></pre>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[修改octopress的时间格式]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format/"/>
-    <updated>2015-02-16T17:59:19+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/02/16/octopress-modify-date-format</id>
-    <content type="html"><![CDATA[<p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
-
-<p><code>date_format: "%F %a"       #2012-01-01</code></p>
-
-<p>后来在StackOverflow上提了一个问题找到了答案：</p>
-
-<ol>
-<li><p>安装Octopress Date format：</p>
-
-<pre><code> gem install octopress-date-format
-</code></pre></li>
-<li><p>在<code>_config.yml</code>中加入：</p>
-
-<pre><code> gems:
-     - octopress-date-format
-</code></pre></li>
-<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
-
-<pre><code> date_format: 'ordinal' # July 3rd, 2014
- time_format: '%-I:%M %P'   # 2:08 pm
-</code></pre></li>
-</ol>
-
-
-<p>我们可以改成:</p>
-
-<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
-    time_format: "%H:%M"     # 24 hour time
-</code></pre>
-
-<p>最后生成页面，大功告成：</p>
-
-<pre><code>    rake generate
-</code></pre>
-
-<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[CSS中的display 'Block','inline','inline-block']]></title>
-    <link href="https://Jaskey.github.io/blog/2015/02/16/css-display-properties/"/>
-    <updated>2015-02-16T16:39:20+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/02/16/css-display-properties</id>
-    <content type="html"><![CDATA[<p>CSS的 <code>display</code> 中有三个不同的值会影响布局，今天把总结下几个的不同特点。</p>
-
-<h2>display: inline</h2>
-
-<ol>
-<li>不会加入换行符，可以允许后面有HTML元素挨着。</li>
-<li>margin-top/bottommargin-top/bottom 失效.</li>
-<li>padding-top/bottom可以生效,但是不影响空白的空间,所以设置的padding会和其他元素重叠</li>
-<li><strong>不能</strong>设置<code>width</code>或者<code>height</code></li>
-</ol>
-
-
-<p>inline的元素有:</p>
-
-<p><code>&lt;span&gt;``&lt;a&gt;</code></p>
-
-<h2>display: block</h2>
-
-<ol>
-<li>在block后强制换行</li>
-<li>可以设置<code>width</code>或者<code>height</code></li>
-<li>padding,margin表现正常</li>
-</ol>
-
-
-<p>block的元素有:</p>
-
-<p><code>&lt;p&gt;``&lt;div&gt;``&lt;h1&gt;</code></p>
-
-<h2>display: inline-block</h2>
-
-<ol>
-<li>像<code>inline</code>一样,允许元素挨在同一行,</li>
-<li>可以设置<code>width</code>或者<code>height</code></li>
-<li>像<code>block</code>一样,padding,margin表现正常</li>
-</ol>
-
-
-<h2>例子</h2>
-
-<p>以下几张图展现几个不同的<code>display效果</code>:</p>
-
-<p>假如我们在div的一大串文字中,嵌入了一个<code>&lt;span&gt;</code>的文字, 通过设置span的不同<code>display</code>,将有以下效果:</p>
-
-<p><strong>diplay:inline</strong></p>
-
-<p><img src="https://Jaskey.github.io/images/css/display-inline.png" title="display:inline" alt="display:inline" /></p>
-
-<p><strong>display:block</strong></p>
-
-<p><img src="https://Jaskey.github.io/images/css/display-block.png" title="display:block" alt="display:block" /></p>
-
-<p><strong>display:inline-block</strong></p>
-
-<p><img src="https://Jaskey.github.io/images/css/display-inline-block.png" title="display:inline-block" alt="display:inline-block" /></p>
-
-<p>可以认为,<code>display:inline-block</code>就像<code>display:inline</code>一样,但是可以正常的设置高度和宽度等属性.所以我们可以使用<code>display:inline-block</code>替换<code>float</code>,去完成文字环绕.</p>
-
-<p><a href="http://jsfiddle.net/Mta2b/" title="demo链接">demo链接</a></p>
 ]]></content>
   </entry>
   

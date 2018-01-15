@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="https://Jaskey.github.io/posts/4">
+  <link rel="canonical" href="http://Jaskey.github.io/posts/4">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -76,6 +76,225 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014/11/10/stateful-vs-stateless/">Stateless的web架构</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-10T21:26:13+08:00'><span class='date'>2014-11-10 Mon</span> <span class='time'>21:26</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>分布式架构中用户状态的问题</h2>
+
+<p>传统的web架构中，我们通常会用使用session保存用户的当前状态用以标记一个用户，例如用户在不同的请求中都能找到他的购物车中的物品。</p>
+
+<p>但随着用户量的增长，无法避免的，我们需要使用使用分布式的系统。而在分布式场景，问题将会变得复杂起来。</p>
+
+<p>例如，现在有三台应用服务器A,B,C。第一次用户的请求被负载均衡器路由到了A服务器，相关的状态被保存了起来，那么下次一个请求过来的时候，假如负载均衡器把他的请求路由到了B上，所有的已有状态都将丢失。就好像你刚刚在购物车上抢到了一台小米手机，准备付款的时候发现购物车居然是空的！这是我们需要急切避免的问题！</p>
+
+<h2>Sticky Session</h2>
+
+<p>要解决这种场景，如果我们使用原来的架构，就必须更改负载均衡器的策略，可使用一个sticky session 的策略。</p>
+
+<p>即同一个用户的请求都转发到同一台的服务器，这样，session就不用丢失。服务器依旧可以在session中找到用户的相关信息。负载均衡器可以在查看HTTP头中的Cookies（我们设置用户的标识到其中）去判断应该路由到哪台具体的服务器上，以便获取到local session。</p>
+
+<p>用sticky session解决这类问题有两个较为明显的<strong>好处</strong>：</p>
+
+<ol>
+<li>所有的应用代码都不需要修改，本来单机使用session的，分布式环境依旧可以使用。</li>
+<li>有利于命中本机的RAM缓存，例如可以有效的存储某些用户的静态信息在本机，下次有效的使用缓存增加响应速度</li>
+</ol>
+
+
+<p>但是，sticky session 有如下<strong>坏处</strong>：</p>
+
+<ol>
+<li>如果一台服务器宕机，该服务器上的session就会丢失（这是local session的通病）。这对于状态敏感的应用，如购物车，是极大的问题。</li>
+<li>由于负载均衡器使用了sticky,这可能导致负载很不均衡。</li>
+<li>如果负载过重，希望横向扩展，不能即时的收到效果。因为原来的用户的所有存有session的请求都会路由到原来的服务器。</li>
+</ol>
+
+
+<h2>Stateless Archetecture</h2>
+
+<p>可见，sticky session 很难解决用户状态不丢失的问题，那么要避免sticky session缺点而又解决这类的用户状态的问题，现在流行的架构是无状态的（stateless），也就是说，不使用session，server端不保留用户的任何状态。</p>
+
+<p>一旦我们把应用做成无状态的，有很多好处</p>
+
+<p>1 . 最明显的就是易于横向扩展！服务器不需要维护用户的状态，所以每一台服务器去处理用户的请求，都是一样的。负载均衡器可以使用最简单最优的策略，如随机/轮询等策略负载到具体的应用服务器上。</p>
+
+<p>2 . 即便应用服务器宕机，也不会丢失用户状态，因为状态没有保存在该机上。而当需要增加机器已处理大量用户请求，由于无状态，可以让新的机器快速的拥有一定负载(load)。</p>
+
+<p>严格意义上说，无状态的架构应该是指整个server不保存客户端操作的状态（client state），也叫应用状态（application state），这不包括资源的状态（resource state），资源状态是必须保存的，例如用户曾经购买过的商品等等这些需要持久化的状态。</p>
+
+<p>但实际上，用户操作的过程必然是有状态的，例如你浏览微博的时候，浏览到第二页，那么下一页就是第三页，这个浏览到的当前页面，就是用户的操作状态，我们希望的这个状态不由server去保存，而把状态转移出去。</p>
+
+<p>应用服务器前接客户端，后接数据库。所以我们可以把状态转移到这两者之一。</p>
+
+<p>1 .转移到client</p>
+
+<p>这是真正的无状态，整个server保存任何客户操作状态，而是由客户端自己维持，这也是REST的约束之一。例如，用户在第二页的时候，下一页对应的请求和在第三页的时候的下一页请求是不一样的，这由客户端自己处理并发送请求，服务端只需要接受参数就足够知道要做什么样的操作，不需要访问任何服务端保存的用户状态。例如我们可以把用户的相关状态通过cookie设置在HTTP Response，这样应用服务器获取状态的责任就转移到客户端本身。例如标识一个用户ID（加密的hash串）之类的，可以设置到cookie中，但这仅限于某些不敏感的状态。而且，cookie中能设置的数据大小也很有限。</p>
+
+<p>2 .转移到数据库（分布式缓存）中。</p>
+
+<p>另外一个更为可取的方法是使用数据库或者分布式缓存（如memcache）存储用户的状态，需要注意的这不算是无状态的架构，而顶多只能算web server的无状态，这样无状态的服务器依旧可以使用可靠的方式获取到用户的状态而做出合理的逻辑处理，并且session不依赖于单一机器，所以即便出现机器宕机，也不会丢失用户状态。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/06/firefox-search-engine-plugin/">5分钟速写自定义搜索引擎插件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-06T15:18:03+08:00'><span class='date'>2014-11-06 Thu</span> <span class='time'>15:18</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近搞了几个火狐自定义的搜索引擎插件，就像这里这些插件：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/search-plugin.jpg" title="搜索引擎插件" alt="搜索引擎插件" /></p>
+
+<p>对于某些经常使用搜索的内外网站，如豆瓣或者公司内部的Bug号搜索，代码搜索等，都可以提供一定程度的便利。</p>
+
+<p>今天把写的过程分享一下，5分钟便可自己写上一个了。</p>
+
+<h2>语法部分</h2>
+
+<p>详细的官网文档是：<a href="https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox">https://developer.mozilla.org/zh-CN/docs/Mozilla/Add-ons/Creating_OpenSearch_plugins_for_Firefox</a></p>
+
+<p>我们直接上一个例子，这样上手最快。</p>
+
+<p>先简单浏览下写搜索引擎插件的语法：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;engineName&lt;/ShortName&gt;
+  &lt;Description&gt;engineDescription&lt;/Description&gt;
+  &lt;InputEncoding&gt;inputEncoding&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;data:image/x-icon;base64,imageData&lt;/Image&gt;
+  &lt;Url type="text/html" method="method" template="searchURL"&gt;
+    &lt;Param name="paramName1" value="paramValue1"/&gt;
+    ...
+    &lt;Param name="paramNameN" value="paramValueN"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" template="suggestionURL"/&gt;
+  &lt;moz:SearchForm&gt;searchFormURL&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>这样一个xml文件，即便什么都不看，都能大致模仿而写出一个。</p>
+
+<p>解释一下其中某些标签的作用：</p>
+
+<p><strong>ShortName</strong>: 搜索引擎的简称，最后会显示到界面中</p>
+
+<p><strong>Image</strong>：使用指向一个图标的URL来代表这个搜索引擎，可以使用链接，也可以使用<a href="http://software.hixie.ch/utilities/cgi/data/data">http://software.hixie.ch/utilities/cgi/data/data</a> 生成base64编码的data: URI。</p>
+
+<p><strong>URL</strong>:这是我们关心的重点。其中两个上面两个URL例子，其中一个<code>type=text/html</code>,另一个<code>type=application/x-suggestions+json</code>。</p>
+
+<p><code>type="text/html"</code> 用来指定进行搜索查询的URL.</p>
+
+<p><code>type="application/x-suggestions+json"</code> 用来指定获取搜索建议（search suggestions）的URL. 如下图所示：</p>
+
+<p><img src="/images/firefox-serach-engine-plugin/suggestions.jpg" title="搜索建议" alt="搜索建议" /></p>
+
+<h2>例子——豆瓣</h2>
+
+<p><strong>大致介绍到这里，直接上一个我写的豆瓣的例子</strong></p>
+
+<p>首先，在 火狐安装路径&#8221;%PROGRAM_FILES%\Mozilla Firefox\searchplugins&#8221;下新建一个xml文件，如douban.xml</p>
+
+<p>然后复制上面的模板，进行修改，以下是我的douban.xml(注：由于base64图片编码太长，以下省略为&hellip;&hellip;)</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+   xmlns:moz="http://www.mozilla.org/2006/browser/search/"&gt;
+  &lt;ShortName&gt;豆瓣搜索&lt;/ShortName&gt;
+  &lt;Description&gt;使用豆瓣进行搜索&lt;/Description&gt;
+  &lt;InputEncoding&gt;UTF-8&lt;/InputEncoding&gt;
+  &lt;Image width="16" height="16" type="image/x-icon"&gt;..........&lt;/Image&gt;
+  &lt;Url type="text/html" method="GET" template="http://www.douban.com/search"&gt;
+     &lt;Param name="source" value="suggest"/&gt;
+     &lt;Param name="q" value="{searchTerms}"/&gt;
+  &lt;/Url&gt;
+  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+  &lt;moz:SearchForm&gt;http://www.douban.com/search&lt;/moz:SearchForm&gt;
+&lt;/OpenSearchDescription&gt;
+</code></pre>
+
+<p>其中值得留意的地方就是<code>value ="{searchTerms}"</code>这里,{serachTerms}表示的是用户在搜框输入的字符串。</p>
+
+<p>而最后的SearchForm表示跳往搜索页的 URL. 这使得Firefox能让用户直接浏览目的网站.这是火狐限定的语法部分，不是标准的opensource部分。</p>
+
+<p><strong>关于搜索建议</strong></p>
+
+<p>这里我使用的搜索建议是谷歌的，原封不动的使用这段即可。</p>
+
+<pre><code>  &lt;Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;amp;q={searchTerms}"/&gt;
+</code></pre>
+
+<p>假如我使用“初恋”作为关键字，将返回类似的以下JSON格式：</p>
+
+<pre><code>["初恋",["初恋这件小事","初恋50次","初恋那件小事","初恋","初恋未满","初恋限定","初恋大作战","初恋的回忆","初恋情人","初恋逆袭系统"]]
+</code></pre>
+
+<p>所以如果需要使用自己的搜索建议，需要保持相应的JSON格式，并且需要保证在500毫秒内返回，关于这点，有空再另外写一篇博文。</p>
+
+<p>最后保存，重启火狐浏览器，就应该能够看到自己增加的小插件啦。</p>
+
+<hr />
+
+<p>注1：如果浏览器还是没有找到这个插件的话，打开%AppData%\Mozilla\Firefox\Profiles\XXXXX.default下，prefs.js，里面加入/修改以下的配置：</p>
+
+<pre><code>user_pref("browser.search.selectedEngine", "engine_name");
+</code></pre>
+
+<p>以上解决方案来源于：<a href="http://stackoverflow.com/questions/9963256/adding-a-custom-search-engine-to-firefox">adding a custom search engine tofirefox</a></p>
+
+<p>注2：  在我本机中，每次修改xml文件后，即使重启火狐都无法获得最新的配置，需要重命名为另外一文件。如果遇到一直修改都无法生效的时候，可以尝试一下这个方法。</p>
+
+<h2>发布分享</h2>
+
+<p>写完之后并本机测试后，如果希望可以分享给其他人都使用，可以注册一个开发者账号，然后到<a href="https://addons.mozilla.org/zh-CN/developers/addon/submit/1">https://addons.mozilla.org/zh-CN/developers/addon/submit/1</a> 提交这个xml文件就可以供大家使用了。</p>
+
+<p>大家可以在<a href="https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach">https://addons.mozilla.org/zh-CN/firefox/addon/doubanserach</a> 找到我豆瓣的这个例子</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/10/31/program-tunning/">谈谈性能瓶颈及简单调优</a></h1>
     
     
@@ -85,7 +304,7 @@
 
 
 
-<time class='entry-date' datetime='2014-10-31T17:44:25+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>5:44 pm</span></time>
+<time class='entry-date' datetime='2014-10-31T17:44:25+08:00'><span class='date'>2014-10-31 Fri</span> <span class='time'>17:44</span></time>
         
       </p>
     
@@ -248,7 +467,7 @@
 
 
 
-<time class='entry-date' datetime='2014-10-26T21:19:25+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:19 pm</span></time>
+<time class='entry-date' datetime='2014-10-26T21:19:25+08:00'><span class='date'>2014-10-26 Sun</span> <span class='time'>21:19</span></time>
         
       </p>
     
@@ -463,7 +682,7 @@ IF CACHE EMPTY
 
 
 
-<time class='entry-date' datetime='2014-10-26T00:41:53+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>12:41 am</span></time>
+<time class='entry-date' datetime='2014-10-26T00:41:53+08:00'><span class='date'>2014-10-26 Sun</span> <span class='time'>00:41</span></time>
         
       </p>
     
@@ -747,7 +966,7 @@ city from memcached: shenzhen
 
 
 
-<time class='entry-date' datetime='2014-10-21T19:34:50+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>7:34 pm</span></time>
+<time class='entry-date' datetime='2014-10-21T19:34:50+08:00'><span class='date'>2014-10-21 Tue</span> <span class='time'>19:34</span></time>
         
       </p>
     
@@ -824,7 +1043,7 @@ city from memcached: shenzhen
 
 
 
-<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>7:37 pm</span></time>
+<time class='entry-date' datetime='2014-10-18T19:37:41+08:00'><span class='date'>2014-10-18 Sat</span> <span class='time'>19:37</span></time>
         
       </p>
     
@@ -862,7 +1081,7 @@ city from memcached: shenzhen
 
 
 
-<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>6:41 pm</span></time>
+<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>18:41</span></time>
         
       </p>
     
@@ -942,7 +1161,7 @@ city from memcached: shenzhen
 
 
 
-<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>12:55 am</span></time>
+<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
         
       </p>
     
@@ -1044,7 +1263,7 @@ $ git pull origin master  # 更新本地master branch
 
 
 
-<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:11 pm</span></time>
+<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'>2014-10-13 Mon</span> <span class='time'>21:11</span></time>
         
       </p>
     
@@ -1113,155 +1332,6 @@ public int getNextI(){
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/11/understanding-soa/">初探SOA</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-11T10:41:33+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>11</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>10:41 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>有些系统或者产品当发展得越来越大后，就会有很多子模块，子产品。但这些模块中却有着很多相同的需要解决的问题，即有许多共有的业务逻辑。例如，可能豆瓣系统下面的豆瓣读书，豆瓣电影，豆瓣小组等等的每个模块虽然都有着独特的功能，但都有对于用户信息的读写，或者用户评价的相关逻辑。</p>
-
-<p>这时候，假如每个系统都要独自的单独维护着这些逻辑，会出现很多重复性的代码和逻辑，这就会导致这一部分共有的逻辑需要修改的时候，每个模块下的对应逻辑都要作相应的更改，会导致系统的维护成本大大上升。</p>
-
-<p>为了解决的这一类问题，可采用提取公共逻辑去划分不同的系统的方法来提高系统的可重用性和可维护性。</p>
-
-<p>还有另外一个问题是，随着系统的访问量逐步上升，由于单一系统需要处理所有的逻辑，必然会导致当访问量、数据量上升到一定程度后出现性能问题。这时候，我们可以把系统进行分解，以让独立的子系统分工处理其中某些具体的任务。</p>
-
-<p>无论哪种问题，在我们把系统分解成了几个子系统之后，都要有一个最明显的问题需要解决：系统之间如何进行通信/交互。</p>
-
-<p>显而易见的，系统可以通过网络进行通信：如基于HTTP，TCP+NIO，RMI或者WebService等等进行通信。同时，具体应该是同步还是异步通信，这也是一个需要考虑的问题。</p>
-
-<p>那么问题就来了，当子系统越来越多，由于系统间的通信没有统一的标准，这将导致开发人员每需要访问一个子系统时，都可能需要使用/学习不同的交互方式，这大大增加了维护成本。</p>
-
-<p>这时候，SOA就出现了，它是为了解决统一交互方式这一问题出出现的。</p>
-
-<p>SOA(Service-oriented architecture)，强调的是系统之间使用一个统一标准的服务方式进行交互，各个系统可以采用不同的语言，不同的框架实现，而交互则全部通过服务的方式进行。</p>
-
-<p>SOA所带来的挑战如下：</p>
-
-<ul>
-<li><strong>服务多级调用所带来的延时。</strong></li>
-</ul>
-
-
-<p>任何一个分布式的应用由于需要通过网络进行调用，除了成功和失败之外，都会多出一种状态：超时。而这在服务多级调用的时候会带来不少挑战：例如：A&mdash;>B&mdash;->C的过程中，可能会带啦大幅度的延时。为了解决高性能交互，需要完善调用的过程，例如当B服务执行的时如果已经超时，就没有必要调用C服务了，而应该直接抛出超时异常给A。</p>
-
-<ul>
-<li><strong>调试/跟踪困难</strong></li>
-</ul>
-
-
-<p>如 A&ndash;>B&ndash;>C的过程，假如B报错了，调用者可能会认为B服务的问题，而B服务的开发人员则可能认为C的问题。而C则又可能认为这是网络的问题。这就导致了出现问题时候调试/跟踪困难</p>
-
-<ul>
-<li><strong>更高的安全/检测要求</strong></li>
-</ul>
-
-
-<p>未拆分系统时候，安全和检测只需要在一个系统出现，而拆分后，每个系统都需要相应的安全控制和监测。</p>
-
-<ul>
-<li><strong>现有应用移植</strong></li>
-</ul>
-
-
-<p>这是推广SOA的大挑战。应用越多，难度和时间越大</p>
-
-<ul>
-<li><strong>QoS(Quality of Service)的支持</strong></li>
-</ul>
-
-
-<p>每个服务提供者能支撑的访问量是有限的，因此设定服务的QoS非常重要，并且应该尽可能利用流量控制、机器资源分配等保障QoS</p>
-
-<ul>
-<li><strong>高可用和高可伸缩的挑战</strong></li>
-</ul>
-
-
-<p>这是互联网应用必须做到的，而SOA由于承担了所有服务的交互，因此其在这两个指标上影响重大</p>
-
-<ul>
-<li><strong>多版本和依赖管理</strong></li>
-</ul>
-
-
-<p>由于服务多起来后，需要对服务的依赖关系进行管理，以便升级时做相应的安排。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/10/gc-algorithm/">JVM垃圾回收算法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-10T17:09:51+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:09 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>GC的原理是，找到不再被使用的对象（没有被引用），然后回收这些对象所占的内存。通常使用的是收集器的方式实现GC，主要有引用计数收集器和跟踪收集器</p>
-
-<ul>
-<li><strong>引用计数收集器</strong></li>
-</ul>
-
-
-<hr />
-
-<p>顾名思义，引用计数收集器做的事是记录每个对象现在被引用的数量，而当计数器下降到0的时候，证明已经没有被引用了。就可以被回收了：如下图所示</p>
-
-<p><img src="http://jaskey.github.io/images/gc/gc_reference_counter.jpg" title="引用计数收集器" alt="引用计数收集器" /></p>
-
-<p>当A释放了B的引用后，就可以回收B的所占用的内存。</p>
-
-<p>但是引用计数需要对每一个对象赋值时进行计数器的增减，这有一定的消耗。更重要的是，他无法实现循环引用的场景。例如如果B和C相互引用，那么即使A释放了B和C的引用，也无法回收B和C。</p>
-
-<h2>- <strong>跟踪收集器</strong></h2>
-
-<p>采用集中的管理方式，全局记录数据的引用状态。基于既定的条件触发（如定时或者空间不足），执行时候需要从跟集合扫描对象的引用关系，这要有复制（Copying）、标记-清除（Mark-Sweep）和标记-压缩（Mark-Compact）三种实现算法。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/10/10/gc-algorithm/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -1279,6 +1349,14 @@ public int getNextI(){
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2018/01/15/rabbitmq-note/">RabbitMQ常用命令与配置</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/06/13/rocketmq-client-config/">RocketMQ 客户端配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/02/16/rocketmq-clean-commitlog/">RocketMQ——消息文件过期原理</a>
       </li>
     
@@ -1290,19 +1368,22 @@ public int getNextI(){
         <a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2016/12/19/rocketmq-network-protocol/">RocketMQ——通信协议</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a>
-      </li>
-    
   </ul>
 </section>
 
 <section>
     <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="vertical" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a></div>
+</section>
+
+
+<section>
+  <h1>StackOverflow</h1>
+  <a href="http://stackoverflow.com/users/">
+	<img src="http://stackoverflow.com/users/flair/2087628.png" width="208" height="58" 
+		 alt="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers" 
+		 title="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers"
+	>
+  </a>
 </section>
 
 
@@ -1386,7 +1467,7 @@ public int getNextI(){
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2017 - Jaskey Lam -
+  Copyright &copy; 2018 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

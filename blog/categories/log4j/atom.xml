@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Log4j | 薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/blog/categories/log4j/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/blog/categories/log4j/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[通过VM参数指定本地log4j配置文件,Spring Boot]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
+    <link href="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
     <updated>2016-03-21T19:20:09+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
+    <id>http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
     <content type="html"><![CDATA[<p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
 
 <p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
@@ -35,9 +35,9 @@
   
   <entry>
     <title type="html"><![CDATA[通过VM参数选择本地log4j配置文件]]></title>
-    <link href="https://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/"/>
+    <link href="http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument/"/>
     <updated>2014-11-30T02:32:58+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument</id>
+    <id>http://Jaskey.github.io/blog/2014/11/30/log4j-configuration-via-jvm-argument</id>
     <content type="html"><![CDATA[<p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
 
 <p>在项目的参数中加入：</p>

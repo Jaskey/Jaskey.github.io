@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Jquery | 薛定谔的风口猪]]></title>
-  <link href="https://Jaskey.github.io/blog/categories/jquery/atom.xml" rel="self"/>
-  <link href="https://Jaskey.github.io/"/>
-  <updated>2017-04-11T23:40:09+08:00</updated>
-  <id>https://Jaskey.github.io/</id>
+  <link href="http://Jaskey.github.io/blog/categories/jquery/atom.xml" rel="self"/>
+  <link href="http://Jaskey.github.io/"/>
+  <updated>2018-01-16T02:16:00+08:00</updated>
+  <id>http://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[jQuery BlockUI 的使用]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/02/10/jquery-block-ui/"/>
+    <link href="http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui/"/>
     <updated>2015-02-10T12:05:30+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/02/10/jquery-block-ui</id>
+    <id>http://Jaskey.github.io/blog/2015/02/10/jquery-block-ui</id>
     <content type="html"><![CDATA[<p>jQuery BlockUI Plugin<a href="http://malsup.github.io/jquery.blockUI.js" title="下载链接">(下载链接)</a>  能做到方便得屏蔽整个page或者某些元素。当用于异步请求的时候，尤为有用。</p>
 
 <p>用法也非常简单。以下简单的记录下使用笔记：</p>

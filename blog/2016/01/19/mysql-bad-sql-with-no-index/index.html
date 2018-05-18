@@ -115,7 +115,7 @@ SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索
 <h3>索引列使用了Like %XXX</h3>
 
 <pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
-SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
+SELECT * FROM `houdunwang` WHERE `uname` LIKE '%后缀不走索引' -- 不走索引
 </code></pre>
 
 <p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>

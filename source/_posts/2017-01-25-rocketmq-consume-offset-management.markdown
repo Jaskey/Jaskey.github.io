@@ -59,7 +59,7 @@ PushConsumer为了保证消息肯定消费成功，只有使用方明确表示�
 
 所以，社区中经常有人问：“为什么我设了`CONSUME_FROM_LAST_OFFSET`，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。
 
-对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：[RocketMQ——消息文件过期原理](http://jaskey.github.io/blog/2016/12/19/rocketmq-clean-commitlog/ "RocketMQ——消息文件过期原理) 
+对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：[RocketMQ——消息文件过期原理](http://jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/ "RocketMQ——消息文件过期原理") 
 
 ## 消息ACK机制
 

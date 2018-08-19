@@ -168,4 +168,4 @@ RabbitMQ有两种方法让设置消息的TTL：
 
 所以，对于此类多延迟时间的，可以考虑设置多级延迟队列。例如1分钟，5分钟，10分钟，20分钟这样多级的延迟队列，使得延迟相近的尽量放到同一个队列中减少拥堵的最坏情况。
 
-![rabbitmq 多级延迟队列](http://jaskey.github.io/images/rabbitmq/multi-delay-queue "rabbitmq 多级延迟队列")
+![rabbitmq 多级延迟队列](http://jaskey.github.io/images/rabbitmq/multi-delay-queue.png "rabbitmq 多级延迟队列")

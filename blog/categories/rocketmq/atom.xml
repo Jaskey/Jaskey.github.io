@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Rocketmq | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/rocketmq/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2018-01-16T02:16:00+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/rocketmq/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2018-08-20T00:23:59+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息文件过期原理]]></title>
-    <link href="http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
+    <link href="https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/"/>
     <updated>2017-02-16T11:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
+    <id>https://Jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a> 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实<strong>并没有</strong>物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。</p>
 
 <h2>消费完后的消息去哪里了？</h2>
@@ -107,9 +107,9 @@
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——消息ACK机制及消费进度管理]]></title>
-    <link href="http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
+    <link href="https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management/"/>
     <updated>2017-01-25T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
+    <id>https://Jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management</id>
     <content type="html"><![CDATA[<p><a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/" title="RokectMQ——水平扩展及负载均衡详解">RokectMQ——水平扩展及负载均衡详解</a> 中剖析过，consumer的每个实例是靠队列分配来决定如何消费消息的。那么消费进度具体是如何管理的，又是如何保证消息成功消费的?（RocketMQ有保证消息肯定消费成功的特性,失败则重试）？</p>
 
 <p>本文将详细解析消息具体是如何ack的，又是如何保证消费肯定成功的。</p>
@@ -331,9 +331,9 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——水平扩展及负载均衡详解]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
+    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-rebalance</id>
     <content type="html"><![CDATA[<p>RocketMQ是一个分布式具有高度可扩展性的消息中间件。本文旨在探索在broker端，生产端，以及消费端是如何做到横向扩展以及负载均衡的。</p>
 
 <h2>Broker端水平扩展</h2>
@@ -400,9 +400,9 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——通信协议]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
     <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
+    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
     <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
 
 <p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
@@ -756,9 +756,9 @@ private boolean k;// unitMode = false;
   
   <entry>
     <title type="html"><![CDATA[RocketMQ——角色与术语详解]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
+    <link href="https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept/"/>
     <updated>2016-12-15T15:48:01+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
+    <id>https://Jaskey.github.io/blog/2016/12/15/rocketmq-concept</id>
     <content type="html"><![CDATA[<p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
 
 <p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>

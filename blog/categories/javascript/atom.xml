@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Javascript | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/javascript/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2018-01-16T02:16:00+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/javascript/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2018-08-20T00:23:59+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[JavaScript实现私有方法]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/03/04/js-private-methods/"/>
+    <link href="https://Jaskey.github.io/blog/2015/03/04/js-private-methods/"/>
     <updated>2015-03-04T15:06:11+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/03/04/js-private-methods</id>
+    <id>https://Jaskey.github.io/blog/2015/03/04/js-private-methods</id>
     <content type="html"><![CDATA[<p>JavaScript的所有成员（属性+方法）都是公有的，但是我们有方法模拟出类似于OOP一样的私有方法。</p>
 
 <p>以下使用例子<code>Person</code>，假如我们需要一个<code>toStr</code>的私有方法，只能在Person内部才能访问。
@@ -215,9 +215,9 @@ p.publicMethod();
   
   <entry>
     <title type="html"><![CDATA[JavaScript中返回函数]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/02/02/javascript_function%20closure/"/>
+    <link href="https://Jaskey.github.io/blog/2015/02/02/javascript_function%20closure/"/>
     <updated>2015-02-02T18:20:05+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/02/02/javascript_function closure</id>
+    <id>https://Jaskey.github.io/blog/2015/02/02/javascript_function closure</id>
     <content type="html"><![CDATA[<p>最近学习JavaScript,遇到了函数闭包的相关问题，由于这是Java没有的概念，认知上容易糊涂。到底</p>
 
 <pre><code>function a(){

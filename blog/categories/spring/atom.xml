@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Spring | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/spring/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2018-01-16T02:16:00+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/spring/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2018-08-20T00:23:59+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
+    <link href="https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
     <updated>2016-04-05T15:15:48+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
+    <id>https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
     <content type="html"><![CDATA[<p>你很可能根据<a href="https://spring.io/guides/gs/rest-service/" title="官方教程">https://spring.io/guides/gs/rest-service/</a>搭起了一个Spring的Rest服务，然后打包成了jar包，不需要容器就可以在生成环境下通过运行jar包启动一个Web服务。</p>
 
 <p>但这样的服务怎么样正确的停止呢？或许你只是简单的<code>kill -9</code>对应的进程，但实际上，有更优雅的方式。</p>
@@ -100,9 +100,9 @@ management.address=127.0.0.1
   
   <entry>
     <title type="html"><![CDATA[通过VM参数指定本地log4j配置文件,Spring Boot]]></title>
-    <link href="http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
+    <link href="https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot/"/>
     <updated>2016-03-21T19:20:09+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
+    <id>https://Jaskey.github.io/blog/2016/03/21/log4j-via-vm-arguments-spring-boot</id>
     <content type="html"><![CDATA[<p><code>Spring Boot</code>有预设的日志配置逻辑（具体参看：<a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html#boot-features-custom-log-configuration">这里</a>）, 如果是log4j的话，以下文件会被加载：</p>
 
 <p><code>log4j-spring.properties</code>, <code>log4j-spring.xml</code>, <code>log4j.properties</code> , <code>log4j.xml</code></p>
@@ -120,9 +120,9 @@ management.address=127.0.0.1
   
   <entry>
     <title type="html"><![CDATA[从属性文件为变量赋值，Spring]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/"/>
+    <link href="https://Jaskey.github.io/blog/2014/11/30/inject-propeties-values/"/>
     <updated>2014-11-30T03:38:56+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/11/30/inject-propeties-values</id>
+    <id>https://Jaskey.github.io/blog/2014/11/30/inject-propeties-values</id>
     <content type="html"><![CDATA[<p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
 
 <p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
@@ -182,9 +182,9 @@ public class SignUtil {
   
   <entry>
     <title type="html"><![CDATA[怎么在Spring Controller里面返回404]]></title>
-    <link href="http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/"/>
+    <link href="https://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller/"/>
     <updated>2014-09-27T18:02:48+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller</id>
+    <id>https://Jaskey.github.io/blog/2014/09/27/how-to-return-404-in-spring-controller</id>
     <content type="html"><![CDATA[<p>由于大多的客户端和服务端是独立的（可能用不同语言编写），客户端无法获知服务端的异常，所以普通的异常处理并不足以提示客户端。而基于HTTP协议的服务，我们则需要按照服务端的异常而返回特定的状态码给客户端。</p>
 
 <p>以返回404状态码为例，在Spring 的Controller里面我们可以有以下3种方式处理：</p>

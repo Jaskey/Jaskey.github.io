@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Python | 薛定谔的风口猪]]></title>
-  <link href="http://Jaskey.github.io/blog/categories/python/atom.xml" rel="self"/>
-  <link href="http://Jaskey.github.io/"/>
-  <updated>2018-01-16T02:16:00+08:00</updated>
-  <id>http://Jaskey.github.io/</id>
+  <link href="https://Jaskey.github.io/blog/categories/python/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2018-08-20T00:23:59+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Python中用dictionary操作SQL Select, Insert]]></title>
-    <link href="http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
+    <link href="https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
     <updated>2015-05-07T16:19:49+08:00</updated>
-    <id>http://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
+    <id>https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
     <content type="html"><![CDATA[<p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
 
 <p>首先，连接数据库</p>

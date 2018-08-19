@@ -9,8 +9,8 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Jaskey的个人博客">
-  <meta name="keywords" content="Java, JavaScript, js,git, css#">
+  <meta name="description" content="有时候git push 会报类似的错误，如在BAE上push一个项目较大的时候，可能就会报此错误。由于遇到很多次，今天记录下解决方法： 默认情况下，Git设置了HTTP操作的最大值为一MB，所以当你push代码的时候如果超过这个值，则可能发生错误。 解决方法如下： 进入git 目录 &hellip;">
+  
 
   <!-- http://t.co/dKP3o1e -->
   <meta name="HandheldFriendly" content="True">
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://Jaskey.github.io/posts/4">
+  <link rel="canonical" href="https://Jaskey.github.io/posts/4">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -26,9 +26,6 @@
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
   <script src="/javascripts/octopress.js" type="text/javascript"></script>
-
-  <!--linkedin source-->
-  <script type="text/javascript" src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
 <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
@@ -58,11 +55,9 @@
   </fieldset>
 </form>
   
-<ul class="main-navigation"><!--导航栏-->
-  <li><a href="/">博文</a></li>
-  <li><a href="/blog/archives/">归档</a></li>
-  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
-  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
 </ul>
 
 </nav>
@@ -70,6 +65,55 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/">Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-23T23:10:43+08:00'><span class='date'>2014-11-23 Sun</span> <span class='time'>23:10</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候git push 会报类似的错误，如在BAE上push一个项目较大的时候，可能就会报此错误。由于遇到很多次，今天记录下解决方法：</p>
+
+<p>默认情况下，Git设置了HTTP操作的最大值为一MB，所以当你push代码的时候如果超过这个值，则可能发生错误。</p>
+
+<p>解决方法如下：</p>
+
+<ol>
+<li>进入git 目录</li>
+<li><p>扩大允许的最大值：</p>
+
+<pre><code> git config http.postBuffer *bytes*
+</code></pre></li>
+</ol>
+
+
+<p>如：扩大到500MB:</p>
+
+<pre><code>    git config http.postBuffer 524288000
+</code></pre>
+
+<p>再次push，问题应该就解决了。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1249,89 +1293,6 @@ $ git pull origin master  # 更新本地master branch
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/13/java-synchronization/">谈谈Java同步机制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'>2014-10-13 Mon</span> <span class='time'>21:11</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
-今天简单谈谈Java的同步机制。</p>
-
-<p>我们以一个十分简单的例子讲起。</p>
-
-<pre><code>int i=0
-public int getNextI(){
-    return ++i;
-}
-</code></pre>
-
-<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
-
-<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
-
-<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
-
-<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
-
-<h2>volatile</h2>
-
-<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
-
-<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
-
-<h2>synchronized</h2>
-
-<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
-
-<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
-
-<p>我们可以改成</p>
-
-<pre><code>public synchronized int getNextI(){
-    return i++;
-}
-</code></pre>
-
-<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
-
-<p>注：
-如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
-
-<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
-
-<pre><code>public  int getNextI(){
-    synchronized(this){
-        return i++;
-    }
-}
-</code></pre>
-
-<p>更多文档可参考：</p>
-
-<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -1345,8 +1306,12 @@ public int getNextI(){
 <aside class="sidebar">
   
     <section>
-  <h1>最近博文</h1>
+  <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2018/08/15/rabbitmq-delay-queue/">RabbitMQ实现延迟队列</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2018/01/15/rabbitmq-note/">RabbitMQ常用命令与配置</a>
@@ -1362,10 +1327,6 @@ public int getNextI(){
     
       <li class="post">
         <a href="/blog/2017/01/25/rocketmq-consume-offset-management/">RocketMQ——消息ACK机制及消费进度管理</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/12/19/rocketmq-rebalance/">RocketMQ——水平扩展及负载均衡详解</a>
       </li>
     
   </ul>
@@ -1468,7 +1429,7 @@ public int getNextI(){
   </div>
   <footer role="contentinfo"><p>
   Copyright &copy; 2018 - Jaskey Lam -
-  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 
 </footer>

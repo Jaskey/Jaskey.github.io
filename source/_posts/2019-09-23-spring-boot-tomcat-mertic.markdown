@@ -8,9 +8,6 @@ keywords: java spring boot
 description: java , spring boot
 ---
 
-# 监控Spring Boot中的Tomcat性能数据
-
-
 
 现在，我们经常会使用Spring Boot以开发Web服务，其内嵌容器的方法的确使得开发效率大大提升。
 
@@ -37,7 +34,7 @@ Maven 依赖：
 
 
 
-然后当Spring Boot运行之后，Spring Boot会有很多服务暴露在http服务中，这些服务叫EndPoints， 通过 http://应用路径/actuator 这个 url 即可访问，例如  http://{应用路径}/actuator/info， http://{应用路径}/actuator/health 这两个endpoints是默认开启的。
+然后当Spring Boot运行之后，Spring Boot会有很多服务暴露在http服务中，这些服务叫EndPoints， 通过 http://{应用路径}/actuator 这个 url 即可访问，例如  http://{应用路径}/actuator/info， http://{应用路径}/actuator/health 这两个endpoints是默认开启的。
 
 其中actuator这个路径可以通过配置修改：
 

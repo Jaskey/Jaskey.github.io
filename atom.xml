@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2018-08-20T00:45:26+08:00</updated>
+  <updated>2019-09-23T23:20:45+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,452 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[监控Spring Boot中的Tomcat性能数据]]></title>
+    <link href="https://Jaskey.github.io/blog/2019/09/23/spring-boot-tomcat-mertic/"/>
+    <updated>2019-09-23T14:56:56+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2019/09/23/spring-boot-tomcat-mertic</id>
+    <content type="html"><![CDATA[<p>现在，我们经常会使用Spring Boot以开发Web服务，其内嵌容器的方法的确使得开发效率大大提升。</p>
+
+<p>由于网关层通常是直接面对用户请求的一层，也是微服务里面最上游的一个服务，其请求量通常是所有服务中最大的，如果服务出现了性能上的问题，网关层通常都会出现阻塞、超时等现象，这时候就很可能需要性能的调优，其中最常见的则是参数调优。但如何知道哪些性能参数成为了瓶颈（如容器线程数是否不足等），则是调优的前提条件。</p>
+
+<p>本文总结介绍如何在使用了Spring  Boot的前提下，获取运行时的Tomcat性能运行情况。</p>
+
+<p>Spring Boot中有一个Spring Boot actuator的模块，用来监控和管理应用的运行状态，例如健康状况，线程运行情况等。</p>
+
+<p>Maven 依赖：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;dependencies&gt;
+</span><span class='line'>    &lt;dependency&gt;
+</span><span class='line'>    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+</span><span class='line'>    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+</span><span class='line'>    &lt;/dependency&gt;
+</span><span class='line'>&lt;/dependencies&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后当Spring Boot运行之后，Spring Boot会有很多服务暴露在http服务中，这些服务叫EndPoints， 通过 <a href="http://">http://</a>{应用路径}/actuator 这个 url 即可访问，例如  <a href="http://">http://</a>{应用路径}/actuator/info， <a href="http://">http://</a>{应用路径}/actuator/health 这两个endpoints是默认开启的。</p>
+
+<p>其中actuator这个路径可以通过配置修改：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>management.endpoints.web.base-path=/mypath</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下是获取健康状态的一个例子：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ curl 'http://localhost:8080/actuator/health' -i -X GET</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可能会得到类似这样的结果：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>    "status" : "UP"
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>比较简陋，如果希望这个接口有更多数据，可以尝试这样的配置：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>management.endpoint.health.show-details=always</span></code></pre></td></tr></table></div></figure>
+
+
+<p>结果就会丰富了（我的应用用了Redis）：类似</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  "status": "UP",
+</span><span class='line'>  "details": {
+</span><span class='line'>      "diskSpace": {
+</span><span class='line'>          "status": "UP",
+</span><span class='line'>          "details": {
+</span><span class='line'>              "total": 214745214976,
+</span><span class='line'>              "free": 174805827584,
+</span><span class='line'>              "threshold": 10485760
+</span><span class='line'>          }
+</span><span class='line'>      },
+</span><span class='line'>      "redis": {
+</span><span class='line'>          "status": "UP",
+</span><span class='line'>          "details": {
+</span><span class='line'>              "cluster_size": 3,
+</span><span class='line'>              "slots_up": 16384,
+</span><span class='line'>              "slots_fail": 0
+</span><span class='line'>          }
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是这还不够，我们需要详细的容器数据。监控状况只是一部分。而这些我们想要的数据，是在一个叫metric的EndPoint下面。 但是此endpoint 默认没有暴露到http接口的的，需要添加配置：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#默认只开启info, health 的http暴露，在此增加metric endpoint
+</span><span class='line'>management.endpoints.web.exposure.include=info, health,metric</span></code></pre></td></tr></table></div></figure>
+
+
+<p>之后我们就能访问这个metric有哪些数据了</p>
+
+<p>$ curl &lsquo;<a href="http://localhost:8080/actuator/metric">http://localhost:8080/actuator/metric</a>&rsquo; -i -X GET</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>    "names": [
+</span><span class='line'>        "jvm.memory.max",
+</span><span class='line'>        "jvm.threads.states",
+</span><span class='line'>        "process.files.max",
+</span><span class='line'>        "jvm.gc.memory.promoted",
+</span><span class='line'>        "tomcat.cache.hit",
+</span><span class='line'>        "tomcat.servlet.error",
+</span><span class='line'>        "system.load.average.1m",
+</span><span class='line'>        "tomcat.cache.access",
+</span><span class='line'>        "jvm.memory.used",
+</span><span class='line'>        "jvm.gc.max.data.size",
+</span><span class='line'>        "jvm.gc.pause",
+</span><span class='line'>        "jvm.memory.committed",
+</span><span class='line'>        "system.cpu.count",
+</span><span class='line'>        "logback.events",
+</span><span class='line'>        "tomcat.global.sent",
+</span><span class='line'>        "jvm.buffer.memory.used",
+</span><span class='line'>        "tomcat.sessions.created",
+</span><span class='line'>        "jvm.threads.daemon",
+</span><span class='line'>        "system.cpu.usage",
+</span><span class='line'>        "jvm.gc.memory.allocated",
+</span><span class='line'>        "tomcat.global.request.max",
+</span><span class='line'>        "tomcat.global.request",
+</span><span class='line'>        "tomcat.sessions.expired",
+</span><span class='line'>        "jvm.threads.live",
+</span><span class='line'>        "jvm.threads.peak",
+</span><span class='line'>        "tomcat.global.received",
+</span><span class='line'>        "process.uptime",
+</span><span class='line'>        "http.client.requests",
+</span><span class='line'>        "tomcat.sessions.rejected",
+</span><span class='line'>        "process.cpu.usage",
+</span><span class='line'>        "tomcat.threads.config.max",
+</span><span class='line'>        "jvm.classes.loaded",
+</span><span class='line'>        "http.server.requests",
+</span><span class='line'>        "jvm.classes.unloaded",
+</span><span class='line'>        "tomcat.global.error",
+</span><span class='line'>        "tomcat.sessions.active.current",
+</span><span class='line'>        "tomcat.sessions.alive.max",
+</span><span class='line'>        "jvm.gc.live.data.size",
+</span><span class='line'>        "tomcat.servlet.request.max",
+</span><span class='line'>        "tomcat.threads.current",
+</span><span class='line'>        "tomcat.servlet.request",
+</span><span class='line'>        "process.files.open",
+</span><span class='line'>        "jvm.buffer.count",
+</span><span class='line'>        "jvm.buffer.total.capacity",
+</span><span class='line'>        "tomcat.sessions.active.max",
+</span><span class='line'>        "tomcat.threads.busy",
+</span><span class='line'>        "process.start.time"
+</span><span class='line'>    ]
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中列出的是所有可以获取的监控数据，在其中我们发现了我们想要的</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>"tomcat.threads.config.max"
+</span><span class='line'>"tomcat.threads.current"
+</span><span class='line'>"tomcat.threads.busy"
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么如何获取其中的值呢？只需要在metric路径下加上希望获取的指标即可： curl &lsquo;<a href="http://localhost:8080/actuator/metric/tomcat.threads.busy">http://localhost:8080/actuator/metric/tomcat.threads.busy</a>&rsquo;</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  "name": "tomcat.threads.busy",
+</span><span class='line'>  "description": null,
+</span><span class='line'>  "baseUnit": "threads",
+</span><span class='line'>  "measurements": [{
+</span><span class='line'>      "statistic": "VALUE",
+</span><span class='line'>      "value": 1.0
+</span><span class='line'>  }],
+</span><span class='line'>  "availableTags": [{
+</span><span class='line'>      "tag": "name",
+</span><span class='line'>      "values": ["http-nio-10610"]
+</span><span class='line'>  }]
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在此，基本我们想要的数据都能实时的通过http服务接口的方式获取了，那么在流量峰值的时候，一些实时的状态便可获取到了。</p>
+
+<h2>监控数据</h2>
+
+<p>但是我们面对的情况是这样的，半个小时前，一个push活动带来了很大的量，但现在流量已经过去了，需要定位当时的性能问题意味着需要采集到过去的数据。所以我们可能需要一个服务定期去监控这些数据。Spring Boot已经考虑到了这种情况，所以其中有一个prometheus的模块，他是一个独立的服务去采集其中的监控数据并可视化，具体的介绍可以参考：<a href="https://www.callicoder.com/spring-boot-actuator-metrics-monitoring-dashboard-prometheus-grafana/">https://www.callicoder.com/spring-boot-actuator-metrics-monitoring-dashboard-prometheus-grafana/</a></p>
+
+<h2>以日志形式定期输出监控数据</h2>
+
+<p>很多时候，如果有日志的方法去定期输出监控的数据这样已经足够我们分析了。在Spring Boot 2.x里，只需要配置一个Bean</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@Configuration
+</span><span class='line'>class MetricsConfig {
+</span><span class='line'>    @Bean
+</span><span class='line'>    LoggingMeterRegistry loggingMeterRegistry() {
+</span><span class='line'>        return new LoggingMeterRegistry();
+</span><span class='line'>    }
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>之所以需要Spring Boot版本2.x，LoggingMeterRegistry是因为是micrometer-core里面的1.10以上才引入的，而Spring Boot 1.x都低于这个版本，如果不想升级Spring Boot版本，可以尝试显示变更此版本：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;dependency&gt;
+</span><span class='line'>    &lt;groupId&gt;io.micrometer&lt;/groupId&gt;
+</span><span class='line'>    &lt;artifactId&gt;micrometer-core&lt;/artifactId&gt;
+</span><span class='line'>    &lt;version&gt;1.1.3&lt;/version&gt;
+</span><span class='line'>&lt;/dependency&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后日志的内容就会每一分钟的打印出来：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>jvm.buffer.count{id=direct} value=26 buffers
+</span><span class='line'>jvm.buffer.count{id=mapped} value=0 buffers
+</span><span class='line'>jvm.buffer.memory.used{id=direct} value=632.600586 KiB
+</span><span class='line'>jvm.buffer.memory.used{id=mapped} value=0 B
+</span><span class='line'>jvm.buffer.total.capacity{id=direct} value=632.599609 KiB
+</span><span class='line'>jvm.buffer.total.capacity{id=mapped} value=0 B
+</span><span class='line'>jvm.classes.loaded{} value=12306 classes
+</span><span class='line'>jvm.gc.live.data.size{} value=39.339607 MiB
+</span><span class='line'>jvm.gc.max.data.size{} value=2.666992 GiB
+</span><span class='line'>jvm.memory.committed{area=nonheap,id=Compressed Class Space} value=8.539062 MiB
+</span><span class='line'>jvm.memory.committed{area=nonheap,id=Code Cache} value=26.8125 MiB
+</span><span class='line'>jvm.memory.committed{area=heap,id=PS Survivor Space} value=30 MiB
+</span><span class='line'>jvm.memory.committed{area=heap,id=PS Eden Space} value=416.5 MiB
+</span><span class='line'>jvm.memory.committed{area=heap,id=PS Old Gen} value=242 MiB
+</span><span class='line'>jvm.memory.committed{area=nonheap,id=Metaspace} value=66.773438 MiB
+</span><span class='line'>jvm.memory.max{area=heap,id=PS Survivor Space} value=30 MiB
+</span><span class='line'>jvm.memory.max{area=heap,id=PS Eden Space} value=1.272949 GiB
+</span><span class='line'>jvm.memory.max{area=heap,id=PS Old Gen} value=2.666992 GiB
+</span><span class='line'>jvm.memory.max{area=nonheap,id=Metaspace} value=-1 B
+</span><span class='line'>jvm.memory.max{area=nonheap,id=Compressed Class Space} value=1 GiB
+</span><span class='line'>jvm.memory.max{area=nonheap,id=Code Cache} value=240 MiB
+</span><span class='line'>jvm.memory.used{area=nonheap,id=Code Cache} value=26.635071 MiB
+</span><span class='line'>jvm.memory.used{area=heap,id=PS Survivor Space} value=25.214882 MiB
+</span><span class='line'>jvm.memory.used{area=heap,id=PS Eden Space} value=46.910545 MiB
+</span><span class='line'>jvm.memory.used{area=heap,id=PS Old Gen} value=39.34742 MiB
+</span><span class='line'>jvm.memory.used{area=nonheap,id=Metaspace} value=63.333778 MiB
+</span><span class='line'>jvm.memory.used{area=nonheap,id=Compressed Class Space} value=7.947166 MiB
+</span><span class='line'>jvm.threads.daemon{} value=52 threads
+</span><span class='line'>jvm.threads.live{} value=54 threads
+</span><span class='line'>jvm.threads.peak{} value=67 threads
+</span><span class='line'>jvm.threads.states{state=terminated} value=0 threads
+</span><span class='line'>jvm.threads.states{state=blocked} value=0 threads
+</span><span class='line'>jvm.threads.states{state=new} value=0 threads
+</span><span class='line'>jvm.threads.states{state=runnable} value=20 threads
+</span><span class='line'>jvm.threads.states{state=waiting} value=19 threads
+</span><span class='line'>jvm.threads.states{state=timed-waiting} value=15 threads
+</span><span class='line'>process.cpu.usage{} value=-1
+</span><span class='line'>process.start.time{} value=435900h 48m 53.344s
+</span><span class='line'>process.uptime{} value=56m 6.709s
+</span><span class='line'>system.cpu.count{} value=8
+</span><span class='line'>system.cpu.usage{} value=-1
+</span><span class='line'>tomcat.global.request.max{name=http-nio-10610} value=0.597s
+</span><span class='line'>tomcat.servlet.request.max{name=dispatcherServlet} value=0.567s
+</span><span class='line'>tomcat.sessions.active.current{} value=0 sessions
+</span><span class='line'>tomcat.sessions.active.max{} value=0 sessions
+</span><span class='line'>tomcat.threads.busy{name=http-nio-10610} value=0 threads
+</span><span class='line'>tomcat.threads.config.max{name=http-nio-10610} value=200 threads
+</span><span class='line'>tomcat.threads.current{name=http-nio-10610} value=10 threads
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果需要修改打印的频率，可修改LoggingRegistryConfig以更改其打印频率</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  //下面是单独的配置实现的参考，当需要修改配置时候可以使用
+</span><span class='line'>  return new LoggingMeterRegistry(new LoggingRegistryConfig() {
+</span><span class='line'>       @Override
+</span><span class='line'>     public Duration step() {
+</span><span class='line'>         return Duration.ofSeconds(10);//10秒输出一次
+</span><span class='line'>       }
+</span><span class='line'>
+</span><span class='line'>       @Override
+</span><span class='line'>       public String get(String key) {
+</span><span class='line'>            return null;
+</span><span class='line'>       }
+</span><span class='line'>   }, Clock.SYSTEM);
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[RabbitMQ实现延迟队列]]></title>
@@ -2950,31 +3396,6 @@ columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
 insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
 
 cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
-</code></pre>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Insert or Update操作，MySQL]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql/"/>
-    <updated>2015-05-05T16:46:59+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/05/05/insert-or-update-mysql</id>
-    <content type="html"><![CDATA[<p>如果需要执行操作如：“插入一行记录，若存在，则更新”的操作，在MySQL中，不需要使用Exists也不需要分两次语句执行，可以直接使用如下语句：</p>
-
-<pre><code> INSERT INTO table1 (user, auth) VALUES ('user1', 1) ON DUPLICATE KEY UPDATE auth = 1;
-</code></pre>
-
-<p>上面的语句达到的效果是往table1里面插入一条记录，给<code>user1</code> <code>1</code>的权限，若存在主键或者唯一索引冲突，则更新权限值为1。</p>
-
-<p>注：这语法不是标准SQL语法，所以仅适用于MySQL ，详情参看：<a href="https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html">https://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html</a></p>
-
-<p>若用于JDBC, 而替换的数据不是像上面一个常数值，而是由变量决定，SQL可以如下：</p>
-
-<pre><code>INSERT INTO mytable VALUES (?, ?, ?, ?)
-ON DUPLICATE KEY UPDATE `col1`=values(col1), 
-                        `col2`=values(col2), 
-                        `col3`=values(col3), 
-                        `col4`=values(col4);
 </code></pre>
 ]]></content>
   </entry>

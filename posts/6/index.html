@@ -5,11 +5,14 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: Bae - 薛定谔的风口猪</title>
+  <title>薛定谔的风口猪</title>
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="Category: bae">
+  <meta name="description" content="本文翻译自：
+setup octopress on windows 7 准备工作： 安装Git
+安装ruby,例如：Ruby 1.9.3-p194,并配置环境变量PATH 到rubyhome/bin
+安装 Development Kit.如 use DevKit-tdm-32-4.5.2- &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +21,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="https://Jaskey.github.io/blog/categories/bae">
+  <link rel="canonical" href="https://Jaskey.github.io/posts/6">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
@@ -63,40 +66,147 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div>
-<article role="article">
+      <div class="blog-index">
   
+  
+  
+    <article>
+      
   <header>
-    <h1 class="entry-title">Category: Bae</h1>
+    
+      <h1 class="entry-title"><a href="/blog/2014/09/04/how-to-octopress/">Windows7上配置和使用Octopress</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-04T17:26:00+08:00'><span class='date'>2014-09-04 Thu</span> <span class='time'>17:26</span></time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+  <div class="entry-content"><p>本文翻译自：
+<a href="http://www.techelex.org/setup-octopress-on-windows7/">setup octopress on windows 7</a></p>
 
-  
-  <h2>2014</h2>
+<hr />
 
-<article>
-  
-<h1><a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a></h1>
-<time datetime="2014-11-25T23:38:51+08:00" pubdate><span class='month'>Nov</span> <span class='day'>25</span> <span class='year'>2014</span></time>
+<h2>准备工作：</h2>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/bae/'>bae</a>, <a class='category' href='/blog/categories/maven/'>maven</a></span>
-</footer>
+<ol>
+<li><a href="http://git-scm.com/">安装Git</a></li>
+<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
+<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 use <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
+<li>建立一个文件夹，例如在C：/github</li>
+</ol>
 
 
-</article>
+<p>配置Octopress:</p>
 
+<pre><code>cd c:/github
+git clone git://github.com/imathis/octopress.git octopress #clone一个仓库，此处替换 octopress 成为 username.github.io
+cd octopress #进入clone出来的项目
+ruby --version # 应该会报出ruby 版本如 Ruby 1.9.3
+</code></pre>
+
+<p>然后进行相关初始化：</p>
+
+<pre><code>cd C:/RubyDevKit
+ruby dk.rb init
+ruby dk.rb install
+</code></pre>
+
+<p>安装依赖：</p>
+
+<pre><code>cd c:/github/octopress #replace octopress with username.github.io
+gem install bundler//若出现https连接不上，到home目录下找.gemrc文件，然后在source修改https为http
+bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port。若https连接不上，到GemFile中的source的https修改为http
+</code></pre>
+
+<p>安装默认的OctoPress 主题：</p>
+
+<pre><code>rake install
+</code></pre>
+
+<hr />
+
+<h2>建立Github的仓库</h2>
+
+<p>命名为：你的名字.github.io</p>
+
+<h2>部署</h2>
+
+<pre><code>rake setup_github_pages
+</code></pre>
+
+<p>这样做的结果是：</p>
+
+<ol>
+<li>询问你的Github Pages 的仓库URL。</li>
+<li>从origin重命名指向imathis/octopress 的remote 到octopress</li>
+<li>增加你的Github pages 的仓库为默认的 origin remote</li>
+<li>当前branch 从master 转换到source</li>
+<li>配置你的博客url</li>
+<li>在_deploy文件下下配置一个master 分支用于开发</li>
+</ol>
+
+
+<hr />
+
+<h2>发布：</h2>
+
+<pre><code>rake generate
+rake deploy
+</code></pre>
+
+<hr />
+
+<p>这样就会生成你的博客，复制生成的文件到_deploy/下，并增加到git，commit 和push到master分支。</p>
+
+<p>最后，commit源文件</p>
+
+<pre><code>git add .
+git commit -m '提交信息'
+git push origin source
+</code></pre>
+
+<p>现在，访问你的用户名.github.io就可以访问你的博客了。（第一次可能会延迟十几分钟）</p>
+
+<hr />
+
+<h2>新增博文</h2>
+
+<pre><code>rake new_post["title"]
+</code></pre>
+
+<p>这里会生成一个markdown文件到source/_posts下</p>
+
+<p>修改此markdown文件，再次发布，即可看到新的博文。</p>
+
+<hr />
+
+<p>有关markdown的语法和使用请参看<a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a></p>
+
+<p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
 </div>
-
   
-</article>
+  
 
+
+    </article>
+  
+  <div class="pagination">
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/posts/5">Newer &rarr;</a>
+    
+  </div>
 </div>
-
 <aside class="sidebar">
   
     <section>
@@ -218,7 +328,6 @@
 
   
 </aside>
-
 
     </div>
   </div>

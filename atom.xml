@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2019-09-23T23:20:45+08:00</updated>
+  <updated>2019-10-09T23:01:34+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,106 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[SpringBoot+Dubbo优雅退出分析及方案]]></title>
+    <link href="https://Jaskey.github.io/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/"/>
+    <updated>2019-09-30T14:56:56+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown</id>
+    <content type="html"><![CDATA[<p>背景：</p>
+
+<p>当我们使用SpringBoot+D做微服务的时候，可能再服务停机的过程，发现在一瞬间出现一些报错，最典型的如比如拿到的数据库连接已经关闭等问题，如下图所示：</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-problem.png" alt="img" /></p>
+
+<p>从日志错误可以看到，停机时还存在正在处理的请求，而此请求需要访问数据源，但数据源的资源被 Spring 容器关闭了，导致获取不到而报错。</p>
+
+<p>但是实际上，无论Dubbo和Spring其实都实现了优雅退出，为什么最后退出还是不那么优雅呢？</p>
+
+<p>要分析这个问题，首先得分析它们两者的优雅退出实现。</p>
+
+<h1>Dubbo优雅退出</h1>
+
+<p>dubbo框架本身基于ShutdownHook注册了一个优雅退出的钩子，背后会调用其destroyAll来实现自身的优雅关闭。</p>
+
+<p>以下是Dubbo 2.6.2的源码：</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-1" alt="img" /></p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-2" alt="img" /></p>
+
+<p>Dubbo发现程序退出的时候，钩子方法会通知注册中心取消自身的注册——以便告知消费者不要调用自己了，然后关闭自身的端口连接——在关闭自身连接的时候还会sleep自旋的方法等待已有的处理请求先完成）</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-3" alt="img" /></p>
+
+<p>但是，Dubbo服务的优雅退出，不代表服务背后的代码是优雅的，也就是说在Dubbo优雅退出的完成前，我们的服务能否能保证可用——背后的资源/服务是否仍然可用。</p>
+
+<p>本文一开始截图的错误，原因就是服务停机的时候，依赖的数据库资源因为某些原因已经回收了，这时候正在处理的请求自然报错而显得不优雅了。</p>
+
+<p>而回收的人并不是别人，就是Spring的优雅退出。</p>
+
+<h1>Spring的优雅退出</h1>
+
+<p>Spring回收资源也是基于ShutdownHook实现的，Spring在启动的时候会调用<code>refreshContext</code>接口，这个接口默认会帮我们注册优雅退出的钩子方法。</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-sourcecode-1" alt="img" /></p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-sourcecode-2" alt="img" /></p>
+
+<p>这个钩子方法最后会销毁Spring容器，其中自然包括其背后的依赖的资源。</p>
+
+<p>因为大部分情况下，我们的Dubbo服务是依赖于Spring的资源的，要真正实现优雅退出，除了双方本身退出的过程是优雅的，还需要保证Dubbo退出的过程中Spring的资源是可用的——也就是退出应该要是有顺序的：Dubbo退出→Spring退出。</p>
+
+<p>但是Java的ShutdownHook背后的退出是并发执行而没有顺序依赖的，这是背后表现不优雅的原因。以下是JDK文档的描述：</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/jdk-shutdownhook-comments" alt="img" /></p>
+
+<p>正是由于本身应该有顺序关系的退出逻辑，在并行的处理，导致部分的流量正在处理过程中，依赖的资源已经释放了，最终导致退出的不优雅。</p>
+
+<p>要解决这个问题，可简单可行的思路是：给Dubbo退出一定的时间去处理，然后再执行Spring容器的关闭。但由于钩子方法的时机并不能程序员控制，那么怎么样才能做到呢——禁用原生Spring的钩子方法，在合适的时机手动销毁Spring容器。</p>
+
+<h1>优雅退出方案：</h1>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SpringApplication</span> <span class="n">application</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="n">Main</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'><span class="n">application</span><span class="o">.</span><span class="na">setRegisterShutdownHook</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span><span class="c1">//关闭spring的shutdown hook，后续手动触发</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">ConfigurableApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+</span><span class='line'><span class="n">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">addShutdownHook</span><span class="o">(</span><span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="s">&quot;T_SHUTDOWN_HOOK&quot;</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;”====================shutdown App====================“。&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//....这里可以做其他优雅退出处理，例如回收本地线程池、关闭定时调度器等的操作</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">2000</span><span class="o">);</span><span class="c1">//等待一段时间，这里给时间dubbo的shutdownhook执行，</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//关闭spring容器</span>
+</span><span class='line'>        <span class="n">context</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[监控Spring Boot中的Tomcat性能数据]]></title>
@@ -3350,53 +3450,6 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 <li>Apply</li>
 </ol>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Python中用dictionary操作SQL Select, Insert]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python/"/>
-    <updated>2015-05-07T16:19:49+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/05/07/insert-sql-with-dictionary-python</id>
-    <content type="html"><![CDATA[<p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
-
-<p>首先，连接数据库</p>
-
-<pre><code>conn = MySQLdb.connect(host=host,
-                       user=user,
-                       passwd=passwd,
-                       db=db,
-                       charset=charset)
-</code></pre>
-
-<h1>SELECT:</h1>
-
-<p>在获取cursor的时候，传入<code>MySQLdb.cursors.DictCursor</code>即可</p>
-
-<pre><code>cursor = conn.cursor(MySQLdb.cursors.DictCursor)  ##结果集成为dictionary
-cursor.execute(select_sql )  # query
-
-for row in cursor:
-    print type(row),row
-    name = row["name"]  # 直接使用key获取
-    id = row["id"]      # 直接使用key获取
-</code></pre>
-
-<p>会发现,row的类型已经是一个dict, 其中每一列都可以使用key值获取
-    <type 'dict'> {id:123L,&lsquo;name&rsquo;:u&#8217;abc&#8217; }</p>
-
-<h1>INSERT</h1>
-
-<p>如果需要把一个准备好的dict插入到数据库，不想一个个对应的赋值，可以考虑使用如下方式:</p>
-
-<pre><code>myDict = {'name':'abc','age':16L}
-insert_table = 'mytable'
-placeholders = ', '.join(['%s']* len(mydict))  ##按照dict长度返回如：%s, %s 的占位符
-columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
-insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
-
-cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
-</code></pre>
 ]]></content>
   </entry>
   

@@ -36,13 +36,13 @@ dubbo框架本身基于ShutdownHook注册了一个优雅退出的钩子，背后
 
 以下是Dubbo 2.6.2的源码：
 
-![img](http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-1)
+![img](http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-1.png)
 
-![img](http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-2)
+![img](http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-2.png)
 
 Dubbo发现程序退出的时候，钩子方法会通知注册中心取消自身的注册——以便告知消费者不要调用自己了，然后关闭自身的端口连接——在关闭自身连接的时候还会sleep自旋的方法等待已有的处理请求先完成）
 
-![img](http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-3)
+![img](http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-3.png)
 
 
 
@@ -58,9 +58,9 @@ Dubbo发现程序退出的时候，钩子方法会通知注册中心取消自身
 
 Spring回收资源也是基于ShutdownHook实现的，Spring在启动的时候会调用`refreshContext`接口，这个接口默认会帮我们注册优雅退出的钩子方法。
 
-![img](http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-sourcecode-1)
+![img](http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-hook-sourcecode-1.png)
 
-![img](http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-sourcecode-2)
+![img](http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-hook-sourcecode-2.png)
 
 这个钩子方法最后会销毁Spring容器，其中自然包括其背后的依赖的资源。
 
@@ -70,7 +70,7 @@ Spring回收资源也是基于ShutdownHook实现的，Spring在启动的时候�
 
 但是Java的ShutdownHook背后的退出是并发执行而没有顺序依赖的，这是背后表现不优雅的原因。以下是JDK文档的描述：
 
-![img](http://jaskey.github.io/images/dubbo-shutdown-hook/jdk-shutdownhook-comments)
+![img](http://jaskey.github.io/images/dubbo-shutdown-hook/jdk-shudownhook-coments.png)
 
 正是由于本身应该有顺序关系的退出逻辑，在并行的处理，导致部分的流量正在处理过程中，依赖的资源已经释放了，最终导致退出的不优雅。
 

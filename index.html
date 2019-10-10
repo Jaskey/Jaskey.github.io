@@ -133,7 +133,7 @@
 
 <p>但是Java的ShutdownHook背后的退出是并发执行而没有顺序依赖的，这是背后表现不优雅的原因。以下是JDK文档的描述：</p>
 
-<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/jdk-shutdownhook-hook-comments.png" alt="img" /></p>
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/jdk-shudownhook-coments.png" alt="img" /></p>
 
 <p>正是由于本身应该有顺序关系的退出逻辑，在并行的处理，导致部分的流量正在处理过程中，依赖的资源已经释放了，最终导致退出的不优雅。</p>
 

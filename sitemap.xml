@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>https://jaskey.github.io/blog/2020/03/18/sharding-sphere-data-desensitization/</loc>
+<lastmod>2020-03-18T20:53:00+08:00</lastmod>
+</url>
+<url>
 <loc>https://jaskey.github.io/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/</loc>
 <lastmod>2019-09-30T14:56:56+08:00</lastmod>
 </url>
@@ -311,19 +315,7 @@
 <loc>https://jaskey.github.io/blog/categories/rocketmq/</loc>
 </url>
 <url>
-<loc>https://jaskey.github.io/posts/2/</loc>
-</url>
-<url>
-<loc>https://jaskey.github.io/posts/3/</loc>
-</url>
-<url>
-<loc>https://jaskey.github.io/posts/4/</loc>
-</url>
-<url>
-<loc>https://jaskey.github.io/posts/5/</loc>
-</url>
-<url>
-<loc>https://jaskey.github.io/posts/6/</loc>
+<loc>https://jaskey.github.io/blog/categories/shardingsphere/</loc>
 </url>
 <url>
 <loc>https://jaskey.github.io/baidu_verify_fEOrou9JEs.html</loc>

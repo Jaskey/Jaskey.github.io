@@ -9,7 +9,7 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="MySQLdb中可以轻松地使用dictionary操作SQL。 首先，连接数据库 conn = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db, charset=charset) SELECT: 在获取cursor的时候， &hellip;">
+  <meta name="description" content="IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是CTRL+Y，在IntelliJ里面CTRL+Y是删除操作，可是我们习惯与CTRL+Y是Redo（重做）操作。 可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,49 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/07/change-intelij-short-cut/">修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>18:02</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
+
+<p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
+
+<ol>
+<li>进入Settings（快捷键：<kbd>CTRL</kbd>+<kbd>ALT</kbd>+<kbd>S</kbd>，或者<kbd>SHITT</kbd>*2出<code>Search Everywhere</code>中搜索settings进入）</li>
+<li>左边菜单选择KeyMap（可搜索）</li>
+<li>选择默认的keymaps（IntelliJ的）,然后选择copy出一份新的，在新的keymaps里面修改</li>
+<li>在新的keymaps里面的<code>Main Menu--&gt;Edit--&gt;Redo</code> 右键选择 <code>Add Keyboard Shortcut</code></li>
+<li>键盘按<kbd>CTRL</kbd>+<kbd>Y</kbd> (修改的快捷键)</li>
+<li>OK</li>
+<li>选择 &ldquo;Remove&rdquo; ，当窗口提示： &ldquo;the shortcut is already assigned to other actions. Do you want to remove other assignments?&rdquo;</li>
+<li>Apply</li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -834,47 +877,6 @@ public class SignUtil {
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/11/30/log4j-configuration-via-jvm-argument/">通过VM参数选择本地log4j配置文件</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-11-30T02:32:58+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>02:32</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。</p>
-
-<p>在项目的参数中加入：</p>
-
-<pre><code>-Dlog4j.configuration=file:log4j配置文件路径
-</code></pre>
-
-<p>注：路径需要以file:开头，如：</p>
-
-<pre><code>-Dlog4j.configuration=file:E:\Programming\debug_log4j.properties
-</code></pre>
-
-<p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -892,6 +894,10 @@ public class SignUtil {
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/03/18/sharding-sphere-data-desensitization/">基于Sharding Sphere实现数据“一键脱敏”</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/">SpringBoot+Dubbo优雅退出分析及方案</a>
       </li>
     
@@ -905,10 +911,6 @@ public class SignUtil {
     
       <li class="post">
         <a href="/blog/2018/01/15/rabbitmq-note/">RabbitMQ常用命令与配置</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/06/13/rocketmq-client-config/">RocketMQ 客户端配置</a>
       </li>
     
   </ul>
@@ -1010,7 +1012,7 @@ public class SignUtil {
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2019 - Jaskey Lam -
+  Copyright &copy; 2020 - Jaskey Lam -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 

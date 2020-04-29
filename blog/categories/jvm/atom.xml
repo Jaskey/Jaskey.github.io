@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Jvm | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/jvm/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-04-29T22:15:28+08:00</updated>
+  <updated>2020-04-29T22:21:41+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -169,11 +169,11 @@ Heap &lt;b&gt;after&lt;/b&gt; GC invocations=8 (full 0):
 
 <p><strong>concurrent collector</strong>： 大部分的垃圾回收工作会同步的进行（不阻塞应用的运行）以维持短暂的GC暂停时间。它是设计给中等或大数据集的、响应时间比整体的吞吐量要更重要的应用，因为用这种算法去降低GC的停顿会一定程度降低应用的性能。</p>
 
-<p><img src="http://jaskey.github.io/images/gc/gc-compared" title="gc-compared" alt="gc-compared" /></p>
+<p><img src="http://jaskey.github.io/images/gc/gc-compared.png" title="gc-compared" alt="gc-compared" /></p>
 
 <p>​    HotSpot JVM可以让我们选择不同的GC算法去回收年轻代和年老代，但是某些算法是需要配套的使用才兼容的。例如，你不能选择<em>Parallel Scavenge</em>去回收年轻代的同时，使用CMS收集器去回收年老代因为这两个收集器是不兼容的。以下是兼容的收集器的示意图</p>
 
-<p><img src="http://jaskey.github.io/images/gc/gc-collectors-pairing" title="gc-collectors-pairing" alt="gc-collectors-pairing" /></p>
+<p><img src="http://jaskey.github.io/images/gc/gc-collectors-pairing.png" title="gc-collectors-pairing" alt="gc-collectors-pairing" /></p>
 
 <ol>
 <li>“Serial”是一个stop-the-world，复制算法的垃圾收集器，使用一条GC线程。</li>

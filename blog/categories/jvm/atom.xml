@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Jvm | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/jvm/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-03-19T00:11:41+08:00</updated>
+  <updated>2020-04-29T22:15:28+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,195 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Java GC垃圾收集器这点小事]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/04/27/gc-basics/"/>
+    <updated>2020-04-27T15:08:05+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/04/27/gc-basics</id>
+    <content type="html"><![CDATA[<p>​    对于大多数的应用来说，其实默认的JVM设置就够用了，但当你意识到有GC引起的性能问题、并且仅仅加大堆内存空间也解决不了的时候，那你就应该考虑下GC的调优了。但对于大多数程序员来说，这是很麻烦的，因为调优需要很多耐心，并且需要知道垃圾回收器的运作原理及背后对应用的影响。本文是high-level层面的关于Java垃圾回收器的总览，并以例子的形式去讲解性能定位的一些问题。</p>
+
+<p>​    正文开始。</p>
+
+<p>​    Java提供了很多种垃圾回收器，会在gc运行的线程中搭配着不同的算法。不同的回收器工作原理不一样，优缺点也不同。最重要的是无论哪一种回收器都会&#8221;stop the world&#8221;。就是说，在收集和回收的过程中，你的应用程序（或多或少）都会处于暂停状态，只不过不同算法的stop the world的表现有所不同。有些算法一直都会闲置不工作直到必须要垃圾收集才开始工作，然后就暂停应用程序很长的时间；而有一些则能和应用程序同步的进行所以在“stop the world”阶段就会有更少的暂停。选择最合适的算法要取决于你的目标：你是想优化整体的吞吐量即便不时地就会长时间暂停也是可以接受的，还是说你是想得到低延迟的优化通过分散各个时间以得到每时每刻都低延迟。</p>
+
+<p>​    为了增强垃圾回收的过程，Java（准确的说是 HotSpot JVM）把堆分成了两个代，年轻代和年老代（还有一个叫永久代的区域不在我们本文讨论范围）</p>
+
+<p><img src="http://jaskey.github.io/images/gc/hotspot-heap.png" title="hotspot-heap" alt="hotspot-heap" /></p>
+
+<p>​    年轻代是一些“年轻”的对象存放的地方，而年轻代还会继续分为以下三个区域：</p>
+
+<ol>
+<li>伊甸区（Eden Space）</li>
+<li>幸存区1（Survivor Space 1）</li>
+<li>幸存区2（Survivor Space 2）</li>
+</ol>
+
+
+<p>​    默认情况下，伊甸区是大于两个幸存者区的总和的。例如在我的Mac OS X上的64位HotSpot JVM上，伊甸区占了大概年轻代76%的区域。所有的对象一开始都会在伊甸区创建，当伊甸区满了之后，就会触发一次次要的垃圾回收（minor gc），期间新对象会快速地被检查是否可以进行垃圾回收。一旦发现那些对象已经死亡（dead），也就是说没有再被其他对象引用了（这里先简单忽略掉引用的具体类型带来的一些差异，不在本文讨论），就会被标记为死亡然后被垃圾回收掉。而其中“幸存”的对象就会被移到其中的一个空的Survivor Space。你可能会问，具体移动到哪一个幸存区呢？要回答这个问题，首先我们先聊一下幸存区的设计。</p>
+
+<p>​    之所以设计两个幸存区，是为了避免内存碎片。假设只有一个幸存区（然后我们把幸存区想象成一个内存中连续的数组），当年轻代的gc在这个数组上运行了一遍后，会标记一些死亡对象然后删除掉，这样的话势必会在内存中留下一些空洞的区域（原来的对象存活的位置），那么就有必要做压缩了。所以为了避免做压缩，HotSpot JVM就从一个幸存者区复制所有幸存的对象到另外一个（空的）幸存者区里，这样就没有空洞了。这里我们讲到了压缩，顺便提一下年老代的垃圾回收器（除了CMS）在进行年老代垃圾回收的时候都会进行压缩以避免内存碎片。</p>
+
+<p>​    简单地说，次要的垃圾回收（当伊甸区满的时候）就会把存活的对象从伊甸区和其中一个幸存区（gc日志中以“from”呈现）左右捣腾地搬到另外一个幸存区（又叫“to”）。这样会一直的持续下去直到以下的条件发生：</p>
+
+<ol>
+<li>对象达到了最大的晋升时间阈值（<em>maximum tenuring threshold</em>），就是说在年轻代被左右捣腾得足够久了，媳妇熬成婆。</li>
+<li>幸存区已经没有空间去接受新生的对象了（后面会讲到）</li>
+</ol>
+
+
+<p>​    以上条件发生后，对象就会被移动到年老代了。下面用一个具体的例子来理解下。假设我们有以下的应用程序，它会在初始化的时候创建一些长期存活的对象，也会在运行的过程中不断的创建很多存活时间很短的对象（例如我们的web服务器程序在处理请求的时候会不断分配存活时间很短的对象）</p>
+
+<pre><code class="java">private static void createFewLongLivedAndManyShortLivedObjects() {
+        HashSet&lt;Double&gt; set = new HashSet&lt;Double&gt;();
+
+        long l = 0;
+        for (int i=0; i &lt; 100; i++) {
+            Double longLivedDouble = new Double(l++);
+            set.add(longLivedDouble);  // 加到集合里，让这些对象能持续的存活
+        }
+
+        while(true) { // 不断地创建一些存活时间短的对象（这里在实际代码中比较极端，仅为演示用）
+            Double shortLivedDouble = new Double(l++);
+        }
+}
+</code></pre>
+
+<p> 在运行这个程序的过程中我们启用GC的部分日志参数：</p>
+
+<pre><code class="java">-Xmx100m                     // 分配100MV的堆内存
+-XX:-PrintGC                 // 开启GC日志打印
+-XX:+PrintHeapAtGC           // 开启GC日志打印堆信息
+-XX:MaxTenuringThreshold=15  // 为了让对象能在年轻代呆久一点
+-XX:+UseConcMarkSweepGC      // 暂时先忽略这个配置，后面会讲到
+-XX:+UseParNewGC             // 暂时先忽略这个配置，后面会讲到
+</code></pre>
+
+<p>gc 日志会显示垃圾收集前后的情况如下：</p>
+
+<pre><code class="html">Heap &lt;b&gt;before&lt;/b&gt; GC invocations=5 (full 0):
+ par new (&lt;u&gt;young&lt;/u&gt;) generation total 30720K, used 28680K
+  eden space 27328K,   &lt;b&gt;100%&lt;/b&gt; used
+  from space 3392K,   &lt;b&gt;39%&lt;/b&gt; used
+  to   space 3392K,   0% used
+ concurrent mark-sweep (&lt;u&gt;old&lt;/u&gt;) generation total 68288K, used &lt;b&gt;0K&lt;/b&gt; &lt;br/&gt;
+Heap &lt;b&gt;after&lt;/b&gt; GC invocations=6 (full 0):
+ par new generation (&lt;u&gt;young&lt;/u&gt;) total 30720K, used 1751K
+  eden space 27328K,   &lt;b&gt;0%&lt;/b&gt; used
+  from space 3392K,   &lt;b&gt;51%&lt;/b&gt; used
+  to   space 3392K,   0% used
+ concurrent mark-sweep (&lt;u&gt;old&lt;/u&gt;) generation total 68288K, used &lt;b&gt;0K&lt;/b&gt;
+</code></pre>
+
+<p>​    从这个日志里我们能得到以下信息。第一，在这次gc之前，已经发生了5次的minor gc了（所以这次是第6次）。第二，伊甸区占用了100%所以触发了这次的gc。第三，其中一个幸存区域已经使用了39%的空间（还有不少可用空间）。而这次垃圾收集结束后，我们能看到伊甸区就被清空了（0%）然后幸存者区域上升到51%。这意味着伊甸区和其中一个幸存区里存活的对象已经被移动到另外一个幸存区了，然后死亡的对象已经被垃圾回收了。怎么推断的死亡对象被回收了呢？我们看到伊甸区原来是比幸存区要大的（27328K vs 3392K），而后面幸存区的空间大小仅仅是轻微的上升（伊甸区被清空了），所以大量的对象肯定是被垃圾回收了。而我们再看看年老代，年老代是一直都是空的，无论是这次垃圾回收前还是后（回想一下，我们设置了晋升阈值为15）。</p>
+
+<p>​    下面我们再试另外一个实验。这次用多线程不断的创建存活时间很短的对象。直觉上判断，依旧应该没有对象会上升到年老代才对，因为minor gc就应该可以把这些对象清理干净。我们来看看实际情况如何</p>
+
+<pre><code class="java">private static void createManyShortLivedObjects() {
+        final int NUMBER_OF_THREADS = 100;
+        final int NUMBER_OF_OBJECTS_EACH_TIME = 1000000;
+
+        for (int i=0; i&lt;NUMBER_OF_THREADS; i++) {
+            new Thread(() -&gt; {
+                    while(true) {
+                        for (int i=0; i&lt;NUMBER_OF_OBJECTS_EACH_TIME; i++) {
+                            Double shortLivedDouble = new Double(1.0d);
+                        }
+                        sleepMillis(1);
+                    }
+                }
+            }).start();
+        }
+    }
+}
+</code></pre>
+
+<p>这次，我们只给10MB的内存，然后看看GC日志</p>
+
+<pre><code class="java">Heap &lt;b&gt;before&lt;/b&gt; GC invocations=0 (full 0):
+ par new (&lt;u&gt;young&lt;/u&gt;) generation total 3072K, used 2751K
+  eden space 2752K,  99% used
+  from space 320K,   0% used
+  to   space 320K,   0% used
+ concurrent mark-sweep (&lt;u&gt;old&lt;/u&gt;) generation total 6848K, used &lt;b&gt;0K&lt;/b&gt; &lt;br/&gt;
+Heap &lt;b&gt;after&lt;/b&gt; GC invocations=1 (full 0):
+ par new generation  (&lt;u&gt;young&lt;/u&gt;)  total 3072K, used 318K
+  eden space 2752K,   0% used
+  from space 320K,  99% used
+  to   space 320K,   0% used
+ concurrent mark-sweep (&lt;u&gt;old&lt;/u&gt;) generation total 6848K, used &lt;b&gt;76K&lt;/b&gt;
+</code></pre>
+
+<p>​    从日志上看，并不如我们一开始想的那样。这次，老年代在第一次minor gc之后，接受了一些对象。实际上这些对象都是存活时间很短的对象，并且我们设置了晋升阈值是15次，再而且日志里显示的gc只是第一次垃圾收集。这个现象背后实际上是这样的：应用程序创建了大量的对象在伊甸区，minor gc启动的时候尝试去回收，但是大多数的这些存活时间很短的对象实际上都是active的（被一个运行中的线程引用着）。那么年轻代的垃圾收集器就只好把这些对象移动到年老代了。这其实是一个不好的现象，因为这些被移到到年老代的对象其实是过早衰老了（prematurely aged），它们只有在老年代的major gc才能被回收，而major gc通常会耗时更长。对于某些垃圾算法例如CMS，major gc会在年老代70%内存占据后出发。这个值可以通过参数修改<code>-XX:CMSInitiatingOccupancyFraction=70</code></p>
+
+<p>​    怎么样防止这些短暂存活的对象过早衰老呢？有几个方法，其中一个理论上可行的方法是估计这些活跃的短暂存活对象的数量，然后设置合理的年轻代大小。我们下面来试试：</p>
+
+<ul>
+<li>年轻代默认是整个堆大小的1/3，这次我们通过 <code>-XX:NewRatio=1</code> 来修改其大小让他内存更大些（大约3.4MB，原来是3MB）</li>
+<li>同时调整幸存者区的大小：<code>-XX:SurvivorRatio=1</code> （大约1.6MB一个区，原来是0.3MB）</li>
+</ul>
+
+
+<p>问题就解决了。经过8次的minor gc，年老代依旧是空的</p>
+
+<pre><code class="html">Heap &lt;b&gt;before&lt;/b&gt; GC invocations=7 (full 0):
+ par new generation   total 3456K, used 2352K
+  eden space 1792K,  99% used
+  from space 1664K,  33% used
+  to   space 1664K,   0% used
+ concurrent mark-sweep generation total 5120K, used &lt;b&gt;0K&lt;/b&gt; &lt;br/&gt;
+Heap &lt;b&gt;after&lt;/b&gt; GC invocations=8 (full 0):
+ par new generation   total 3456K, used 560K
+  eden space 1792K,   0% used
+  from space 1664K,  33% used
+  to   space 1664K,   0% used [
+ concurrent mark-sweep generation total 5120K, used &lt;b&gt;0K&lt;/b&gt;
+</code></pre>
+
+<p>​    对于GC调优，没有银弹。这里只是简单地示意。对于实际的应用，需要不断的修改配置试错来找到最佳配置。例如，这次其实我们也可以将堆的总大小调大一倍来解决此问题。</p>
+
+<h2>垃圾回收算法</h2>
+
+<p>​    接下来我们来看看具体的垃圾回收算法。Hotspot JVM针对年轻代和年老代有多个不同的算法。从宏观层面上看，有三种类型的垃圾回收算法，每一类都有单独的<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/collectors.html">性能特性</a>:</p>
+
+<p><strong>serial collector</strong> ：使用一条线程进行所有的垃圾回收工作，相对来说也是高效的因为没有线程之间的通信。适用于单处理器的机器。使用<code>-XX:+UseSerialGC.</code>启用</p>
+
+<p><strong>parallel collector</strong> (同时也称作吞吐回收器) ：使用多线程进行垃圾回收，这样能显著的降低垃圾回收的负荷。设计来适用于这样的应用：拥有中等或大数据集的，运行在多核处理器或多线程的硬件</p>
+
+<p><strong>concurrent collector</strong>： 大部分的垃圾回收工作会同步的进行（不阻塞应用的运行）以维持短暂的GC暂停时间。它是设计给中等或大数据集的、响应时间比整体的吞吐量要更重要的应用，因为用这种算法去降低GC的停顿会一定程度降低应用的性能。</p>
+
+<p><img src="http://jaskey.github.io/images/gc/gc-compared" title="gc-compared" alt="gc-compared" /></p>
+
+<p>​    HotSpot JVM可以让我们选择不同的GC算法去回收年轻代和年老代，但是某些算法是需要配套的使用才兼容的。例如，你不能选择<em>Parallel Scavenge</em>去回收年轻代的同时，使用CMS收集器去回收年老代因为这两个收集器是不兼容的。以下是兼容的收集器的示意图</p>
+
+<p><img src="http://jaskey.github.io/images/gc/gc-collectors-pairing" title="gc-collectors-pairing" alt="gc-collectors-pairing" /></p>
+
+<ol>
+<li>“Serial”是一个stop-the-world，复制算法的垃圾收集器，使用一条GC线程。</li>
+<li>“Parallel Scavenge”是一个stop-the-world、采用复制算法的垃圾收集器，但是使用多条GC线程。</li>
+<li>ParNew是一个stop-the-world，复制算法的收集器，使用多条GC线程。它和Parallel Scavenge的区别是它做了一些增强以适应搭配CMS使用。例如ParNew会做必要的同步（synchronization ）以便它能在CMS的同步阶段运行。</li>
+<li>Serial Old 是一个stop-the-world，采用标记-清除-压缩算法的回收器，使用一条GC线程</li>
+<li>CMS（Concurrent Mark Sweep）是一个同步能力最强、低延迟的垃圾回收器</li>
+<li>Parallel Old是一个压缩算法的垃圾回收器，使用多个GC线程。</li>
+</ol>
+
+
+<p>​    对于服务端的应用程序（需要处理客户端请求）来说，使用CMS+ParNew是不错的选择。</p>
+
+<p>我在大概10GB堆内存的程序中使用过也能保持响应时间稳定和短暂的GC暂停时间。我认识的一些开发者使用Parallel collectors (<em>Parallel Scavenge</em> + <em>Parallel Old</em>) ，效果也不错。</p>
+
+<p>​    其中一件需要注意的事是CMS已经宣布废弃了，会被Oralce推荐使用一个新的同步收集器取代， <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/vm/G1.html">Garbage-First</a> 简称 <strong>G1</strong>, 一个最先由Java推出的垃圾收集器</p>
+
+<p>​    G1是一个服务端类型（server-style）的垃圾回收器，针对多处理器、大内存的计算机使用。它能尽可能地满足一个GC延迟时间的目标，同时也有很高的吞吐量</p>
+
+<p>​    <strong>G1</strong> 会同时在年轻代和年老代进行工作。它针对大堆有专门的优化（>10GB）。我没有亲身尝试过G1，我团队里的开发者仍然使用的CMS，所以我还不能对两者进行比较。但通过快速的搜索之后，我找到了一个性能对比说CMS会比G1更好（<a href="http://blog.novatec-gmbh.de/g1-action-better-cms/">CMS outperforming</a> <a href="https://dzone.com/articles/g1-vs-cms-vs-parallel-gc">G1</a>）。我倾向于谨慎，但G1应该是不错的。我们能靠以下参数启动</p>
+
+<pre><code>-XX:+UseG1GC
+</code></pre>
+
+<p>注：以上由本人摘选翻译自<a href="https://codeahoy.com/2017/08/06/basics-of-java-garbage-collection/">https://codeahoy.com/2017/08/06/basics-of-java-garbage-collection/</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[JVM垃圾回收算法]]></title>

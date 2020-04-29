@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>自定义ShardingSphere的加解密器 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="默认的Sharding Sphere 支持AES和MD5两种加密器。有些时候可能需要自定义使用自己的加解密算法，如AES的具体实现不一样等。网上公开的并没有直接的指引，通过部分源码的阅读，找到了可行的方式。需要三步： 1.实现自定义解密器 （实现ShardingEncryptor 接口） 1
+2 &hellip;">
+  <meta name="keywords" content="java , Sharding Sphere , 数据脱敏">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="https://Jaskey.github.io/blog/2020/04/29/user-defined-shardingsphere-encryptor">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">自定义ShardingSphere的加解密器</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2020-04-29T20:44:03+08:00'><span class='date'>2020-04-29 Wed</span> <span class='time'>20:44</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>默认的Sharding Sphere 支持AES和MD5两种加密器。有些时候可能需要自定义使用自己的加解密算法，如AES的具体实现不一样等。网上公开的并没有直接的指引，通过部分源码的阅读，找到了可行的方式。需要三步：</p>
+
+<h2>1.实现自定义解密器 （实现ShardingEncryptor 接口）</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TestShardingEncryptor</span> <span class="kd">implements</span> <span class="n">ShardingEncryptor</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">private</span> <span class="n">Properties</span> <span class="n">properties</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Properties</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="nd">@Override</span>
+</span><span class='line'>         <span class="kd">public</span> <span class="n">String</span> <span class="nf">getType</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>                <span class="k">return</span> <span class="s">&quot;TEST&quot;</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>          <span class="nd">@Override</span>
+</span><span class='line'>         <span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="nd">@Override</span>
+</span><span class='line'>         <span class="kd">public</span> <span class="n">String</span> <span class="nf">encrypt</span><span class="o">(</span><span class="kd">final</span> <span class="n">Object</span> <span class="n">plaintext</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>             <span class="k">return</span> <span class="s">&quot;TEST-&quot;</span><span class="o">+</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">plaintext</span><span class="o">);</span>
+</span><span class='line'>         <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="nd">@Override</span>
+</span><span class='line'>        <span class="kd">public</span> <span class="n">Object</span> <span class="nf">decrypt</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">ciphertext</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>             <span class="k">return</span> <span class="n">ciphertext</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;TEST-&quot;</span><span class="o">,</span><span class="s">&quot;&quot;</span><span class="o">);</span>
+</span><span class='line'>         <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>getType</code>返回的字符串（本例为&#8221;TEST&#8221;）即为本加解密器的类型（后续使用的时候会使用）</p>
+
+<h2>2.创建org.apache.shardingsphere.spi.encrypt.ShardingEncryptor 文件</h2>
+
+<p>需要创建一个文件名为<code>org.apache.shardingsphere.spi.encrypt.ShardingEncryptor</code>放入resources路径下的<code>\META-INF\services</code></p>
+
+<p><img src="http://jaskey.github.io/images/shardingsphere/sharding-encryptor-file-path.png" title="sharding-encryptor-file-path" alt="sharding-encryptor-file-path" /></p>
+
+<p>文件的内容就是类名全称，如：</p>
+
+<p>com.yourcompany.TestShardingEncryptor</p>
+
+<h2>3.配置使用此自定义类</h2>
+
+<h4>Java配置模式：</h4>
+
+<p>如果未使用Spring Boot，需要显示用代码配置</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">EncryptorRuleConfiguration</span> <span class="n">encryptorConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">EncryptorRuleConfiguration</span><span class="o">(</span><span class="s">&quot;TEST&quot;</span><span class="o">,</span> <span class="n">props</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Spring Boot配置模式：</h4>
+
+<p>如果使用的是Spring Boot配置模式，则需要如下配置</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">spring</span><span class="o">.</span><span class="na">shardingsphere</span><span class="o">.</span><span class="na">encrypt</span><span class="o">.</span><span class="na">encryptors</span><span class="o">.</span><span class="na">my_encryptor</span><span class="o">.</span><span class="na">type</span><span class="o">=</span><span class="n">TEST</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2020-04-29T20:44:03+08:00'><span class='date'>2020-04-29 Wed</span> <span class='time'>20:44</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/shardingsphere/'>shardingsphere</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="https://Jaskey.github.io/blog/2020/04/29/user-defined-shardingsphere-encryptor/" data-via="" data-counturl="https://Jaskey.github.io/blog/2020/04/29/user-defined-shardingsphere-encryptor/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2020/04/27/gc-basics/" title="Previous Post: Java GC垃圾收集器这点小事">&laquo; Java GC垃圾收集器这点小事</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/04/27/gc-basics/">Java GC垃圾收集器这点小事</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/03/18/sharding-sphere-data-desensitization/">基于Sharding Sphere实现数据“一键脱敏”</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/">SpringBoot+Dubbo优雅退出分析及方案</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2019/09/23/spring-boot-tomcat-mertic/">监控Spring Boot中的Tomcat性能数据</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+    <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="vertical" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a></div>
+</section>
+
+
+<section>
+  <h1>StackOverflow</h1>
+  <a href="http://stackoverflow.com/users/">
+	<img src="http://stackoverflow.com/users/flair/2087628.png" width="208" height="58" 
+		 alt="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers" 
+		 title="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers"
+	>
+  </a>
+</section>
+
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="https://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2020 - Jaskey Lam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

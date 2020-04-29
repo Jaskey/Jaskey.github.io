@@ -9,7 +9,8 @@
   <meta name="author" content="Jaskey Lam">
 
   
-  <meta name="description" content="有时候我们项目的log4j配置文件配置的是生产环境，每次本地调试又不想改会本地的调试配置，就可以通过JVM参数去修改此路径。 在项目的参数中加入： -Dlog4j.configuration=file:log4j配置文件路径 注：路径需要以file:开头，如： -Dlog4j. &hellip;">
+  <meta name="description" content="很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让.gitignore生效，以下是步骤 确保你现在branch上的重要文件已经commit.
+在项目根路径运行： git rm -r --cached . &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +66,134 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/12/03/ignore-files-that-have-already-been-committed/">Untrace .gitignore中已经被commit的文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-12-03T11:35:01+08:00'><span class='date'>2014-12-03 Wed</span> <span class='time'>11:35</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>很可能在添加忽略文件到.gitignore之前，你已经commit过那些文件，如何把这些提交了的文件忽略并且不在本地删除这些文件，让<code>.gitignore</code>生效，以下是步骤</p>
+
+<ol>
+<li>确保你现在branch上的重要文件已经commit.</li>
+<li><p>在项目根路径运行：</p>
+
+<pre><code> git rm -r --cached .
+</code></pre></li>
+<li><p>然后从staging area中移除所有已经改变的文件:</p>
+
+<pre><code> git add .
+</code></pre></li>
+<li><p>最后再提交即可</p>
+
+<pre><code> git commit -m ".gitignore is working, fixed untracked files"
+</code></pre></li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/30/inject-propeties-values/">从属性文件为变量赋值，Spring</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-30T03:38:56+08:00'><span class='date'>2014-11-30 Sun</span> <span class='time'>03:38</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候，我们需要从一些属性文件为变量赋值，这样修改变量值就不需要修改代码，直接修改属性文件就可以了。这样方便管理和维护。</p>
+
+<p>Spring可以很轻松地通过Annotation的方式注入属性值，以下记录下学习的过程。</p>
+
+<h2>配置</h2>
+
+<p><strong>1. 新建属性文件</strong></p>
+
+<p>如<code>application.properties</code></p>
+
+<p>里面的格式为： <code>name=value</code></p>
+
+<p>如：</p>
+
+<pre><code>token=wodinow
+</code></pre>
+
+<p><strong>2. 配置属性文件路径</strong></p>
+
+<pre><code>&lt;context:property-placeholder location="classpath:application.properties" /&gt;
+</code></pre>
+
+<hr />
+
+<h2>使用注解注入</h2>
+
+<p>在一个Bean中， 使用@Value注解使用${name}格式，如在@Controller中</p>
+
+<pre><code>@Controller
+public class CoreController {   
+
+    @Value("${developer_id}")
+    private String developerID;
+
+    }
+</code></pre>
+
+<h2>为静态变量注入</h2>
+
+<p>Spring不能为静态变量注入属性值，但我们可以配置一个setter完成此项工作，如：</p>
+
+<pre><code>@Component
+public class SignUtil {  
+
+    //需要从属性文件中读值的静态变量
+    private static  String TOKEN;  
+
+    //配置一个setter, 为该静态变量赋值
+    @Value("${token}")
+    private void setTOKEN(String token) {
+        SignUtil.TOKEN = token;
+    }  
+｝
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1007,367 +1136,6 @@ IF CACHE EMPTY
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/26/get-started-with-memcached/">快速入门Memcached</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-26T00:41:53+08:00'><span class='date'>2014-10-26 Sun</span> <span class='time'>00:41</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近学习Memcahced,使用了一天时间搭建了memcached的集群，并使用memcached的客户端<code>spymemcached</code>成功访问到集群。今天整理下学习的笔记。</p>
-
-<h2>Linux下安装Memcached</h2>
-
-<p>以<code>Ubuntu</code>为例。</p>
-
-<p>1.更新本地仓库</p>
-
-<pre><code>sudo apt-get update
-</code></pre>
-
-<p>2.安装<code>memcached Service</code></p>
-
-<pre><code>sudo apt-get install memcached
-</code></pre>
-
-<p>3.安装成功后，使用<code>ps aux | grep memcached</code>可检查<code>memcached</code>服务是否已启动。你可能会看到类似下面的信息，证明memcached服务已经启动。</p>
-
-<pre><code>memcache  1027  0.0  0.1  46336  1080 ?        Sl   00:38   0:00 /usr/bin/memcached -m 64 -p 11211 -u memcache -l 0.0.0.0
-jaskey    2477  0.0  0.0   4372   832 pts/1    S+   00:49   0:00 grep --color=auto memcached
-</code></pre>
-
-<p>注：默认情况下，memcached的服务进程只在默认的localhost监听。所以如果我们需要从其他机器访问该服务，需要修改监听的ip</p>
-
-<h2>修改memcached服务监听地址</h2>
-
-<p>打开配置文件：<code>memcached.conf</code>(在/etc下)</p>
-
-<pre><code># Specify which IP address to listen on. The default is to listen on all IP addresses
-# This parameter is one of the only security measures that memcached has, so make sure
-# it's listening on a firewalled interface.
--l 127.0.0.1
-</code></pre>
-
-<p>找到相关-l 的配置，修改为<code>0.0.0.0</code>即可</p>
-
-<p>其余重要还有-m(内存大小)，-p(默认端口号)</p>
-
-<pre><code># Start with a cap of 64 megs of memory. It's reasonable, and the daemon default
-# Note that the daemon will grow to this size, but does not start out holding this much
-# memory
--m 64
-
-# Default connection port is 11211
--p 11211
-</code></pre>
-
-<h2>使用telnet与memcached通信</h2>
-
-<p>1.首先，安装telnet客户端</p>
-
-<pre><code>sudo apt-get install telnet
-</code></pre>
-
-<p>2.使用telnet访问</p>
-
-<pre><code>telnet localhost 11211
-</code></pre>
-
-<p>其中11211为memcached默认端口。</p>
-
-<p>如果你能看到类似以下的输出，则证明访问成功。</p>
-
-<pre><code>Trying 127.0.0.1...Connected to localhost.Escape character is '^]'.
-</code></pre>
-
-<p>我们可以使用<code>stats</code>命令获得memcached的基本信息</p>
-
-<pre><code>Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-stats
-STAT pid 1027
-STAT uptime 1487
-STAT time 1414256583
-STAT version 1.4.13
-STAT libevent 2.0.16-stable
-STAT pointer_size 32
-STAT rusage_user 0.040002
-STAT rusage_system 0.252015
-STAT curr_connections 5
-STAT total_connections 6
-STAT connection_structures 6
-STAT reserved_fds 20
-STAT cmd_get 0
-STAT cmd_set 0
-STAT cmd_flush 0
-STAT cmd_touch 0
-STAT get_hits 0
-STAT get_misses 0
-STAT delete_misses 0
-STAT delete_hits 0
-STAT incr_misses 0
-STAT incr_hits 0
-STAT decr_misses 0
-STAT decr_hits 0
-STAT cas_misses 0
-STAT cas_hits 0
-STAT cas_badval 0
-STAT touch_hits 0
-STAT touch_misses 0
-STAT auth_cmds 0
-STAT auth_errors 0
-STAT bytes_read 7
-STAT bytes_written 0
-STAT limit_maxbytes 67108864
-STAT accepting_conns 1
-STAT listen_disabled_num 0
-STAT threads 4
-STAT conn_yields 0
-STAT hash_power_level 16
-STAT hash_bytes 262144
-STAT hash_is_expanding 0
-STAT expired_unfetched 0
-STAT evicted_unfetched 0
-STAT bytes 0
-STAT curr_items 0
-STAT total_items 0
-STAT evictions 0
-STAT reclaimed 0
-END
-</code></pre>
-
-<h2>往memcached存储/获取值</h2>
-
-<p>使用<code>add</code>命令</p>
-
-<pre><code>add newkey 0 60 5
-abcde
-</code></pre>
-
-<p>如果现实STORED则为存储成功:</p>
-
-<p>然后就可以使用<code>get newkey</code>获取到这个存储的值了。</p>
-
-<pre><code>get newkey
-VALUE newkey 0 5
-abcde
-END
-</code></pre>
-
-<p><strong>命令解析</strong>：</p>
-
-<pre><code>&lt;command name&gt; &lt;key&gt; &lt;flags&gt; &lt;exptime&gt; &lt;bytes&gt;
-</code></pre>
-
-<p>常用command name 有 <code>add</code> , <code>set</code>,  <code>replace</code>, <code>append</code>。</p>
-
-<p><code>flags</code></p>
-
-<p>是一个16为无符号整形，memcached server会把这个flags和key一起存储起来，并且访问该key的时候，也会返回这个<code>flags</code>。我们可以根据需要设置这个key的格外信息。</p>
-
-<p><code>exptime</code></p>
-
-<p>值超时的时间，单位为秒。如果设置为0，则不会超时。</p>
-
-<p><code>bytes</code></p>
-
-<p>存储的值的大小，在我们这个例子，由于我们需要存储abcde,所以我们设置改参数为5。</p>
-
-<hr />
-
-<h2>建立分布式memcached集群</h2>
-
-<p>到此为止，我们已经可以访问到默认启动的memcached服务了，但是实际上我们需要一个memcached集群。我们可以在多台机器上启动memcached服务，这样就可以获取一个无限制内存大小的缓存服务。然后使用memcached客户端连接上去。</p>
-
-<p>鉴于在学习阶段，我们可以尝试在不同的端口上启动memcached，然后获得一个本地集群。</p>
-
-<p>启动memcached:
-    memcached -d -l 0.0.0.0 -m 64 -p 12122</p>
-
-<p>其中<code>-d</code>参数表示启动为daemon, -l 指定监听ip，-p监听端口，-m指定服务的内存大小。</p>
-
-<p>然后使用<code>ps aux |grep memcached</code>确认端口的确运行成功。</p>
-
-<h2>使用memcached客户端</h2>
-
-<p>memcached的守护进程是对不知道集群的存在和server设置的。实际上，是memcached client把数据分布式的存储在不同memcached服务上。所以，同一份存储的数据，你只能在一个memcached服务中访问，其他的memcached都无法获得。</p>
-
-<p>我们这里以java语言作为例子，演示如何使用java访问memcached server。这里使用的是<code>spymemcached</code>这个memcached client。</p>
-
-<p>在<code>maven</code>中添加spymemacached依赖：</p>
-
-<pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;net.spy&lt;/groupId&gt;
-    &lt;artifactId&gt;spymemcached&lt;/artifactId&gt;
-    &lt;version&gt;2.10.1&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<p>代码示例如下：</p>
-
-<pre><code>public class MemcachedDemo 
-{
-
-    static final  InetSocketAddress[] servers=new InetSocketAddress[]{  //创建好需要连接的memcached集群的ip和端口
-        new InetSocketAddress("192.168.56.101",11211),
-        new InetSocketAddress("192.168.56.101",11212)
-    };
-
-    public static void main( String[] args ) throws IOException{
-        System.out.println( "Begin memcached" );
-        MemcachedClient client=new MemcachedClient(servers);//建立memcached client对象连接到集群，注：spymemcahced,会处理重新连接
-
-
-        //存储两个对象，一个String类型，一个自定义对象（需要实现Serializable接口）
-        client.set("city", 60, "shenzhen");//expired in 60 seconds
-        System.out.println( "city is set" );
-        client.set("emp", 0, new Employee("jaskey", 23));//never expired,注：Employee对象需要实现java.io.Serializable接口        
-
-        //从memcached server中获取对象
-        Employee empFromServer=(Employee)client.get("emp");
-        String city=(String)client.get("city");
-
-        System.out.println("emp from memcached: "+empFromServer);
-        System.out.println("city from memcached: "+city);
-
-        client.shutdown();
-        }
-}
-</code></pre>
-
-<p>输出：</p>
-
-<pre><code>Begin memcached
-2014-10-26 01:56:51.431 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=/192.168.56.101:11211, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
-2014-10-26 01:56:51.435 INFO net.spy.memcached.MemcachedConnection:  Added {QA sa=/192.168.56.101:11212, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
-2014-10-26 01:56:51.443 INFO net.spy.memcached.MemcachedConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@72a7d24a
-emp is set
-emp from memcached: Employee("jaskey", 23)
-city from memcached: shenzhen
-2014-10-26 01:56:51.492 INFO net.spy.memcached.MemcachedConnection:  Shut down memcached client
-</code></pre>
-
-<p>其中，get操作是同步的，如果希望使用异步get，可以使用<code>asyncGet</code>方法返回一个<code>Future</code>对象：</p>
-
-<pre><code>    Future&lt;Object&gt; fobject = client.asyncGet("emp");
-    try {
-        Employee emp=(Employee)fobject.get(10, TimeUnit.SECONDS);//设置10秒的timeout
-        System.out.println("emp from memcached"+emp);
-    } catch (InterruptedException e) {
-        e.printStackTrace();
-    } catch (ExecutionException e) {
-        e.printStackTrace();
-    } catch (TimeoutException e) {
-        e.printStackTrace();
-    }
-</code></pre>
-
-<h2>关于集群</h2>
-
-<p>如果这时候，你使用telnet命令分别访问不同的memcached服务，你很可能发现emp这个值只存在于其中的一个服务，而其他服务是获取不到的。</p>
-
-<p>这样证明一份数据只被保存了一遍，然而对于客户端而言，具体保存在哪里却是完全透明的，因为spymemcahced把这个数据映射的工作做了。</p>
-
-<p>这样我们就好像操作一份很大内存空间的缓存一样，而实际上，我们是对分布在不同memcached 服务的内存空间在进行操作。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/21/about-wealth/">大学生与烧饼小贩</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-21T19:34:50+08:00'><span class='date'>2014-10-21 Tue</span> <span class='time'>19:34</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近写技术的东西比较多，刚好也在看《黑客与画家》，里面讲到的关于如何创造财富这一论点引起了我极大的共鸣和思考，觉得既然博客折腾起来了，就简单整理下，写下点东西。刚好最近大学生校园招聘的季节，就从这个话题切入扯点东西吧。</p>
-
-<p>在当今社会，什么东西都离不开钱，似乎没有钱，就生存不下去了（似乎的确是这样子）。然后，我们从出生那天起，就被安排着如何成为一个会赚钱的人。</p>
-
-<p>上一个好的小学，报读各种英语培训班、奥数班，目的是为了考上好的中学。在中学和无数人死磕排名，好像排后了一名就世界末日一般的前景，每个人都被用成绩贴上了各种标签，无他，为了高考考个好成绩。</p>
-
-<p>高考罢，要挑一个好的学校，读一门好的专业。好的学校就是就业率高，好的专业就是毕业容易找到好的工作，好的工作就是钱多活少又稳定。呵呵。没有一个人会问学校的学术氛围，也没有几个人会考虑孩子/自己到底喜欢的是什么，毕竟学生已经被训练为不会思考的机器，一辈子都在同一条起跑线上竞争，不需要思考，只需要永远的跑，跟着前面跑，跟着大家跑。所以，突然有了选择的时候，反而迷茫了，下意识的也只会跟着大众走。于是，金融、计算机、工程这些专业变得炙手可热。随之而来的，随便一所不沾边的学校都乱开一通专业。</p>
-
-<p>在这个时候，你会发现，家长、学校变化都十分巨大。学校不再有很多的竞争逼着你走，虽然学生会丑陋的政治斗争依旧十分激烈，但我们可以不参加。而家长似乎也对你的成绩不那么过问了。无他，因为这么多年来，似乎已经到了收割的季节——到了毕业那一年，任务就完成了——孩子成为了一个大学生，理应是一个会赚钱的人咯！</p>
-
-<p>在这个时候，才发现，就业竞争是如此的激烈。几万人应聘那零丁的几个职位，挤破头来最后拿个3 4千的工作。所有人都不知道这一辈是对呢？还是错？反正都这样干，那就都这样吧。毕业了也就那样了，无无聊聊朝九晚五，挤着公交地铁，天天看着房价涨、工资甚至还赶不上物价。眼看着街边一个卖烧饼的收入都一万多了，才可能回想，这一辈子到底得到了什么？</p>
-
-<p>其实这也难怪，一个毕业后只能对着电脑打打字、写几份文件的，比不上一个卖烧饼的，又有什么出奇的？</p>
-
-<p><strong>但肯定很多人出来骂娘了，这TM不公平啊！凭啥！</strong></p>
-
-<p>问题就在这里，很多大学生总觉得这不公平、家长们也觉得无奈：农民工兄弟做的是体力活，我做的好歹他们不会做，说得自己做的东西像战斗机一样是什么高科技。坦白说，即便是如我们这种码农一样的职业，也就用着美国人的电脑，在美国人的系统上用美国人的语言模仿着美国人的代码，也不见得多么高端。</p>
-
-<p>这里似乎有一个误区，我们总潜意识的想着用付出去衡量收获，这可能和读书时代我们宣扬“一分耕耘，一分收获”有关。这完全是一个错误的观点。在市场经济下，能交换收获的，只有输出。</p>
-
-<p>这本来是一个很原始的道理，但随着历史的发展，被慢慢淡化了，所以有必要从头谈谈。</p>
-
-<p>在古时候，没有货币出现的时候，人们会使用物品交换的方式去获得自己所需的东西。如果我需要鸡蛋，但我没有鸡去生蛋，那么我可能用羊去换。找到一家需要羊的，又拥有鸡蛋可换的人，跟他们去交换。然后假如我需要另外的东西，就再找合适的人交换。</p>
-
-<p>这样发展到后面，人们的需求越来越多，在局限的一个地方要找到双方都刚好互补需求的另外一个人，十分不容易。于是，一般等价物便出现了，这类东西的一个最重要的属性是稀有，一般说来是稀有金属，如金、银。人们可以用自己生产的物品交换这一等价物品（卖），然后用这个等价物去购买另外的商品。</p>
-
-<p>再到后来，携带金属交换并不便利，而且计算也没那么灵活。便出现了货币，直至纸币。人们去工作去赚钱，赚到了钱就可以买自己需要的东西。</p>
-
-<p>在这里，一个概念容易被模糊——钱似乎就是财富。但这并不正确。钱只是换取、衡量财富的一种物品，它本身并不具备价值。假如突然有一天，银行印了一大堆钞票满天飞，那么你手上的钱瞬间就沦为废纸。</p>
-
-<p>人类发明了一般等价物和后来的货币，为的不是创造财富，而是为了交换财富。所以，真正的财富，是我们用钱交换（买/卖）的东西，这里面说的很可能是一种物质的商品，也有可能是一种服务。</p>
-
-<p>那么，理清楚这点之后，对于我们理解大学生就业、自己拿多少工资这种问题有什么作用呢？作用十分明显，乃至答案呼之欲出。我们去打工，不是卖自己的时间，自由、劳动力去交换钱（这些是表面的），深沉次的是，我们在出售“生产力”（并不是劳动力）。简单说，就是企业买了我们的某段时间、自由，并用我们的某些技能去为他们服务。而至于他们给多少钱，这并不取决于我们的服务时间、服务态度，而是取决于我们这段时间的“生产力”——能创造多少财富。</p>
-
-<p>对，财富是可以创造出来的，这似乎每个人都懂，但似乎又不是。如果我们把钱=财富的话，这个命题就是假命题。因为钱的多少是由银行决定的，而银行把钱印到全世界都是，这并不增加社会的财富，反而让所有人都变穷了。明显，钱不是财富。那么什么是财富？</p>
-
-<p>举一个例子，有一天，马浓再也敲不动代码了，然后被老板炒了。身上没有钱，穷得只剩下有一台破单车，还要不能跑的。然后他把它修了一下，能跑起来了，于是拿去卖了，获得了100块，够吃一个月的满头了！这一个过程中，马浓就创造了财富，他本来不拥有任何可以交换钱的物品（至少换不了100块），现在有了，因为他创造了一量价值100块（准确地说，价值1个月的馒头）的单车，这个世界因为马浓这一个行为，财富得到了上升。</p>
-
-<p><strong>所以，财富不是一定的，而是不断的变化的（人类历史就是不断创造财富的过程），这并不是一个零和游戏！</strong>马云他成功成为了中国首富，但没有从社会剥夺过一分一毫。相反，他让整个中国的财富迅速上升——很多店主依靠淘宝赚了一桶金，很多老百姓因为淘宝买到了更为便宜的衣服。</p>
-
-<p>但这样一看，似乎只有生产，或者说只有物质生产才是创造财富的过程？也不对！再举个例子，淘宝卖的衣服，衣服本身是财富，但是他一开始并不能成为社会的财富，假如他生产出来的衣服一直都摆在库存没人穿，他们从其量也就一堆布料。</p>
-
-<p>然后这时候，马浓去应聘做了一个物流人员，做起了把衣服从浙江发往广东的工作，使得广东的老百姓能买到浙江的衣服了。在这个过程中，假如没有马浓的输送，衣服无法成为你和我的财富。也就是说，服务也是一个创造财富的过程，由于物流人员的服务，我能够买到衣服，而卖家能卖到钱。这繁荣了整个淘宝，使得大家继续不断地创造更多的财富。而马浓也因此赚到了每月近万元的收入。</p>
-
-<p>扯得有点远，我们回到大学生就业和卖烧饼的例子。大学生工作获得的工资，其实就是帮助企业去创造财富的过程，虽然这一过程似乎都被模糊为帮企业赚钱了。一个企业用4000块请你工作，是因为他觉得你能创造多余4000块的财富（假如一个月后人民币没有贬/升值）。这和市场买卖是一个意思，你值4000块，自然有人用4000买，如果你3000肯卖，肯定很多人愿意买。如果你希望自己能卖个10000块，最后肯定的结果就是没人肯买你（即便买了也会立刻退货），最后经过市场的催化，会逐渐趋向于你最终的“市值”。而没有任何一个人逼你去卖一家烧饼小摊的烧饼，然总有很多人愿意去买，因为他创造了烧饼这一财富，而你认为他卖得并不贵（坦白说，是挺贵的，但市场告诉你，他值这个价），最后他赚得了10000多的收入。</p>
-
-<p>Fair enough! 十分公平。也许你的工作并不比卖烧饼的轻松（不过很多的确比烧饼轻松得多），而且我们的前期投入也肯定比小贩们投入得多得多（无论教育费用，时间），但这就是市场给予我们的回应。一个人的收入，与他创造财富的能力相匹配，这是我能想到的最为公平且合理的资源配置方式。当然，除了创造财富外，还有另外一种获得财富的手段，那就是偷窃。这不包括真真意义上的偷，而还包括贪污、资源垄断，他们和偷窃都拥有一样的特点——没有创造财富而获取创造出来的财富，这在中国还十分的严重，但对比历史已经好得多得多。至少，以前的首富都是达官贵人，现在我们的首富却是马云。</p>
-
-<p>那么，自己能拿多少钱？应该问的，不是自己付出了多少，自己的学历，自己的身份，而是问自己到底能创造多少财富，<strong>在市场化的社会里，最简单、最公平的获取财富的手段，就是创造财富了。</strong></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -1385,6 +1153,14 @@ city from memcached: shenzhen
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/04/27/gc-basics/">Java GC垃圾收集器这点小事</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/03/18/sharding-sphere-data-desensitization/">基于Sharding Sphere实现数据“一键脱敏”</a>
       </li>
     
@@ -1394,14 +1170,6 @@ city from memcached: shenzhen
     
       <li class="post">
         <a href="/blog/2019/09/23/spring-boot-tomcat-mertic/">监控Spring Boot中的Tomcat性能数据</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2018/08/15/rabbitmq-delay-queue/">RabbitMQ实现延迟队列</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2018/01/15/rabbitmq-note/">RabbitMQ常用命令与配置</a>
       </li>
     
   </ul>

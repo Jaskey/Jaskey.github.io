@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Shardingsphere | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/shardingsphere/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-03-19T00:11:41+08:00</updated>
+  <updated>2020-04-29T22:15:28+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,71 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[自定义ShardingSphere的加解密器]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/04/29/user-defined-shardingsphere-encryptor/"/>
+    <updated>2020-04-29T20:44:03+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/04/29/user-defined-shardingsphere-encryptor</id>
+    <content type="html"><![CDATA[<p>默认的Sharding Sphere 支持AES和MD5两种加密器。有些时候可能需要自定义使用自己的加解密算法，如AES的具体实现不一样等。网上公开的并没有直接的指引，通过部分源码的阅读，找到了可行的方式。需要三步：</p>
+
+<h2>1.实现自定义解密器 （实现ShardingEncryptor 接口）</h2>
+
+<pre><code class="java">public class TestShardingEncryptor implements ShardingEncryptor {
+        private Properties properties = new Properties();
+
+         @Override
+         public String getType() {
+                return "TEST";
+          }
+
+
+          @Override
+         public void init() {
+
+         }
+
+         @Override
+         public String encrypt(final Object plaintext) {
+             return "TEST-"+String.valueOf(plaintext);
+         }
+
+         @Override
+        public Object decrypt(final String ciphertext) {
+             return ciphertext.replaceAll("TEST-","");
+         }
+}
+</code></pre>
+
+<p>其中<code>getType</code>返回的字符串（本例为&#8221;TEST&#8221;）即为本加解密器的类型（后续使用的时候会使用）</p>
+
+<h2>2.创建org.apache.shardingsphere.spi.encrypt.ShardingEncryptor 文件</h2>
+
+<p>需要创建一个文件名为<code>org.apache.shardingsphere.spi.encrypt.ShardingEncryptor</code>放入resources路径下的<code>\META-INF\services</code></p>
+
+<p><img src="http://jaskey.github.io/images/shardingsphere/sharding-encryptor-file-path.png" title="sharding-encryptor-file-path" alt="sharding-encryptor-file-path" /></p>
+
+<p>文件的内容就是类名全称，如：</p>
+
+<p>com.yourcompany.TestShardingEncryptor</p>
+
+<h2>3.配置使用此自定义类</h2>
+
+<h4>Java配置模式：</h4>
+
+<p>如果未使用Spring Boot，需要显示用代码配置</p>
+
+<pre><code class="java">EncryptorRuleConfiguration encryptorConfig = new EncryptorRuleConfiguration("TEST", props);
+</code></pre>
+
+<h4>Spring Boot配置模式：</h4>
+
+<p>如果使用的是Spring Boot配置模式，则需要如下配置</p>
+
+<pre><code class="java">spring.shardingsphere.encrypt.encryptors.my_encryptor.type=TEST  
+</code></pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[基于Sharding Sphere实现数据“一键脱敏”]]></title>

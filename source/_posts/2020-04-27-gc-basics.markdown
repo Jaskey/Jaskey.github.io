@@ -222,7 +222,7 @@ Heap <b>after</b> GC invocations=8 (full 0):
 
 
 
-![gc-collectors-pairing](http://jaskey.github.io/images/gc/gc-collectors-pairing.png "gc-collectors-pairing")
+![gc-collectors-pairing](http://jaskey.github.io/images/gc/gc-collectors-pairing.jpg "gc-collectors-pairing")
 
 
 

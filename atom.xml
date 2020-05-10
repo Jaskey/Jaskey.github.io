@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-04-29T22:21:41+08:00</updated>
+  <updated>2020-05-11T00:30:56+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -347,7 +347,7 @@
 
 <p>​    HotSpot JVM可以让我们选择不同的GC算法去回收年轻代和年老代，但是某些算法是需要配套的使用才兼容的。例如，你不能选择<em>Parallel Scavenge</em>去回收年轻代的同时，使用CMS收集器去回收年老代因为这两个收集器是不兼容的。以下是兼容的收集器的示意图</p>
 
-<p><img src="http://jaskey.github.io/images/gc/gc-collectors-pairing.png" title="gc-collectors-pairing" alt="gc-collectors-pairing" /></p>
+<p><img src="http://jaskey.github.io/images/gc/gc-collectors-pairing.jpg" title="gc-collectors-pairing" alt="gc-collectors-pairing" /></p>
 
 <ol>
 <li>“Serial”是一个stop-the-world，复制算法的垃圾收集器，使用一条GC线程。</li>

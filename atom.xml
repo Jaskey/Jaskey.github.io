@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-11T00:30:56+08:00</updated>
+  <updated>2020-05-15T01:19:25+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,56 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[利用Java进程名进行jstat -gc]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/05/13/stat-gc-with-process-name/"/>
+    <updated>2020-05-13T16:29:07+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/05/13/stat-gc-with-process-name</id>
+    <content type="html"><![CDATA[<p>需要实时观看GC的情况，我们可以类似如下命令进行监控</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'> jstat -gc <span class="nv">$pid</span> <span class="m">100</span> <span class="m">10</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是这里需要一个进程号，很麻烦，每个Java进程在不同机器或者启动不一样就会不一样，对于自动监控脚本或者是如果需要定位应用刚开始启动时候gc的问题时，当你手动敲完命令拿到pid的时候，可能都凉了。</p>
+
+<p>对此写了一个简单的shell脚本可以传入进程名去执行jstat</p>
+
+<p>gcstat.sh:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c">#! /bin/bash</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">process</span><span class="o">=</span><span class="nv">$1</span>
+</span><span class='line'><span class="nv">interval</span><span class="o">=</span><span class="nv">$2</span>
+</span><span class='line'><span class="nv">count</span><span class="o">=</span><span class="nv">$3</span>
+</span><span class='line'><span class="nv">pid</span><span class="o">=</span><span class="k">$(</span>ps -ef <span class="p">|</span> grep java <span class="p">|</span> grep <span class="nv">$process</span> <span class="p">|</span> grep -v grep <span class="p">|</span> awk <span class="s1">&#39;{print $2}&#39;</span><span class="k">)</span>
+</span><span class='line'><span class="nb">echo</span> <span class="nv">$pid</span>
+</span><span class='line'><span class="nb">echo</span> <span class="nv">$interval</span>
+</span><span class='line'><span class="nb">echo</span> <span class="nv">$count</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>./gcstat.sh  processName <span class="m">1000</span> 5
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[自定义ShardingSphere的加解密器]]></title>
@@ -3784,67 +3834,6 @@ select * from dept where deptno=45
 </code></pre>
 
 <p>注：中间需要自己解决冲突，若出现冲突，可以尝试使用 <code>git mergetool</code> 使用GUI工具解决</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[CSS实现垂直居中]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/08/04/css-vertical-align/"/>
-    <updated>2015-08-04T16:49:40+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/08/04/css-vertical-align</id>
-    <content type="html"><![CDATA[<p>CSS垂直居中真是一个令人头疼的事，最近遇到了一个较为简单且通用的方法，总结如下：</p>
-
-<p>1.无需要设置自己高度，和父容器高度, 利用绝对定位只需要以下三行：</p>
-
-<pre><code>parentElement{
-    position:relative;
-}
-childElement{
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-}
-</code></pre>
-
-<p>2.若只有父容器下只有一个元素，且父元素设置了高度，则只需要使用相对定位即可</p>
-
-<pre><code>parentElement{
-    height:xxx;
-}
-.childElement {
-  position: relative;
-  top: 50%;
-  transform: translateY(-50%);
-}
-</code></pre>
-
-<p>例子猛击:<a href="http://jsfiddle.net/V5uKe/904/" title="demo">DEMO</a></p>
-
-<hr />
-
-<h2>Flex布局</h2>
-
-<p>如果你不需要兼容老式浏览器(例如IE9及以下)，使用Flex布局可以非常轻松实现</p>
-
-<p>浏览器支持如下：
-<img src="https://Jaskey.github.io/images/css/flex-support.jpg" title="flex的支持性" alt="Flex的支持性" /></p>
-
-<p>样式：</p>
-
-<pre><code>parentElement{
-    display:flex;/*Flex布局*/
-    display: -webkit-flex; /* Safari */
-    align-items:center;/*交叉轴居中，这里由于flex-direction默认是row,即垂直居中*/
-}
-</code></pre>
-
-<p>注意，设为Flex布局以后，子元素的float、clear和vertical-align属性将失效</p>
-
-<p>例子猛击:<a href="http://codepen.io/anon/pen/PZKZqe" title="Flex垂直居中Demo">Flex demo</a></p>
-
-<hr />
-
-<p>Flex教程可参考<a href="http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html">这里</a></p>
 ]]></content>
   </entry>
   

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Gc | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/gc/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-15T00:04:45+08:00</updated>
+  <updated>2020-05-15T01:19:25+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -20,7 +20,7 @@
     <id>https://Jaskey.github.io/blog/2020/05/13/stat-gc-with-process-name</id>
     <content type="html"><![CDATA[<p>需要实时观看GC的情况，我们可以类似如下命令进行监控</p>
 
-<pre><code class="shell"> jstat -gc $pid 100 10 
+<pre><code class="bash"> jstat -gc $pid 100 10 
 </code></pre>
 
 <p>但是这里需要一个进程号，很麻烦，每个Java进程在不同机器或者启动不一样就会不一样，对于自动监控脚本或者是如果需要定位应用刚开始启动时候gc的问题时，当你手动敲完命令拿到pid的时候，可能都凉了。</p>
@@ -29,7 +29,7 @@
 
 <p>gcstat.sh:</p>
 
-<pre><code class="shell">#! /bin/bash
+<pre><code class="bash">#! /bin/bash
 
 process=$1
 interval=$2
@@ -42,7 +42,7 @@ echo $count
 
 <p>使用：</p>
 
-<pre><code class="shell">./gcstat.sh  processName 1000 5
+<pre><code class="bash">./gcstat.sh  processName 1000 5
 </code></pre>
 ]]></content>
   </entry>

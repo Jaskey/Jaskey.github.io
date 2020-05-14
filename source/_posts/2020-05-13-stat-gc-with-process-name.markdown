@@ -14,7 +14,7 @@ description: 一段shell脚本利用Java进程名输出gc统计信息
 
 
 
-```shell
+```bash
  jstat -gc $pid 100 10 
 ```
 
@@ -30,7 +30,7 @@ description: 一段shell脚本利用Java进程名输出gc统计信息
 
 gcstat.sh:
 
-```shell
+```bash
 #! /bin/bash
 
 process=$1
@@ -48,7 +48,7 @@ echo $count
 
 
 
-```shell
+```bash
 ./gcstat.sh  processName 1000 5
 ```
 

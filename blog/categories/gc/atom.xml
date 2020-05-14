@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Gc | 薛定谔的风口猪]]></title>
+  <link href="https://Jaskey.github.io/blog/categories/gc/atom.xml" rel="self"/>
+  <link href="https://Jaskey.github.io/"/>
+  <updated>2020-05-15T00:04:45+08:00</updated>
+  <id>https://Jaskey.github.io/</id>
+  <author>
+    <name><![CDATA[Jaskey Lam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[利用Java进程名进行jstat -gc]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/05/13/stat-gc-with-process-name/"/>
+    <updated>2020-05-13T16:29:07+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/05/13/stat-gc-with-process-name</id>
+    <content type="html"><![CDATA[<p>需要实时观看GC的情况，我们可以类似如下命令进行监控</p>
+
+<pre><code class="shell"> jstat -gc $pid 100 10 
+</code></pre>
+
+<p>但是这里需要一个进程号，很麻烦，每个Java进程在不同机器或者启动不一样就会不一样，对于自动监控脚本或者是如果需要定位应用刚开始启动时候gc的问题时，当你手动敲完命令拿到pid的时候，可能都凉了。</p>
+
+<p>对此写了一个简单的shell脚本可以传入进程名去执行jstat</p>
+
+<p>gcstat.sh:</p>
+
+<pre><code class="shell">#! /bin/bash
+
+process=$1
+interval=$2
+count=$3
+pid=$(ps -ef | grep java | grep $process | grep -v grep | awk '{print $2}') 
+echo $pid
+echo $interval
+echo $count
+</code></pre>
+
+<p>使用：</p>
+
+<pre><code class="shell">./gcstat.sh  processName 1000 5
+</code></pre>
+]]></content>
+  </entry>
+  
+</feed>

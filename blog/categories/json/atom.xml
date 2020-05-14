@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Json | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/json/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-11T00:30:56+08:00</updated>
+  <updated>2020-05-15T00:04:45+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -40,30 +40,7 @@
 
 <p>以下为引入后的样本实例：</p>
 
-<p><div id="myelement">
-	.markdown文件中，在需要引入HTML文件的地方写上：
-	<p id="includeCode">&#8217;{&#8216;%include demo/include_HTML_demo.html +&#8217;%&#8217;}&#8217; (注:去掉其中的单引号)</p>
-	<p>HTML代码即会导入，若内嵌JavaScript脚本，也会自动导入允许。</p>
-	<p>这里你看到的区域都是外部导入的HTML文件，尝试点击这里，会发现有脚本运行.</p>
-	<p id="clickme">点我试试看</p>
-</div>
-
-<script>
-
-	$(function(){
-		$('#includeCode').text($('#includeCode').text().replace(/\+|\"/,''));
-		$('p#clickme').hover(function(){
-		$(this).css("color","blue");
-		},function(){
-		$(this).css("color","black");
-		});
-
-		$('div#myelement').on('click',function(e){
-		alert("你刚刚点击了#myelement区域，onClick事件触发了。");
-		});
-	})
-
-</script></p>
+<p>{% include demo/include_HTML_demo.html %}</p>
 
 <p>注：由于octopress已经引入了jQuery,故本页面无须额外引入jQuery.</p>
 ]]></content>

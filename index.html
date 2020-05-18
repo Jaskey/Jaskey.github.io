@@ -77,6 +77,214 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2020-05-18T19:25:21+08:00'><span class='date'>2020-05-18 Mon</span> <span class='time'>19:25</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在Dubbo做微服务的架构后，对于应用请求的追踪是尤为重要的。试想一下你有一个服务在告警，但你却不知道你的请求是从哪个服务/ip上过来的，这对于问题的定位会造成极大的困难。这对于一个上游调用方多、实例多的系统来说，问题尤为明显。</p>
+
+<p>本文仅讨论如何简单地用日志的形式做到追踪调用方的的应用名与IP，详细的调用链追踪是一个系统的话题，不在本文讨论。</p>
+
+<p>要无缝的获取调用方的相关信息，我们可以借助Dubbo的Filter。通过在Provider端增加一个Filter做一个打印。但具体怎么获取呢？</p>
+
+<h2>IP</h2>
+
+<p>IP的获取比较简单，我们可以在Provier端直接使用如下代码获取：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">clientIp</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getRemoteHost</span><span class="o">();</span><span class="c1">//这次请求来自哪个ip</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>应用名</h2>
+
+<p>应用名则没那么容易，或许你看到过url中是有一个application的参数的，那我们是否可以使用以下代码来获取呢？</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">applicationFromContextUrl</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="s">&quot;application&quot;</span><span class="o">);</span><span class="c1">//得到的是本应用的名字</span>
+</span><span class='line'><span class="n">String</span> <span class="n">applicationFromInvokerURL</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">APPLICATION_KEY</span><span class="o">);</span><span class="c1">//得到的也是本应用的名字</span>
+</span><span class='line'><span class="n">LOG</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;applicationFromUrl = {}, applicationFromInvokerURL= {}&quot;</span><span class="o">,</span> <span class="n">applicationFromContextUrl</span><span class="o">,</span> <span class="n">applicationFromInvokerURL</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>答案是否定的，事实上，无论是Provider还是Consumer，当你使用这段代码获取的时候，拿到的都是本应用。</p>
+
+<p>所以需要获取调用方的应用名，我们需要显示的设置进来，这里就需要增加一个Consumer的Filter，获取consumer的应用名放入attachment中带到Provider，Provider在filter中从attachment中获取即可。</p>
+
+<p>Consumer Filter中传入应用名至attachment中：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//手动设置consumer的应用名进attachment</span>
+</span><span class='line'><span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">APPLICATION_KEY</span><span class="o">);</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">application</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">setAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">,</span> <span class="n">application</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Provider Filter中从其中获取调用方的应用名：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>一对Trace Filter示意</h2>
+
+<p>以下是一对消费者和生产者的Filter示意，实现了以下功能：</p>
+
+<ol>
+<li><p>Provider端记录了打印了调用方的IP和应用名</p></li>
+<li><p>Consumer端打印了服务提供方的IP即本次调用的耗时</p></li>
+</ol>
+
+
+<p>Consumer Filter：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Activate</span><span class="o">(</span><span class="n">group</span> <span class="o">=</span> <span class="n">Constants</span><span class="o">.</span><span class="na">CONSUMER</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTraceConsumerFilter</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">LOG</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTraceConsumerFilter</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Invoker</span><span class="o">&lt;?&gt;</span> <span class="n">invoker</span><span class="o">,</span> <span class="n">Invocation</span> <span class="n">invocation</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">RpcException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//手动设置consumer的应用名进attachment</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">APPLICATION_KEY</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">application</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">setAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">,</span> <span class="n">application</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Result</span> <span class="n">result</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">serverIp</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="kt">long</span> <span class="n">startTime</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">result</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">invocation</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">serverIp</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getRemoteHost</span><span class="o">();</span><span class="c1">//这次返回结果是哪个ip</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">Throwable</span> <span class="n">throwable</span> <span class="o">=</span> <span class="o">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">result</span><span class="o">.</span><span class="na">getException</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">Object</span> <span class="n">resultObj</span> <span class="o">=</span> <span class="o">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">result</span><span class="o">.</span><span class="na">getValue</span><span class="o">();</span>
+</span><span class='line'>            <span class="kt">long</span> <span class="n">costTime</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">-</span> <span class="n">startTime</span><span class="o">;</span>
+</span><span class='line'>            <span class="n">LOG</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[TRACE] Call {}, {}.{}() param:{}, return:{}, exception:{}, cost:{} ms!&quot;</span><span class="o">,</span> <span class="n">serverIp</span><span class="o">,</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getInterface</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getMethodName</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getArguments</span><span class="o">(),</span> <span class="n">resultObj</span><span class="o">,</span> <span class="n">throwable</span><span class="o">,</span> <span class="n">costTime</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Provider Filter：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Activate</span><span class="o">(</span><span class="n">group</span> <span class="o">=</span> <span class="n">Constants</span><span class="o">.</span><span class="na">PROVIDER</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTraceProviderFilter</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">LOG</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTraceProviderFilter</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Invoker</span><span class="o">&lt;?&gt;</span> <span class="n">invoker</span><span class="o">,</span> <span class="n">Invocation</span> <span class="n">invocation</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">RpcException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//上游如果手动设置了consumer的应用名进attachment，则取出来打印</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">clientIp</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getRemoteHost</span><span class="o">();</span><span class="c1">//这次请求来自哪个ip</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">from</span> <span class="o">=</span> <span class="n">clientIp</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">StringUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">application</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">from</span> <span class="o">=</span> <span class="n">application</span><span class="o">+</span><span class="s">&quot;(&quot;</span><span class="o">+</span><span class="n">clientIp</span><span class="o">+</span><span class="s">&quot;)&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">LOG</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;[Trace]From {}, {}.{}() param:{}&quot;</span><span class="o">,</span> <span class="n">from</span><span class="o">,</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getInterface</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getMethodName</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getArguments</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">invoker</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">invocation</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Filter 文件中配置启用（注：替换对应的包名）：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">logTraceProviderFilter</span><span class="o">=</span><span class="n">xxxx</span><span class="o">.</span><span class="na">LogTraceProviderFilter</span>
+</span><span class='line'><span class="n">logTraceConsumerFilter</span><span class="o">=</span><span class="n">xxxx</span><span class="o">.</span><span class="na">LogTraceConsumerFilter</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a></h1>
     
     
@@ -2740,118 +2948,6 @@ void messageQueueChanged(final String topic, final Set&lt;MessageQueue&gt; mqAll
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2017/02/16/rocketmq-clean-commitlog/">RocketMQ——消息文件过期原理</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2017-02-16T11:49:23+08:00'><span class='date'>2017-02-16 Thu</span> <span class='time'>11:49</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a> 文中提过，所有的消费均是客户端发起Pull请求的，告诉消息的offset位置，broker去查询并返回。但是有一点需要非常明确的是，消息消费后，消息其实<strong>并没有</strong>物理地被清除，这是一个非常特殊的设计。本文来探索此设计的一些细节。</p>
-
-<h2>消费完后的消息去哪里了？</h2>
-
-<p>消息的存储是一直存在于CommitLog中的。而由于CommitLog是以文件为单位（而非消息）存在的，CommitLog的设计是只允许顺序写的，且每个消息大小不定长，所以这决定了消息文件几乎不可能按照消息为单位删除（否则性能会极具下降，逻辑也非常复杂）。所以消息被消费了，消息所占据的物理空间并不会立刻被回收。</p>
-
-<p>但消息既然一直没有删除，那RocketMQ怎么知道应该投递过的消息就不再投递？——答案是客户端自身维护——客户端拉取完消息之后，在响应体中，broker会返回下一次应该拉取的位置，PushConsumer通过这一个位置，更新自己下一次的pull请求。这样就保证了正常情况下，消息只会被投递一次。</p>
-
-<h2>什么时候清理物理消息文件？</h2>
-
-<p>那消息文件到底删不删，什么时候删？</p>
-
-<p>消息存储在CommitLog之后，的确是会被清理的，但是这个清理只会在以下任一条件成立才会批量删除消息文件（CommitLog）：</p>
-
-<ol>
-<li>消息文件过期（默认72小时），且到达清理时点（默认是凌晨4点），删除过期文件。</li>
-<li>消息文件过期（默认72小时），且磁盘空间达到了水位线（默认75%），删除过期文件。</li>
-<li>磁盘已经达到必须释放的上限（85%水位线）的时候，则开始批量清理文件（无论是否过期），直到空间充足。</li>
-</ol>
-
-
-<p>注：若磁盘空间达到危险水位线（默认90%），出于保护自身的目的，broker会拒绝写入服务。</p>
-
-<h2>这样设计带来的好处</h2>
-
-<p>消息的物理文件一直存在，消费逻辑只是听客户端的决定而搜索出对应消息进行，这样做，笔者认为，有以下几个好处：</p>
-
-<ol>
-<li><p>一个消息很可能需要被N个消费组（设计上很可能就是系统）消费，但消息只需要存储一份，消费进度单独记录即可。这给强大的消息堆积能力提供了很好的支持——一个消息无需复制N份，就可服务N个消费组。</p></li>
-<li><p>由于消费从哪里消费的决定权一直都是客户端决定，所以只要消息还在，就可以消费到，这使得RocketMQ可以支持其他传统消息中间件不支持的回溯消费。即我可以通过设置消费进度回溯，就可以让我的消费组重新像放快照一样消费历史消息；或者我需要另一个系统也复制历史的数据，只需要另起一个消费组从头消费即可（前提是消息文件还存在）。</p></li>
-<li><p>消息索引服务。只要消息还存在就能被搜索出来。所以可以依靠消息的索引搜索出消息的各种原信息，方便事后排查问题。</p></li>
-</ol>
-
-
-<p>注：在消息清理的时候，由于消息文件默认是1GB，所以在清理的时候其实是在删除一个大文件操作，这对于IO的压力是非常大的，这时候如果有消息写入，写入的耗时会明显变高。这个现象可以在凌晨4点（默认删时间时点）后的附近观察得到。</p>
-
-<p>RocketMQ官方建议Linux下文件系统改为Ext4，对于文件删除操作相比Ext3有非常明显的提升。</p>
-
-<h2>跳过历史消息的处理</h2>
-
-<p>由于消息本身是没有过期的概念，只有文件才有过期的概念。那么对于很多业务场景——一个消息如果太老，是无需要被消费的，是不合适的。</p>
-
-<p>这种需要跳过历史消息的场景，在RocketMQ要怎么实现呢？</p>
-
-<p>对于一个全新的消费组，PushConsumer默认就是跳过以前的消息而从最尾开始消费的，解析请参看<a href="http://jaskey.github.io/blog/2017/01/25/rocketmq-consume-offset-management//" title="RocketMQ——消息ACK机制及消费进度管理">RocketMQ——消息ACK机制及消费进度管理</a>相关章节。</p>
-
-<p>但对于已存在的消费组，RocketMQ没有内置的跳过历史消息的实现，但有以下手段可以解决：</p>
-
-<ol>
-<li><p>自身的消费代码按照日期过滤，太老的消息直接过滤。如：</p>
-
-<pre><code>     @Override
-     public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context) {
-         for(MessageExt msg: msgs){
-             if(System.currentTimeMillis()-msg.getBornTimestamp()&gt;60*1000) {//一分钟之前的认为过期
-                 continue;//过期消息跳过
-             }
-
-             //do consume here
-
-         }
-         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
-     }
-</code></pre></li>
-<li><p>自身的消费代码代码判断消息的offset和MAX_OFFSET相差很远，认为是积压了很多，直接return CONSUME_SUCCESS过滤。</p>
-
-<pre><code>     @Override
-     public ConsumeConcurrentlyStatus consumeMessage(//
-         List&lt;MessageExt&gt; msgs, //
-         ConsumeConcurrentlyContext context) {
-         long offset = msgs.get(0).getQueueOffset();
-         String maxOffset = msgs.get(0).getProperty(MessageConst.PROPERTY_MAX_OFFSET);
-         long diff = Long. parseLong(maxOffset) - offset;
-         if (diff &gt; 100000) { //消息堆积了10W情况的特殊处理
-             return ConsumeConcurrentlyStatus. CONSUME_SUCCESS;
-         }
-         //do consume here
-         return ConsumeConcurrentlyStatus. CONSUME_SUCCESS;
-     }
-</code></pre></li>
-<li><p>消费者启动前，先调整该消费组的消费进度，再开始消费。可以人工使用控制台命令resetOffsetByTime把消费进度调整到后面，再启动消费。</p></li>
-<li>原理同3，但使用代码来控制。代码中调用内部的运维接口，具体代码实例祥见<code>ResetOffsetByTimeCommand.java</code>.</li>
-</ol>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -2867,6 +2963,10 @@ void messageQueueChanged(final String topic, final Set&lt;MessageQueue&gt; mqAll
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a>
       </li>
     
@@ -2880,10 +2980,6 @@ void messageQueueChanged(final String topic, final Set&lt;MessageQueue&gt; mqAll
     
       <li class="post">
         <a href="/blog/2020/03/18/sharding-sphere-data-desensitization/">基于Sharding Sphere实现数据“一键脱敏”</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/">SpringBoot+Dubbo优雅退出分析及方案</a>
       </li>
     
   </ul>

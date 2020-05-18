@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-15T02:17:11+08:00</updated>
+  <updated>2020-05-19T00:45:11+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,194 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Dubbo Provider中获取调用者的应用名与IP]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/05/18/dubbo-filter-trace-consumer/"/>
+    <updated>2020-05-18T19:25:21+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/05/18/dubbo-filter-trace-consumer</id>
+    <content type="html"><![CDATA[<p>在Dubbo做微服务的架构后，对于应用请求的追踪是尤为重要的。试想一下你有一个服务在告警，但你却不知道你的请求是从哪个服务/ip上过来的，这对于问题的定位会造成极大的困难。这对于一个上游调用方多、实例多的系统来说，问题尤为明显。</p>
+
+<p>本文仅讨论如何简单地用日志的形式做到追踪调用方的的应用名与IP，详细的调用链追踪是一个系统的话题，不在本文讨论。</p>
+
+<p>要无缝的获取调用方的相关信息，我们可以借助Dubbo的Filter。通过在Provider端增加一个Filter做一个打印。但具体怎么获取呢？</p>
+
+<h2>IP</h2>
+
+<p>IP的获取比较简单，我们可以在Provier端直接使用如下代码获取：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">clientIp</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getRemoteHost</span><span class="o">();</span><span class="c1">//这次请求来自哪个ip</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>应用名</h2>
+
+<p>应用名则没那么容易，或许你看到过url中是有一个application的参数的，那我们是否可以使用以下代码来获取呢？</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">applicationFromContextUrl</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="s">&quot;application&quot;</span><span class="o">);</span><span class="c1">//得到的是本应用的名字</span>
+</span><span class='line'><span class="n">String</span> <span class="n">applicationFromInvokerURL</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">APPLICATION_KEY</span><span class="o">);</span><span class="c1">//得到的也是本应用的名字</span>
+</span><span class='line'><span class="n">LOG</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;applicationFromUrl = {}, applicationFromInvokerURL= {}&quot;</span><span class="o">,</span> <span class="n">applicationFromContextUrl</span><span class="o">,</span> <span class="n">applicationFromInvokerURL</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>答案是否定的，事实上，无论是Provider还是Consumer，当你使用这段代码获取的时候，拿到的都是本应用。</p>
+
+<p>所以需要获取调用方的应用名，我们需要显示的设置进来，这里就需要增加一个Consumer的Filter，获取consumer的应用名放入attachment中带到Provider，Provider在filter中从attachment中获取即可。</p>
+
+<p>Consumer Filter中传入应用名至attachment中：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//手动设置consumer的应用名进attachment</span>
+</span><span class='line'><span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">APPLICATION_KEY</span><span class="o">);</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">application</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">setAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">,</span> <span class="n">application</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Provider Filter中从其中获取调用方的应用名：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>一对Trace Filter示意</h2>
+
+<p>以下是一对消费者和生产者的Filter示意，实现了以下功能：</p>
+
+<ol>
+<li><p>Provider端记录了打印了调用方的IP和应用名</p></li>
+<li><p>Consumer端打印了服务提供方的IP即本次调用的耗时</p></li>
+</ol>
+
+
+<p>Consumer Filter：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Activate</span><span class="o">(</span><span class="n">group</span> <span class="o">=</span> <span class="n">Constants</span><span class="o">.</span><span class="na">CONSUMER</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTraceConsumerFilter</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">LOG</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTraceConsumerFilter</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Invoker</span><span class="o">&lt;?&gt;</span> <span class="n">invoker</span><span class="o">,</span> <span class="n">Invocation</span> <span class="n">invocation</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">RpcException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//手动设置consumer的应用名进attachment</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getUrl</span><span class="o">().</span><span class="na">getParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">APPLICATION_KEY</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">application</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">setAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">,</span> <span class="n">application</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Result</span> <span class="n">result</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">serverIp</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="kt">long</span> <span class="n">startTime</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">result</span> <span class="o">=</span> <span class="n">invoker</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">invocation</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">serverIp</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getRemoteHost</span><span class="o">();</span><span class="c1">//这次返回结果是哪个ip</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">Throwable</span> <span class="n">throwable</span> <span class="o">=</span> <span class="o">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">result</span><span class="o">.</span><span class="na">getException</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">Object</span> <span class="n">resultObj</span> <span class="o">=</span> <span class="o">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">result</span><span class="o">.</span><span class="na">getValue</span><span class="o">();</span>
+</span><span class='line'>            <span class="kt">long</span> <span class="n">costTime</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">-</span> <span class="n">startTime</span><span class="o">;</span>
+</span><span class='line'>            <span class="n">LOG</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[TRACE] Call {}, {}.{}() param:{}, return:{}, exception:{}, cost:{} ms!&quot;</span><span class="o">,</span> <span class="n">serverIp</span><span class="o">,</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getInterface</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getMethodName</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getArguments</span><span class="o">(),</span> <span class="n">resultObj</span><span class="o">,</span> <span class="n">throwable</span><span class="o">,</span> <span class="n">costTime</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Provider Filter：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Activate</span><span class="o">(</span><span class="n">group</span> <span class="o">=</span> <span class="n">Constants</span><span class="o">.</span><span class="na">PROVIDER</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTraceProviderFilter</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">LOG</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTraceProviderFilter</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Invoker</span><span class="o">&lt;?&gt;</span> <span class="n">invoker</span><span class="o">,</span> <span class="n">Invocation</span> <span class="n">invocation</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">RpcException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//上游如果手动设置了consumer的应用名进attachment，则取出来打印</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">clientIp</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getRemoteHost</span><span class="o">();</span><span class="c1">//这次请求来自哪个ip</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">application</span> <span class="o">=</span> <span class="n">RpcContext</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getAttachment</span><span class="o">(</span><span class="s">&quot;dubboApplication&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">from</span> <span class="o">=</span> <span class="n">clientIp</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">StringUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">application</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">from</span> <span class="o">=</span> <span class="n">application</span><span class="o">+</span><span class="s">&quot;(&quot;</span><span class="o">+</span><span class="n">clientIp</span><span class="o">+</span><span class="s">&quot;)&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">LOG</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;[Trace]From {}, {}.{}() param:{}&quot;</span><span class="o">,</span> <span class="n">from</span><span class="o">,</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getInterface</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getMethodName</span><span class="o">(),</span> <span class="n">invocation</span><span class="o">.</span><span class="na">getArguments</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">invoker</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">invocation</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Filter 文件中配置启用（注：替换对应的包名）：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">logTraceProviderFilter</span><span class="o">=</span><span class="n">xxxx</span><span class="o">.</span><span class="na">LogTraceProviderFilter</span>
+</span><span class='line'><span class="n">logTraceConsumerFilter</span><span class="o">=</span><span class="n">xxxx</span><span class="o">.</span><span class="na">LogTraceConsumerFilter</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[利用Java进程名进行jstat -gc]]></title>
@@ -3786,54 +3974,6 @@ SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索
 select * from dept where loc='bj' union
 select * from dept where deptno=45
 </code></pre>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Git中只merge部分commit]]></title>
-    <link href="https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick/"/>
-    <updated>2015-12-22T16:12:38+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2015/12/22/git-cherry-pick</id>
-    <content type="html"><![CDATA[<h2>cherry-pick</h2>
-
-<p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
-
-<pre><code>git cherry-pick &lt;commit 号&gt;
-</code></pre>
-
-<p>如：</p>
-
-<pre><code>git cherry-pick e43a6fd3e94888d76779ad79fb568ed180e5fcdf
-</code></pre>
-
-<p>这样就只会把这个<code>e43a6fd3e94888d76779ad79fb568ed180e5fcdf</code> commit的内容pull到当前的分支，不过你会得到一个新的commit。
-这样就可以按需merge需要的commit,而不需要的就可以直接废弃咯。</p>
-
-<h3>多个commit:</h3>
-
-<p>可以用空格指定多个commit:</p>
-
-<pre><code>git cherry-pick A B C D E F
-</code></pre>
-
-<!--more-->
-
-
-<h2>范围merge:</h2>
-
-<p><code>cherry-pick</code>可以范围merge ,使用 两次版本间使用<code>..</code>连起来：</p>
-
-<pre><code>cherry-pick A..B
-</code></pre>
-
-<p>这样会把从从版本A（不包含）到B（包含）即（A，B]的版本pull到当前分支</p>
-
-<p>甚至，可以使用多段，同样使用空格隔开：</p>
-
-<pre><code>git cherry-pick A..B C..D E..F
-</code></pre>
-
-<p>注：中间需要自己解决冲突，若出现冲突，可以尝试使用 <code>git mergetool</code> 使用GUI工具解决</p>
 ]]></content>
   </entry>
   

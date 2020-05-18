@@ -77,6 +77,60 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015/12/22/git-cherry-pick/">Git中只merge部分commit</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-22T16:12:38+08:00'><span class='date'>2015-12-22 Tue</span> <span class='time'>16:12</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>cherry-pick</h2>
+
+<p>在Git 1.7.2以上的版本引入了一个 cheery-pick的命令可以只merge 部分的commit而不用直接把整个分支merge过来</p>
+
+<pre><code>git cherry-pick &lt;commit 号&gt;
+</code></pre>
+
+<p>如：</p>
+
+<pre><code>git cherry-pick e43a6fd3e94888d76779ad79fb568ed180e5fcdf
+</code></pre>
+
+<p>这样就只会把这个<code>e43a6fd3e94888d76779ad79fb568ed180e5fcdf</code> commit的内容pull到当前的分支，不过你会得到一个新的commit。
+这样就可以按需merge需要的commit,而不需要的就可以直接废弃咯。</p>
+
+<h3>多个commit:</h3>
+
+<p>可以用空格指定多个commit:</p>
+
+<pre><code>git cherry-pick A B C D E F
+</code></pre>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015/12/22/git-cherry-pick/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015/08/04/css-vertical-align/">CSS实现垂直居中</a></h1>
     
     
@@ -861,62 +915,6 @@ p.publicMethod();
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/02/10/jquery-block-ui/">jQuery BlockUI 的使用</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-02-10T12:05:30+08:00'><span class='date'>2015-02-10 Tue</span> <span class='time'>12:05</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>jQuery BlockUI Plugin<a href="http://malsup.github.io/jquery.blockUI.js" title="下载链接">(下载链接)</a>  能做到方便得屏蔽整个page或者某些元素。当用于异步请求的时候，尤为有用。</p>
-
-<p>用法也非常简单。以下简单的记录下使用笔记：</p>
-
-<ol>
-<li>使用前，需要先引入jQuery 再引入jQuery blockUI。</li>
-<li>当需要全屏block时候,使用API <code>$.blockUI()</code>;,unblock使用<code>$.unblockUI()</code></li>
-<li>部分的Element block时，使用 <code>$("选择器").block();</code>unblock使用<code>$(选择器).unblock()</code>即可</li>
-</ol>
-
-
-<p>需要自定义block的消息或者样式，可以传入一个像下面的一个对象：</p>
-
-<pre><code>            {
-                message: '&lt;h1&gt;Processing&lt;/h1&gt;',//显示的消息
-                centerX: false,//当element block时候，注意设置此属性为false,否则位置不生效
-                centerY: false,
-                css: {
-                    top: '5%',
-                    left: '5%'
-                    ....//其他CSS属性
-                }
-            }
-</code></pre>
-
-<p>关于此对象的更多细节，可以查看：<a href="http://malsup.com/jquery/block/#options">http://malsup.com/jquery/block/#options</a></p>
-
-<p>各种demo可以查看：<a href="http://malsup.com/jquery/block/#demos">http://malsup.com/jquery/block/#demos</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -934,6 +932,10 @@ p.publicMethod();
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a>
       </li>
     
@@ -947,10 +949,6 @@ p.publicMethod();
     
       <li class="post">
         <a href="/blog/2020/03/18/sharding-sphere-data-desensitization/">基于Sharding Sphere实现数据“一键脱敏”</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/">SpringBoot+Dubbo优雅退出分析及方案</a>
       </li>
     
   </ul>

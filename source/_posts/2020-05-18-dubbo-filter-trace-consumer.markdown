@@ -4,8 +4,8 @@ title: "Dubbo Provider中获取调用者的应用名与IP"
 date: 2020-05-18 19:25:21 +0800
 comments: true
 categories: dubbo 
-description: git中只merge部分commit
-keywords: dubbo , java, filter
+description: 获取Dubbo调用方的应用名和IP
+keywords: dubbo , java, filter, consumer
 ---
 
 

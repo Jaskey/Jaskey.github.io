@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-19T00:45:11+08:00</updated>
+  <updated>2020-05-19T22:04:57+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,329 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[优雅地处理重复请求（并发请求）——附Java实现]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/05/19/handle-duplicate-request/"/>
+    <updated>2020-05-19T19:52:01+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/05/19/handle-duplicate-request</id>
+    <content type="html"><![CDATA[<p>对于一些用户请求，在某些情况下是可能重复发送的，如果是查询类操作并无大碍，但其中有些是涉及写入操作的，一旦重复了，可能会导致很严重的后果，例如交易的接口如果重复请求可能会重复下单。</p>
+
+<p>重复的场景有可能是：</p>
+
+<ol>
+<li>黑客拦截了请求，重放</li>
+<li>前端/客户端因为某些原因请求重复发送了，或者用户在很短的时间内重复点击了。</li>
+<li>网关重发</li>
+<li>&hellip;.</li>
+</ol>
+
+
+<p>本文讨论的是如果在服务端优雅地统一处理这种情况，如何禁止用户重复点击等客户端操作不在本文的讨论范畴。</p>
+
+<h2>利用唯一请求编号去重</h2>
+
+<p>你可能会想到的是，只要请求有唯一的请求编号，那么就能借用Redis做这个去重——只要这个唯一请求编号在redis存在，证明处理过，那么就认为是重复的</p>
+
+<p>代码大概如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;REQ12343456788&quot;</span><span class="o">;</span><span class="c1">//请求唯一编号</span>
+</span><span class='line'>    <span class="kt">long</span> <span class="n">expireTime</span> <span class="o">=</span>  <span class="mi">1000</span><span class="o">;</span><span class="c1">// 1000毫秒过期，1000ms内的重复请求会认为重复</span>
+</span><span class='line'>    <span class="kt">long</span> <span class="n">expireAt</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">+</span> <span class="n">expireTime</span><span class="o">;</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">val</span> <span class="o">=</span> <span class="s">&quot;expireAt@&quot;</span> <span class="o">+</span> <span class="n">expireAt</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//redis key还存在的话要就认为请求是重复的</span>
+</span><span class='line'>    <span class="n">Boolean</span> <span class="n">firstSet</span> <span class="o">=</span> <span class="n">stringRedisTemplate</span><span class="o">.</span><span class="na">execute</span><span class="o">((</span><span class="n">RedisCallback</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;)</span> <span class="n">connection</span> <span class="o">-&gt;</span> <span class="n">connection</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">KEY</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">val</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">Expiration</span><span class="o">.</span><span class="na">milliseconds</span><span class="o">(</span><span class="n">expireTime</span><span class="o">),</span> <span class="n">RedisStringCommands</span><span class="o">.</span><span class="na">SetOption</span><span class="o">.</span><span class="na">SET_IF_ABSENT</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isConsiderDup</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">firstSet</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">firstSet</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 第一次访问</span>
+</span><span class='line'>        <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">// redis值已存在，认为是重复了</span>
+</span><span class='line'>        <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>业务参数去重</h2>
+
+<p>上面的方案能解决具备唯一请求编号的场景，例如每次写请求之前都是服务端返回一个唯一编号给客户端，客户端带着这个请求号做请求，服务端即可完成去重拦截。</p>
+
+<p>但是，很多的场景下，请求并不会带这样的唯一编号！那么我们能否针对请求的参数作为一个请求的标识呢？</p>
+
+<p>先考虑简单的场景，假设请求参数只有一个字段reqParam，我们可以利用以下标识去判断这个请求是否重复。 <strong>用户ID:接口名:请求参数</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;dedup:U=&quot;</span><span class="o">+</span><span class="n">userId</span> <span class="o">+</span> <span class="s">&quot;M=&quot;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&quot;P=&quot;</span> <span class="o">+</span> <span class="n">reqParam</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么当同一个用户访问同一个接口，带着同样的reqParam过来，我们就能定位到他是重复的了。</p>
+
+<p>但是问题是，我们的接口通常不是这么简单，以目前的主流，我们的参数通常是一个JSON。那么针对这种场景，我们怎么去重呢？</p>
+
+<h3>计算请求参数的摘要作为参数标识</h3>
+
+<p>假设我们把请求参数（JSON）按KEY做升序排序，排序后拼成一个字符串，作为KEY值呢？但这可能非常的长，所以我们可以考虑对这个字符串求一个MD5作为参数的摘要，以这个摘要去取代reqParam的位置。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;dedup:U=&quot;</span><span class="o">+</span><span class="n">userId</span> <span class="o">+</span> <span class="s">&quot;M=&quot;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&quot;P=&quot;</span> <span class="o">+</span> <span class="n">reqParamMD5</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样，请求的唯一标识就打上了！</p>
+
+<p>注：MD5理论上可能会重复，但是去重通常是短时间窗口内的去重（例如一秒），一个短时间内同一个用户同样的接口能拼出不同的参数导致一样的MD5几乎是不可能的。</p>
+
+<h3>继续优化，考虑剔除部分时间因子</h3>
+
+<p>上面的问题其实已经是一个很不错的解决方案了，但是实际投入使用的时候可能发现有些问题：某些请求用户短时间内重复的点击了（例如1000毫秒发送了三次请求），但绕过了上面的去重判断（不同的KEY值）。</p>
+
+<p>原因是这些请求参数的字段里面，<strong>是带时间字段的</strong>，这个字段标记用户请求的时间，服务端可以借此丢弃掉一些老的请求（例如5秒前）。如下面的例子，请求的其他参数是一样的，除了请求时间相差了一秒：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//两个请求一样，但是请求时间差一秒</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120001\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req2</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120002\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这种请求，我们也很可能需要挡住后面的重复请求。所以求业务参数摘要之前，需要剔除这类时间字段。还有类似的字段可能是GPS的经纬度字段（重复请求间可能有极小的差别）。</p>
+
+<h2>请求去重工具类，Java实现</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ReqDedupHelper</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     *</span>
+</span><span class='line'><span class="cm">     * @param reqJSON 请求的参数，这里通常是JSON</span>
+</span><span class='line'><span class="cm">     * @param excludeKeys 请求参数里面要去除哪些字段再求摘要</span>
+</span><span class='line'><span class="cm">     * @return 去除参数的MD5摘要</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">dedupParamMD5</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">reqJSON</span><span class="o">,</span> <span class="n">String</span><span class="o">...</span> <span class="n">excludeKeys</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">decreptParam</span> <span class="o">=</span> <span class="n">reqJSON</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">TreeMap</span> <span class="n">paramTreeMap</span> <span class="o">=</span> <span class="n">JSON</span><span class="o">.</span><span class="na">parseObject</span><span class="o">(</span><span class="n">decreptParam</span><span class="o">,</span> <span class="n">TreeMap</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">excludeKeys</span><span class="o">!=</span><span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">dedupExcludeKeys</span> <span class="o">=</span> <span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">excludeKeys</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(!</span><span class="n">dedupExcludeKeys</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>                <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">dedupExcludeKey</span> <span class="o">:</span> <span class="n">dedupExcludeKeys</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                    <span class="n">paramTreeMap</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">dedupExcludeKey</span><span class="o">);</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">paramTreeMapJSON</span> <span class="o">=</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">paramTreeMap</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">md5deDupParam</span> <span class="o">=</span> <span class="n">jdkMD5</span><span class="o">(</span><span class="n">paramTreeMapJSON</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">&quot;md5deDupParam = {}, excludeKeys = {} {}&quot;</span><span class="o">,</span> <span class="n">md5deDupParam</span><span class="o">,</span> <span class="n">Arrays</span><span class="o">.</span><span class="na">deepToString</span><span class="o">(</span><span class="n">excludeKeys</span><span class="o">),</span> <span class="n">paramTreeMapJSON</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">md5deDupParam</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">jdkMD5</span><span class="o">(</span><span class="n">String</span> <span class="n">src</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">res</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">MessageDigest</span> <span class="n">messageDigest</span> <span class="o">=</span> <span class="n">MessageDigest</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;MD5&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="kt">byte</span><span class="o">[]</span> <span class="n">mdBytes</span> <span class="o">=</span> <span class="n">messageDigest</span><span class="o">.</span><span class="na">digest</span><span class="o">(</span><span class="n">src</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">res</span> <span class="o">=</span> <span class="n">DatatypeConverter</span><span class="o">.</span><span class="na">printHexBinary</span><span class="o">(</span><span class="n">mdBytes</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下面是一些测试日志：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">//两个请求一样，但是请求时间差一秒</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120001\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req2</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120002\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//全参数比对，所以两个参数MD5不同</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD5</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD52</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req2</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;req1MD5 = &quot;</span><span class="o">+</span> <span class="n">dedupMD5</span><span class="o">+</span><span class="s">&quot; , req2MD5=&quot;</span><span class="o">+</span><span class="n">dedupMD52</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//去除时间参数比对，MD5相同</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD53</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req</span><span class="o">,</span><span class="s">&quot;requestTime&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD54</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req2</span><span class="o">,</span><span class="s">&quot;requestTime&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;req1MD5 = &quot;</span><span class="o">+</span> <span class="n">dedupMD53</span><span class="o">+</span><span class="s">&quot; , req2MD5=&quot;</span><span class="o">+</span><span class="n">dedupMD54</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>日志输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">req1MD5</span> <span class="o">=</span> <span class="mi">9</span><span class="n">E054D36439EBDD0604C5E65EB5C8267</span> <span class="o">,</span> <span class="n">req2MD5</span><span class="o">=</span><span class="n">A2D20BAC78551C4CA09BEF97FE468A3F</span>
+</span><span class='line'><span class="n">req1MD5</span> <span class="o">=</span> <span class="n">C2A36FED15128E9E878583CAAAFEFDE9</span> <span class="o">,</span> <span class="n">req2MD5</span><span class="o">=</span><span class="n">C2A36FED15128E9E878583CAAAFEFDE9</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>日志说明：</p>
+
+<ul>
+<li>一开始两个参数由于requestTime是不同的，所以求去重参数摘要的时候可以发现两个值是不一样的</li>
+<li>第二次调用的时候，去除了requestTime再求摘要（第二个参数中传入了&#8221;requestTime&#8221;），则发现两个摘要是一样的，符合预期。</li>
+</ul>
+
+
+<h2>总结</h2>
+
+<p>至此，我们可以得到完整的去重解决方案，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">userId</span><span class="o">=</span> <span class="s">&quot;12345678&quot;</span><span class="o">;</span><span class="c1">//用户</span>
+</span><span class='line'><span class="n">String</span> <span class="n">method</span> <span class="o">=</span> <span class="s">&quot;pay&quot;</span><span class="o">;</span><span class="c1">//接口名</span>
+</span><span class='line'><span class="n">String</span> <span class="n">dedupMD5</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req</span><span class="o">,</span><span class="s">&quot;requestTime&quot;</span><span class="o">);</span><span class="c1">//计算请求参数摘要，其中剔除里面请求时间的干扰</span>
+</span><span class='line'><span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;dedup:U=&quot;</span> <span class="o">+</span> <span class="n">userId</span> <span class="o">+</span> <span class="s">&quot;M=&quot;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&quot;P=&quot;</span> <span class="o">+</span> <span class="n">dedupMD5</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">long</span> <span class="n">expireTime</span> <span class="o">=</span>  <span class="mi">1000</span><span class="o">;</span><span class="c1">// 1000毫秒过期，1000ms内的重复请求会认为重复</span>
+</span><span class='line'><span class="kt">long</span> <span class="n">expireAt</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">+</span> <span class="n">expireTime</span><span class="o">;</span>
+</span><span class='line'><span class="n">String</span> <span class="n">val</span> <span class="o">=</span> <span class="s">&quot;expireAt@&quot;</span> <span class="o">+</span> <span class="n">expireAt</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// NOTE:直接SETNX不支持带过期时间，所以设置+过期不是原子操作，极端情况下可能设置了就不过期了，后面相同请求可能会误以为需要去重，所以这里使用底层API，保证SETNX+过期时间是原子操作</span>
+</span><span class='line'><span class="n">Boolean</span> <span class="n">firstSet</span> <span class="o">=</span> <span class="n">stringRedisTemplate</span><span class="o">.</span><span class="na">execute</span><span class="o">((</span><span class="n">RedisCallback</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;)</span> <span class="n">connection</span> <span class="o">-&gt;</span> <span class="n">connection</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">KEY</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">val</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">Expiration</span><span class="o">.</span><span class="na">milliseconds</span><span class="o">(</span><span class="n">expireTime</span><span class="o">),</span>
+</span><span class='line'>        <span class="n">RedisStringCommands</span><span class="o">.</span><span class="na">SetOption</span><span class="o">.</span><span class="na">SET_IF_ABSENT</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isConsiderDup</span><span class="o">;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">firstSet</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">firstSet</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 第一次访问，追加个超时时间，超时时间内去重</span>
+</span><span class='line'>    <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">// redis值已存在，可以认为是重复了</span>
+</span><span class='line'>    <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Dubbo Provider中获取调用者的应用名与IP]]></title>
@@ -3898,82 +4221,6 @@ management.address=127.0.0.1
 </code></pre>
 
 <p>即可在本地运行时选择本地的配置文件进行日志配置。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[避免写出不走索引的SQL, MySQL]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index/"/>
-    <updated>2016-01-19T20:24:16+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/01/19/mysql-bad-sql-with-no-index</id>
-    <content type="html"><![CDATA[<p>在MySQL中，并不是你建立了索引，并且你在SQL中使用到了该列，MySQL就肯定会使用到那些索引的，有一些情况很可能在你不知不觉中，你就“成功的避开了”MySQL的所有索引。</p>
-
-<p>现假设有<code>t_stu</code>表，age,sname上建立了索引</p>
-
-<h3>索引列参与计算</h3>
-
-<p>如果where条件中<code>age</code>列中使用了计算，则不会使用该索引</p>
-
-<pre><code>SELECT `sname` FROM `t_stu` WHERE `age`=20;-- 会使用索引
-SELECT `sname` FROM `t_stu` WHERE `age`+10=30;-- 不会使用索引！！因为所有索引列参与了计算
-SELECT `sname` FROM `t_stu` WHERE `age`=30-10;-- 会使用索引
-</code></pre>
-
-<p>故，如果需要计算，千万不要计算到索引列，想方设法让其计算到表达式的另一边去。</p>
-
-<h3>索引列使用了函数</h3>
-
-<p>同样的道理，索引列使用了函数，一样会导致相同的后果</p>
-
-<pre><code>SELECT `sname` FROM `stu` WHERE concat(`sname`,'abc') ='Jaskeyabc'; -- 不会使用索引,因为使用了函数运算,原理与上面相同
-SELECT `sname` FROM `stu` WHERE `sname` =concat('Jaskey','abc'); -- 会使用索引
-</code></pre>
-
-<h3>索引列使用了Like %XXX</h3>
-
-<pre><code>SELECT * FROM `houdunwang` WHERE `uname` LIKE '前缀就走索引%' -- 走索引
-SELECT * FROM `houdunwang` WHERE `uname` LIKE '后缀不走索引%' -- 不走索引
-</code></pre>
-
-<p>所以当需要搜索email列中.com结尾的字符串而email上希望走索引时候,可以考虑数据库存储一个反向的内容reverse_email</p>
-
-<pre><code>SELECT * FROM `table` WHERE `reverse_email` LIKE REVERSE('%.com'); -- 走索引
-</code></pre>
-
-<p>注：以上如果你使用<code>REVERSE(email) = REVERSE('%.com')</code>，一样得不到你想要的结果，因为你在索引列email列上使用了函数，MySQL不会使用该列索引</p>
-
-<p>同样的，索引列上使用正则表达式也不会走索引。</p>
-
-<h3>字符串列与数字直接比较</h3>
-
-<p>这是一个坑，假设有一张表,里面的a列是一个<strong>字符char类型</strong>,且a上建立了索引,你用它与数字类型做比较判断的话：</p>
-
-<pre><code> CREATE TABLE `t1` (`a` char(10));
-
- SELECT * FROM `t1` WHERE `a`='1' -- 走索引
- SELECT * FROM `t2` WHERE `a`=1 -- 字符串和数字比较，不走索引！
-</code></pre>
-
-<p>但是如果那个表那个列是一个数字类型，拿来和字符类型的做比较，则不会影响到使用索引</p>
-
-<pre><code> CREATE TABLE `t2` (`b` int);
-
- SELECT * FROM `t2` WHERE `b`='1' -- 虽然b是数字类型，和'1'比较依然走索引
-</code></pre>
-
-<p>但是，无论如何，这种额外的隐式类型转换都是开销，而且由于有字符和数字比就不走索引的情况，故建议<strong>避免一切隐式类型转换</strong></p>
-
-<h3>尽量避免 OR 操作</h3>
-
-<pre><code>select * from dept where dname='jaskey' or loc='bj' or deptno=45 --如果条件中有or,即使其中有条件带索引也不会使用。换言之,就是要求使用的所有字段,都必须建立索引
-</code></pre>
-
-<p>所以除非每个列都建立了索引，否则不建议使用OR，在多列OR中，可以考虑用UNION 替换</p>
-
-<pre><code>select * from dept where dname='jaskey' union
-select * from dept where loc='bj' union
-select * from dept where deptno=45
-</code></pre>
 ]]></content>
   </entry>
   

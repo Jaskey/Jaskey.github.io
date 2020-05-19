@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>https://jaskey.github.io/blog/2020/05/19/handle-duplicate-request/</loc>
+<lastmod>2020-05-19T19:52:01+08:00</lastmod>
+</url>
+<url>
 <loc>https://jaskey.github.io/blog/2020/05/18/dubbo-filter-trace-consumer/</loc>
 <lastmod>2020-05-18T19:25:21+08:00</lastmod>
 </url>
@@ -338,6 +342,21 @@
 </url>
 <url>
 <loc>https://jaskey.github.io/blog/categories/dubbo/</loc>
+</url>
+<url>
+<loc>https://jaskey.github.io/posts/2/</loc>
+</url>
+<url>
+<loc>https://jaskey.github.io/posts/3/</loc>
+</url>
+<url>
+<loc>https://jaskey.github.io/posts/4/</loc>
+</url>
+<url>
+<loc>https://jaskey.github.io/posts/5/</loc>
+</url>
+<url>
+<loc>https://jaskey.github.io/posts/6/</loc>
 </url>
 <url>
 <loc>https://jaskey.github.io/baidu_verify_fEOrou9JEs.html</loc>

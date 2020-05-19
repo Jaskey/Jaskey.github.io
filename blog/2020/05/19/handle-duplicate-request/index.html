@@ -1,0 +1,651 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>优雅地处理重复请求（并发请求）——附Java实现 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="一秒内的业务重复请求如何去重，本文提供一个优雅的、通用的解决方案">
+  <meta name="keywords" content="去重, 重复请求, 并发请求">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="https://Jaskey.github.io/blog/2020/05/19/handle-duplicate-request">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+
+  <!--linkedin source-->
+  <script type="text/javascript" src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">主页</a></li>
+  <li><a href="/blog/archives/">所有博文</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">优雅地处理重复请求（并发请求）——附Java实现</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2020-05-19T19:52:01+08:00'><span class='date'>2020-05-19 Tue</span> <span class='time'>19:52</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>对于一些用户请求，在某些情况下是可能重复发送的，如果是查询类操作并无大碍，但其中有些是涉及写入操作的，一旦重复了，可能会导致很严重的后果，例如交易的接口如果重复请求可能会重复下单。</p>
+
+<p>重复的场景有可能是：</p>
+
+<ol>
+<li>黑客拦截了请求，重放</li>
+<li>前端/客户端因为某些原因请求重复发送了，或者用户在很短的时间内重复点击了。</li>
+<li>网关重发</li>
+<li>&hellip;.</li>
+</ol>
+
+
+<p>本文讨论的是如果在服务端优雅地统一处理这种情况，如何禁止用户重复点击等客户端操作不在本文的讨论范畴。</p>
+
+<h2>利用唯一请求编号去重</h2>
+
+<p>你可能会想到的是，只要请求有唯一的请求编号，那么就能借用Redis做这个去重——只要这个唯一请求编号在redis存在，证明处理过，那么就认为是重复的</p>
+
+<p>代码大概如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;REQ12343456788&quot;</span><span class="o">;</span><span class="c1">//请求唯一编号</span>
+</span><span class='line'>    <span class="kt">long</span> <span class="n">expireTime</span> <span class="o">=</span>  <span class="mi">1000</span><span class="o">;</span><span class="c1">// 1000毫秒过期，1000ms内的重复请求会认为重复</span>
+</span><span class='line'>    <span class="kt">long</span> <span class="n">expireAt</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">+</span> <span class="n">expireTime</span><span class="o">;</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">val</span> <span class="o">=</span> <span class="s">&quot;expireAt@&quot;</span> <span class="o">+</span> <span class="n">expireAt</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//redis key还存在的话要就认为请求是重复的</span>
+</span><span class='line'>    <span class="n">Boolean</span> <span class="n">firstSet</span> <span class="o">=</span> <span class="n">stringRedisTemplate</span><span class="o">.</span><span class="na">execute</span><span class="o">((</span><span class="n">RedisCallback</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;)</span> <span class="n">connection</span> <span class="o">-&gt;</span> <span class="n">connection</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">KEY</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">val</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">Expiration</span><span class="o">.</span><span class="na">milliseconds</span><span class="o">(</span><span class="n">expireTime</span><span class="o">),</span> <span class="n">RedisStringCommands</span><span class="o">.</span><span class="na">SetOption</span><span class="o">.</span><span class="na">SET_IF_ABSENT</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isConsiderDup</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">firstSet</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">firstSet</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 第一次访问</span>
+</span><span class='line'>        <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">// redis值已存在，认为是重复了</span>
+</span><span class='line'>        <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>业务参数去重</h2>
+
+<p>上面的方案能解决具备唯一请求编号的场景，例如每次写请求之前都是服务端返回一个唯一编号给客户端，客户端带着这个请求号做请求，服务端即可完成去重拦截。</p>
+
+<p>但是，很多的场景下，请求并不会带这样的唯一编号！那么我们能否针对请求的参数作为一个请求的标识呢？</p>
+
+<p>先考虑简单的场景，假设请求参数只有一个字段reqParam，我们可以利用以下标识去判断这个请求是否重复。 <strong>用户ID:接口名:请求参数</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;dedup:U=&quot;</span><span class="o">+</span><span class="n">userId</span> <span class="o">+</span> <span class="s">&quot;M=&quot;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&quot;P=&quot;</span> <span class="o">+</span> <span class="n">reqParam</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么当同一个用户访问同一个接口，带着同样的reqParam过来，我们就能定位到他是重复的了。</p>
+
+<p>但是问题是，我们的接口通常不是这么简单，以目前的主流，我们的参数通常是一个JSON。那么针对这种场景，我们怎么去重呢？</p>
+
+<h3>计算请求参数的摘要作为参数标识</h3>
+
+<p>假设我们把请求参数（JSON）按KEY做升序排序，排序后拼成一个字符串，作为KEY值呢？但这可能非常的长，所以我们可以考虑对这个字符串求一个MD5作为参数的摘要，以这个摘要去取代reqParam的位置。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;dedup:U=&quot;</span><span class="o">+</span><span class="n">userId</span> <span class="o">+</span> <span class="s">&quot;M=&quot;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&quot;P=&quot;</span> <span class="o">+</span> <span class="n">reqParamMD5</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样，请求的唯一标识就打上了！</p>
+
+<p>注：MD5理论上可能会重复，但是去重通常是短时间窗口内的去重（例如一秒），一个短时间内同一个用户同样的接口能拼出不同的参数导致一样的MD5几乎是不可能的。</p>
+
+<h3>继续优化，考虑剔除部分时间因子</h3>
+
+<p>上面的问题其实已经是一个很不错的解决方案了，但是实际投入使用的时候可能发现有些问题：某些请求用户短时间内重复的点击了（例如1000毫秒发送了三次请求），但绕过了上面的去重判断（不同的KEY值）。</p>
+
+<p>原因是这些请求参数的字段里面，<strong>是带时间字段的</strong>，这个字段标记用户请求的时间，服务端可以借此丢弃掉一些老的请求（例如5秒前）。如下面的例子，请求的其他参数是一样的，除了请求时间相差了一秒：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//两个请求一样，但是请求时间差一秒</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120001\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req2</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120002\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这种请求，我们也很可能需要挡住后面的重复请求。所以求业务参数摘要之前，需要剔除这类时间字段。还有类似的字段可能是GPS的经纬度字段（重复请求间可能有极小的差别）。</p>
+
+<h2>请求去重工具类，Java实现</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ReqDedupHelper</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     *</span>
+</span><span class='line'><span class="cm">     * @param reqJSON 请求的参数，这里通常是JSON</span>
+</span><span class='line'><span class="cm">     * @param excludeKeys 请求参数里面要去除哪些字段再求摘要</span>
+</span><span class='line'><span class="cm">     * @return 去除参数的MD5摘要</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">dedupParamMD5</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">reqJSON</span><span class="o">,</span> <span class="n">String</span><span class="o">...</span> <span class="n">excludeKeys</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">decreptParam</span> <span class="o">=</span> <span class="n">reqJSON</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">TreeMap</span> <span class="n">paramTreeMap</span> <span class="o">=</span> <span class="n">JSON</span><span class="o">.</span><span class="na">parseObject</span><span class="o">(</span><span class="n">decreptParam</span><span class="o">,</span> <span class="n">TreeMap</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">excludeKeys</span><span class="o">!=</span><span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">dedupExcludeKeys</span> <span class="o">=</span> <span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">excludeKeys</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(!</span><span class="n">dedupExcludeKeys</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>                <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">dedupExcludeKey</span> <span class="o">:</span> <span class="n">dedupExcludeKeys</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                    <span class="n">paramTreeMap</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">dedupExcludeKey</span><span class="o">);</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">paramTreeMapJSON</span> <span class="o">=</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">paramTreeMap</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">md5deDupParam</span> <span class="o">=</span> <span class="n">jdkMD5</span><span class="o">(</span><span class="n">paramTreeMapJSON</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">&quot;md5deDupParam = {}, excludeKeys = {} {}&quot;</span><span class="o">,</span> <span class="n">md5deDupParam</span><span class="o">,</span> <span class="n">Arrays</span><span class="o">.</span><span class="na">deepToString</span><span class="o">(</span><span class="n">excludeKeys</span><span class="o">),</span> <span class="n">paramTreeMapJSON</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">md5deDupParam</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">jdkMD5</span><span class="o">(</span><span class="n">String</span> <span class="n">src</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">res</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">MessageDigest</span> <span class="n">messageDigest</span> <span class="o">=</span> <span class="n">MessageDigest</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;MD5&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="kt">byte</span><span class="o">[]</span> <span class="n">mdBytes</span> <span class="o">=</span> <span class="n">messageDigest</span><span class="o">.</span><span class="na">digest</span><span class="o">(</span><span class="n">src</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">res</span> <span class="o">=</span> <span class="n">DatatypeConverter</span><span class="o">.</span><span class="na">printHexBinary</span><span class="o">(</span><span class="n">mdBytes</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下面是一些测试日志：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">//两个请求一样，但是请求时间差一秒</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120001\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">String</span> <span class="n">req2</span> <span class="o">=</span> <span class="s">&quot;{\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestTime\&quot; :\&quot;20190101120002\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestValue\&quot; :\&quot;1000\&quot;,\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;\&quot;requestKey\&quot; :\&quot;key\&quot;\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;}&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//全参数比对，所以两个参数MD5不同</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD5</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD52</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req2</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;req1MD5 = &quot;</span><span class="o">+</span> <span class="n">dedupMD5</span><span class="o">+</span><span class="s">&quot; , req2MD5=&quot;</span><span class="o">+</span><span class="n">dedupMD52</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//去除时间参数比对，MD5相同</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD53</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req</span><span class="o">,</span><span class="s">&quot;requestTime&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">dedupMD54</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req2</span><span class="o">,</span><span class="s">&quot;requestTime&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;req1MD5 = &quot;</span><span class="o">+</span> <span class="n">dedupMD53</span><span class="o">+</span><span class="s">&quot; , req2MD5=&quot;</span><span class="o">+</span><span class="n">dedupMD54</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>日志输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">req1MD5</span> <span class="o">=</span> <span class="mi">9</span><span class="n">E054D36439EBDD0604C5E65EB5C8267</span> <span class="o">,</span> <span class="n">req2MD5</span><span class="o">=</span><span class="n">A2D20BAC78551C4CA09BEF97FE468A3F</span>
+</span><span class='line'><span class="n">req1MD5</span> <span class="o">=</span> <span class="n">C2A36FED15128E9E878583CAAAFEFDE9</span> <span class="o">,</span> <span class="n">req2MD5</span><span class="o">=</span><span class="n">C2A36FED15128E9E878583CAAAFEFDE9</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>日志说明：</p>
+
+<ul>
+<li>一开始两个参数由于requestTime是不同的，所以求去重参数摘要的时候可以发现两个值是不一样的</li>
+<li>第二次调用的时候，去除了requestTime再求摘要（第二个参数中传入了&#8221;requestTime&#8221;），则发现两个摘要是一样的，符合预期。</li>
+</ul>
+
+
+<h2>总结</h2>
+
+<p>至此，我们可以得到完整的去重解决方案，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">userId</span><span class="o">=</span> <span class="s">&quot;12345678&quot;</span><span class="o">;</span><span class="c1">//用户</span>
+</span><span class='line'><span class="n">String</span> <span class="n">method</span> <span class="o">=</span> <span class="s">&quot;pay&quot;</span><span class="o">;</span><span class="c1">//接口名</span>
+</span><span class='line'><span class="n">String</span> <span class="n">dedupMD5</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ReqDedupHelper</span><span class="o">().</span><span class="na">dedupParamMD5</span><span class="o">(</span><span class="n">req</span><span class="o">,</span><span class="s">&quot;requestTime&quot;</span><span class="o">);</span><span class="c1">//计算请求参数摘要，其中剔除里面请求时间的干扰</span>
+</span><span class='line'><span class="n">String</span> <span class="n">KEY</span> <span class="o">=</span> <span class="s">&quot;dedup:U=&quot;</span> <span class="o">+</span> <span class="n">userId</span> <span class="o">+</span> <span class="s">&quot;M=&quot;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&quot;P=&quot;</span> <span class="o">+</span> <span class="n">dedupMD5</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">long</span> <span class="n">expireTime</span> <span class="o">=</span>  <span class="mi">1000</span><span class="o">;</span><span class="c1">// 1000毫秒过期，1000ms内的重复请求会认为重复</span>
+</span><span class='line'><span class="kt">long</span> <span class="n">expireAt</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">+</span> <span class="n">expireTime</span><span class="o">;</span>
+</span><span class='line'><span class="n">String</span> <span class="n">val</span> <span class="o">=</span> <span class="s">&quot;expireAt@&quot;</span> <span class="o">+</span> <span class="n">expireAt</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// NOTE:直接SETNX不支持带过期时间，所以设置+过期不是原子操作，极端情况下可能设置了就不过期了，后面相同请求可能会误以为需要去重，所以这里使用底层API，保证SETNX+过期时间是原子操作</span>
+</span><span class='line'><span class="n">Boolean</span> <span class="n">firstSet</span> <span class="o">=</span> <span class="n">stringRedisTemplate</span><span class="o">.</span><span class="na">execute</span><span class="o">((</span><span class="n">RedisCallback</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;)</span> <span class="n">connection</span> <span class="o">-&gt;</span> <span class="n">connection</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">KEY</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">val</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">Expiration</span><span class="o">.</span><span class="na">milliseconds</span><span class="o">(</span><span class="n">expireTime</span><span class="o">),</span>
+</span><span class='line'>        <span class="n">RedisStringCommands</span><span class="o">.</span><span class="na">SetOption</span><span class="o">.</span><span class="na">SET_IF_ABSENT</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isConsiderDup</span><span class="o">;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">firstSet</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">firstSet</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 第一次访问，追加个超时时间，超时时间内去重</span>
+</span><span class='line'>    <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">// redis值已存在，可以认为是重复了</span>
+</span><span class='line'>    <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2020-05-19T19:52:01+08:00'><span class='date'>2020-05-19 Tue</span> <span class='time'>19:52</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="horizontal" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a>
+     </div>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="https://Jaskey.github.io/blog/2020/05/19/handle-duplicate-request/" data-via="" data-counturl="https://Jaskey.github.io/blog/2020/05/19/handle-duplicate-request/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2020/05/18/dubbo-filter-trace-consumer/" title="Previous Post: Dubbo Provider中获取调用者的应用名与IP">&laquo; Dubbo Provider中获取调用者的应用名与IP</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近博文</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/04/27/gc-basics/">Java GC垃圾收集器这点小事</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+    <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="vertical" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a></div>
+</section>
+
+
+<section>
+  <h1>StackOverflow</h1>
+  <a href="http://stackoverflow.com/users/">
+	<img src="http://stackoverflow.com/users/flair/2087628.png" width="208" height="58" 
+		 alt="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers" 
+		 title="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers"
+	>
+  </a>
+</section>
+
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="https://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2020 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

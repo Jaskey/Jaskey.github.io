@@ -232,9 +232,9 @@ req1MD5 = C2A36FED15128E9E878583CAAAFEFDE9 , req2MD5=C2A36FED15128E9E878583CAAAF
             RedisStringCommands.SetOption.SET_IF_ABSENT));
 
     final boolean isConsiderDup;
-    if (firstSet != null && firstSet) {// 第一次访问，追加个超时时间，超时时间内去重
+    if (firstSet != null && firstSet) {
         isConsiderDup = false;
-    } else {// redis值已存在，可以认为是重复了
+    } else {
         isConsiderDup = true;
     }
 ```

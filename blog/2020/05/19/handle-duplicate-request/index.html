@@ -398,9 +398,9 @@
 </span><span class='line'>        <span class="n">RedisStringCommands</span><span class="o">.</span><span class="na">SetOption</span><span class="o">.</span><span class="na">SET_IF_ABSENT</span><span class="o">));</span>
 </span><span class='line'>
 </span><span class='line'><span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isConsiderDup</span><span class="o">;</span>
-</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">firstSet</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">firstSet</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 第一次访问，追加个超时时间，超时时间内去重</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">firstSet</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">firstSet</span><span class="o">)</span> <span class="o">{</span>
 </span><span class='line'>    <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">// redis值已存在，可以认为是重复了</span>
+</span><span class='line'><span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
 </span><span class='line'>    <span class="n">isConsiderDup</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
 </span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
@@ -488,6 +488,8 @@ var jiathis_config = {data_track_clickback:'true'};
         <a class="basic-alignment left" href="/blog/2020/05/18/dubbo-filter-trace-consumer/" title="Previous Post: Dubbo Provider中获取调用者的应用名与IP">&laquo; Dubbo Provider中获取调用者的应用名与IP</a>
       
       
+        <a class="basic-alignment right" href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/" title="Next Post: [DUBBO] ReferenceConfig(null) is not DESTROYED when FINALIZE分析及解决">[DUBBO] ReferenceConfig(null) is not DESTROYED when FINALIZE分析及解决 &raquo;</a>
+      
     </p>
   </footer>
 </article>
@@ -499,6 +501,10 @@ var jiathis_config = {data_track_clickback:'true'};
     <section>
   <h1>最近博文</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
@@ -514,10 +520,6 @@ var jiathis_config = {data_track_clickback:'true'};
     
       <li class="post">
         <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/04/27/gc-basics/">Java GC垃圾收集器这点小事</a>
       </li>
     
   </ul>

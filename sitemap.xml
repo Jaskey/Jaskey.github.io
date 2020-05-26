@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>https://jaskey.github.io/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/</loc>
+<lastmod>2020-05-22T18:14:58+08:00</lastmod>
+</url>
+<url>
 <loc>https://jaskey.github.io/blog/2020/05/19/handle-duplicate-request/</loc>
 <lastmod>2020-05-19T19:52:01+08:00</lastmod>
 </url>

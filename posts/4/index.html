@@ -77,6 +77,70 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015/02/16/octopress-modify-date-format/">修改octopress的时间格式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-16T17:59:19+08:00'><span class='date'>2015-02-16 Mon</span> <span class='time'>17:59</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>之前在<code>_config.yml</code>中增加了时间格式的设置,但一直没效果:</p>
+
+<p><code>date_format: "%F %a"       #2012-01-01</code></p>
+
+<p>后来在StackOverflow上提了一个问题找到了答案：</p>
+
+<ol>
+<li><p>安装Octopress Date format：</p>
+
+<pre><code> gem install octopress-date-format
+</code></pre></li>
+<li><p>在<code>_config.yml</code>中加入：</p>
+
+<pre><code> gems:
+     - octopress-date-format
+</code></pre></li>
+<li><p>配置自定义格式。在<code>_config.yml</code>中配置时间的格式。默认的格式是：</p>
+
+<pre><code> date_format: 'ordinal' # July 3rd, 2014
+ time_format: '%-I:%M %P'   # 2:08 pm
+</code></pre></li>
+</ol>
+
+
+<p>我们可以改成:</p>
+
+<pre><code>    date_format: "%Y-%m-%d"  # e.g. 2014-07-03
+    time_format: "%H:%M"     # 24 hour time
+</code></pre>
+
+<p>最后生成页面，大功告成：</p>
+
+<pre><code>    rake generate
+</code></pre>
+
+<p>更多详情可参看：<a href="https://github.com/octopress/date-format#configuration">https://github.com/octopress/date-format#configuration</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015/02/16/css-display-properties/">CSS中的display &#8216;Block&#8217;,&#8217;inline&#8217;,&#8217;inline-block&#8217;</a></h1>
     
     
@@ -788,88 +852,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/11/10/stateful-vs-stateless/">Stateless的web架构</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-11-10T21:26:13+08:00'><span class='date'>2014-11-10 Mon</span> <span class='time'>21:26</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>分布式架构中用户状态的问题</h2>
-
-<p>传统的web架构中，我们通常会用使用session保存用户的当前状态用以标记一个用户，例如用户在不同的请求中都能找到他的购物车中的物品。</p>
-
-<p>但随着用户量的增长，无法避免的，我们需要使用使用分布式的系统。而在分布式场景，问题将会变得复杂起来。</p>
-
-<p>例如，现在有三台应用服务器A,B,C。第一次用户的请求被负载均衡器路由到了A服务器，相关的状态被保存了起来，那么下次一个请求过来的时候，假如负载均衡器把他的请求路由到了B上，所有的已有状态都将丢失。就好像你刚刚在购物车上抢到了一台小米手机，准备付款的时候发现购物车居然是空的！这是我们需要急切避免的问题！</p>
-
-<h2>Sticky Session</h2>
-
-<p>要解决这种场景，如果我们使用原来的架构，就必须更改负载均衡器的策略，可使用一个sticky session 的策略。</p>
-
-<p>即同一个用户的请求都转发到同一台的服务器，这样，session就不用丢失。服务器依旧可以在session中找到用户的相关信息。负载均衡器可以在查看HTTP头中的Cookies（我们设置用户的标识到其中）去判断应该路由到哪台具体的服务器上，以便获取到local session。</p>
-
-<p>用sticky session解决这类问题有两个较为明显的<strong>好处</strong>：</p>
-
-<ol>
-<li>所有的应用代码都不需要修改，本来单机使用session的，分布式环境依旧可以使用。</li>
-<li>有利于命中本机的RAM缓存，例如可以有效的存储某些用户的静态信息在本机，下次有效的使用缓存增加响应速度</li>
-</ol>
-
-
-<p>但是，sticky session 有如下<strong>坏处</strong>：</p>
-
-<ol>
-<li>如果一台服务器宕机，该服务器上的session就会丢失（这是local session的通病）。这对于状态敏感的应用，如购物车，是极大的问题。</li>
-<li>由于负载均衡器使用了sticky,这可能导致负载很不均衡。</li>
-<li>如果负载过重，希望横向扩展，不能即时的收到效果。因为原来的用户的所有存有session的请求都会路由到原来的服务器。</li>
-</ol>
-
-
-<h2>Stateless Archetecture</h2>
-
-<p>可见，sticky session 很难解决用户状态不丢失的问题，那么要避免sticky session缺点而又解决这类的用户状态的问题，现在流行的架构是无状态的（stateless），也就是说，不使用session，server端不保留用户的任何状态。</p>
-
-<p>一旦我们把应用做成无状态的，有很多好处</p>
-
-<p>1 . 最明显的就是易于横向扩展！服务器不需要维护用户的状态，所以每一台服务器去处理用户的请求，都是一样的。负载均衡器可以使用最简单最优的策略，如随机/轮询等策略负载到具体的应用服务器上。</p>
-
-<p>2 . 即便应用服务器宕机，也不会丢失用户状态，因为状态没有保存在该机上。而当需要增加机器已处理大量用户请求，由于无状态，可以让新的机器快速的拥有一定负载(load)。</p>
-
-<p>严格意义上说，无状态的架构应该是指整个server不保存客户端操作的状态（client state），也叫应用状态（application state），这不包括资源的状态（resource state），资源状态是必须保存的，例如用户曾经购买过的商品等等这些需要持久化的状态。</p>
-
-<p>但实际上，用户操作的过程必然是有状态的，例如你浏览微博的时候，浏览到第二页，那么下一页就是第三页，这个浏览到的当前页面，就是用户的操作状态，我们希望的这个状态不由server去保存，而把状态转移出去。</p>
-
-<p>应用服务器前接客户端，后接数据库。所以我们可以把状态转移到这两者之一。</p>
-
-<p>1 .转移到client</p>
-
-<p>这是真正的无状态，整个server保存任何客户操作状态，而是由客户端自己维持，这也是REST的约束之一。例如，用户在第二页的时候，下一页对应的请求和在第三页的时候的下一页请求是不一样的，这由客户端自己处理并发送请求，服务端只需要接受参数就足够知道要做什么样的操作，不需要访问任何服务端保存的用户状态。例如我们可以把用户的相关状态通过cookie设置在HTTP Response，这样应用服务器获取状态的责任就转移到客户端本身。例如标识一个用户ID（加密的hash串）之类的，可以设置到cookie中，但这仅限于某些不敏感的状态。而且，cookie中能设置的数据大小也很有限。</p>
-
-<p>2 .转移到数据库（分布式缓存）中。</p>
-
-<p>另外一个更为可取的方法是使用数据库或者分布式缓存（如memcache）存储用户的状态，需要注意的这不算是无状态的架构，而顶多只能算web server的无状态，这样无状态的服务器依旧可以使用可靠的方式获取到用户的状态而做出合理的逻辑处理，并且session不依赖于单一机器，所以即便出现机器宕机，也不会丢失用户状态。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -887,6 +869,10 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
       </li>
     
@@ -900,10 +886,6 @@ log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
     
       <li class="post">
         <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/04/27/gc-basics/">Java GC垃圾收集器这点小事</a>
       </li>
     
   </ul>

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-19T22:04:57+08:00</updated>
+  <updated>2020-05-26T21:32:37+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,179 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/"/>
+    <updated>2020-05-22T18:14:58+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize</id>
+    <content type="html"><![CDATA[<p>最近发现经常有类似告警：</p>
+
+<p>​    [DUBBO] ReferenceConfig(null) is not DESTROYED when FINALIZE，dubbo version 2.6.2</p>
+
+<p>在此记录一下分析的过程和解决方案。</p>
+
+<h2>从日志定位源码位置</h2>
+
+<pre><code class="java">    @SuppressWarnings("unused")
+    private final Object finalizerGuardian = new Object() {
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+
+            if (!ReferenceConfig.this.destroyed) {
+                logger.warn("ReferenceConfig(" + url + ") is not DESTROYED when FINALIZE");
+
+                /* don't destroy for now
+                try {
+                    ReferenceConfig.this.destroy();
+                } catch (Throwable t) {
+                        logger.warn("Unexpected err when destroy invoker of ReferenceConfig(" + url + ") in finalize method!", t);
+                }
+                */
+            }
+        }
+    };
+</code></pre>
+
+<p>通过日志搜索源码，发现这个日志是<code>ReferenceConfig</code>类中一个<code>finalizerGuardian</code>的实例变量下复写了<code>finalize</code>而打印出来的。而从其中的源码来看，原本应该是希望做到：在发现原本的对象没有被释放资源的时候，手动回收资源。但是后面缺代码被注释了（猜测是有巨坑），就只保留了一个告警。所以实际上这个对象现在只起到了WARN日志提示的作用，并无实际作用。</p>
+
+<p>注：复写<code>finalize</code>方法会导致一定的GC回收的性能问题，因为一个对象如果其中<code>finalize</code>被复写（哪怕只是写一个分号空实现），在垃圾回收的时候都会以单独的方法回收，简单说就是有一条独立的Finalizer线程（优先级很低）单独回收，如果对象分配频繁，会引起一定的性能问题。回到Dubbo的场景，假设在高并发的场景下不断创建ReferenceConfig对象，会影响这些对象的回收效率（并且这个过程中会产生一些<code>java.lang.ref.Finalizer</code>对象）甚至OOM，现在只是打印一个日志是一个不好的实践。对于finalize的原理和其对垃圾回收的影响可以参考<a href="https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin">https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin</a> ，这里摘抄其中一段供参考：</p>
+
+<blockquote><p>Objects that have finalize() method are treated differently during garbage collection process than the ones which don’t have. During garbage collection phase, objects with finalize() method aren’t immediately evicted from the memory. Instead, as the first step, those objects are added to an internal queue of java.lang.ref.Finalizer. For entire JVM, there is only one low priority JVM thread by name ‘Finalizer’ that executes finalize() method of each object in the queue. Only after the execution of finalize() method, object becomes eligible for Garbage Collection. Assume if your application is producing a lot of objects which has finalize() method and low priority “Finalizer” thread isn’t able to keep up with executing finalize() method, then significant amount unfinalized objects will start to build up in the internal queue of java.lang.ref.Finalize, which would result in significant amount of memory wastage.</p></blockquote>
+
+<h2>问题分析</h2>
+
+<p>从以上的源码上，这句日志打印的充分必要条件是：</p>
+
+<p>1.ReferenceConfig被垃圾回收</p>
+
+<p>2.垃圾回收的时候ReferenceConfig没有调用过destroy方法，即<code>!ReferenceConfig.this.destroyed</code></p>
+
+<h2>代码始末</h2>
+
+<p>基于以上的分析，需要知道哪里我们会创建<code>ReferenceConfig</code>对象。通常情况下，这个对象我们是不会代码显示创建的，因为正常都是Dubbo基于我们的配置（注解或者配置文件）去管理内部的对象，只有我们在泛化调用的时候，可能会手动创建。</p>
+
+<p>Dubbo官方文档里<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html%EF%BC%8C%E5%85%B3%E4%BA%8E%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E6%9C%89%E7%B1%BB%E4%BC%BC%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%8C%E5%85%B6%E4%B8%AD%E5%B0%B1%E4%BC%9A%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA">http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html%EF%BC%8C%E5%85%B3%E4%BA%8E%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E6%9C%89%E7%B1%BB%E4%BC%BC%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%8C%E5%85%B6%E4%B8%AD%E5%B0%B1%E4%BC%9A%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA</a><code>ReferenceConfig</code>对象</p>
+
+<pre><code class="java">// 引用远程服务 
+// 该实例很重量，里面封装了所有与注册中心及服务提供方连接，请缓存
+ReferenceConfig&lt;GenericService&gt; reference = new ReferenceConfig&lt;GenericService&gt;(); 
+// 弱类型接口名
+reference.setInterface("com.xxx.XxxService");  
+reference.setVersion("1.0.0");
+// 声明为泛化接口 
+reference.setGeneric(true);  
+
+// 用org.apache.dubbo.rpc.service.GenericService可以替代所有接口引用  
+GenericService genericService = reference.get(); 
+
+// 基本类型以及Date,List,Map等不需要转换，直接调用 
+Object result = genericService.$invoke("sayHello", new String[] {"java.lang.String"}, new Object[] {"world"}); 
+</code></pre>
+
+<p>由于以上代码会存在很容易导致连接等相关资源泄露等问题，详见：<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html%EF%BC%8C%E6%89%80%E4%BB%A5%E6%AD%A3%E5%B8%B8%E7%9A%84%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F%E5%88%99%E5%8F%98%E6%88%90%E8%BF%99%E6%A0%B7%EF%BC%9A">http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html%EF%BC%8C%E6%89%80%E4%BB%A5%E6%AD%A3%E5%B8%B8%E7%9A%84%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F%E5%88%99%E5%8F%98%E6%88%90%E8%BF%99%E6%A0%B7%EF%BC%9A</a></p>
+
+<pre><code class="java">ReferenceConfig&lt;XxxService&gt; reference = new ReferenceConfig&lt;XxxService&gt;();
+reference.setInterface(XxxService.class);
+reference.setVersion("1.0.0");
+......
+ReferenceConfigCache cache = ReferenceConfigCache.getCache();
+// cache.get方法中会缓存 Reference对象，并且调用ReferenceConfig.get方法启动ReferenceConfig
+XxxService xxxService = cache.get(reference);
+// 注意！ Cache会持有ReferenceConfig，不要在外部再调用ReferenceConfig的destroy方法，导致Cache内的ReferenceConfig失效！
+// 使用xxxService对象
+xxxService.sayHello();
+</code></pre>
+
+<p>Dubbo官方对于相关建议的解释是：</p>
+
+<blockquote><p><code>ReferenceConfig</code> 实例很重，封装了与注册中心的连接以及与提供者的连接，需要缓存。否则重复生成 <code>ReferenceConfig</code> 可能造成性能问题并且会有内存和连接泄漏。在 API 方式编程时，容易忽略此问题。</p></blockquote>
+
+<p>但是，实际上这句话和其API的实际设计上存在一定的误解。Dubbo认为<code>ReferenceConfig</code> 实例很重，所以应该缓存这个对象，所以设计了一个<code>ReferenceConfigCache</code>类，这个类实际上可以认为就是一个Map，当第一次调用cache.get(reference)的时候，实际上会把这个<code>ReferenceConfig</code> 放到里面的Map中：</p>
+
+<pre><code class="java">    public &lt;T&gt; T get(ReferenceConfig&lt;T&gt; referenceConfig) {
+        String key = generator.generateKey(referenceConfig);
+
+        ReferenceConfig&lt;?&gt; config = cache.get(key);
+        if (config != null) {
+            return (T) config.get();
+        }
+
+        cache.putIfAbsent(key, referenceConfig);
+        config = cache.get(key);
+        return (T) config.get();
+    }
+</code></pre>
+
+<p>而<code>config.get()</code>的时候，实际上会调用内部的各种初始化的代码。</p>
+
+<p>但是，这里接口设计有一个自相矛盾的地方。怎么讲了，因为“<code>ReferenceConfig</code> 实例很重”，所以，<code>ReferenceConfigCache</code>帮我们做了缓存，但是使用的时候，接口的设计却只能接受一个<code>ReferenceConfig</code> 对象，那这个对象从何而来呢？也就是说，这个缓存其实只能给Dubbo内部使用——用户给一个<code>ReferenceConfig</code> 对象给Dubbo，Dubbo判断这个对象是不是和以前的对象等价，等价的话我就不用用户传递的，用以前创建好的（因为这个对象各种资源都创建好了，没必要重复创建）。</p>
+
+<h2>原因呼之欲出</h2>
+
+<p>分析到这里，其实这个问题的原因已经呼之欲出了：因为泛化调用而创建了<code>ReferenceConfig</code> 对象。实际上，要复现这个问题，只需要模拟不断创建临时<code>ReferenceConfig</code> 变量然后触发GC即可：</p>
+
+<pre><code class="java">for (int i = 0; i&lt;100000;i++) {
+    new ReferenceConfig&lt;&gt;();
+}
+System.gc();//手动触发一下GC，确保上面创建的ReferenceConfig能触发GC回收
+</code></pre>
+
+<p>运行以上代码，你能发现和本文开头一模一样的告警日志。</p>
+
+<h2>为什么是ReferenceConfig(null)，即URL为什么是null？</h2>
+
+<p>你可能会问，上面的分析原因是清楚了，但是为什么ReferenceConfig打印的时候，url参数总是显示null? 其实上面的分析已经回答这个问题了。上面章节我们提到“而<code>config.get()</code>的时候，实际上会调用内部的各种初始化的代码。”而这个初始化的过程之一就是构建合适的url，所以当我们使用<code>`ReferenceConfigCache</code>做泛化调用的时候，除了第一次创建的ReferenceConfig被<code>ReferenceConfigCache</code>缓存起来并初始化了，其他的对象其实都没有初始化过，那自然URL就是空了，同时又因为没有被缓存（所以对象在方法运行结束后不可达了）必然后面会被触发GC，那日志看起来就是ReferenceConfig(null)。</p>
+
+<p>实际上分析到这里，我们可以看出这里Dubbo有两个处理不好的地方</p>
+
+<ol>
+<li>API设计不合理——认为ReferenceConfig很重需要缓存，但是使用的时候必须要提供一个对象</li>
+<li>ReferenceConfig回收的告警上，其实是存在优化空间的，像这种没有初始化过的对象，其实没必要打WARN日志，毕竟他没有初始化过就自然没有什么可destroy的</li>
+</ol>
+
+
+<h2>解决方案</h2>
+
+<p>从这里分析可以看到这行告警其实是”误报“，只要日志里url显示是null，并没有什么特殊的实际影响（在不考虑上文讲的GC问题的前提下）</p>
+
+<pre><code class="java">[DUBBO] ReferenceConfig(null) is not DESTROYED when FINALIZE，dubbo version 2.6.2
+</code></pre>
+
+<p>那如果要修复这个告警，则可考虑显示的缓存<code>ReferenceConfig</code>对象，不要每次泛化调用的时候都创建一个，可参考以下代码：</p>
+
+<pre><code class="java">    private synchronized ReferenceConfig&lt;GenericService&gt; getOrNewReferenceConfig(String interfaceClass) {
+        String refConfigCacheKey = interfaceClass;
+        WeakReference&lt;ReferenceConfig&lt;GenericService&gt;&gt; referenceConfigWeakReference = refConfigCache.get(refConfigCacheKey);
+
+        if (referenceConfigWeakReference != null) {//缓存有弱引用
+            ReferenceConfig&lt;GenericService&gt; referenceConfigFromWR = referenceConfigWeakReference.get();
+            if (referenceConfigFromWR == null) {//证明没人引用自己被GC了，需要重建
+                ReferenceConfig&lt;GenericService&gt; referenceConfig = newRefConifg(interfaceClass);
+                refConfigCache.put(refConfigCacheKey, new WeakReference&lt;&gt;(referenceConfig));//放入缓存中，用弱应用hold住，不影响该有GC
+                return referenceConfig;
+            } else {
+                return referenceConfigFromWR;
+            }
+
+        } else {//缓存没有，则创建
+            ReferenceConfig&lt;GenericService&gt; referenceConfig = newRefConifg(interfaceClass);
+            refConfigCache.put(refConfigCacheKey, new WeakReference&lt;&gt;(referenceConfig));//放入缓存中，用弱应用hold住，不影响该有GC
+            return referenceConfig;
+        }
+    }
+</code></pre>
+
+<p>注：</p>
+
+<ol>
+<li>其中newRefConifg即为原先的创建<code>ReferenceConfig</code>的代码</li>
+<li>之所以使用<code>WeakReference</code>是为了保证这个缓存的对象不会影响GC——即该回收的时候还是得回收</li>
+</ol>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[优雅地处理重复请求（并发请求）——附Java实现]]></title>
@@ -206,9 +379,9 @@ req1MD5 = C2A36FED15128E9E878583CAAAFEFDE9 , req2MD5=C2A36FED15128E9E878583CAAAF
             RedisStringCommands.SetOption.SET_IF_ABSENT));
 
     final boolean isConsiderDup;
-    if (firstSet != null &amp;&amp; firstSet) {// 第一次访问，追加个超时时间，超时时间内去重
+    if (firstSet != null &amp;&amp; firstSet) {
         isConsiderDup = false;
-    } else {// redis值已存在，可以认为是重复了
+    } else {
         isConsiderDup = true;
     }
 </code></pre>
@@ -500,165 +673,6 @@ Heap &lt;b&gt;after&lt;/b&gt; GC invocations=8 (full 0):
 </code></pre>
 
 <p>注：以上由本人摘选翻译自<a href="https://codeahoy.com/2017/08/06/basics-of-java-garbage-collection/">https://codeahoy.com/2017/08/06/basics-of-java-garbage-collection/</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[基于Sharding Sphere实现数据“一键脱敏”]]></title>
-    <link href="https://Jaskey.github.io/blog/2020/03/18/sharding-sphere-data-desensitization/"/>
-    <updated>2020-03-18T20:53:00+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2020/03/18/sharding-sphere-data-desensitization</id>
-    <content type="html"><![CDATA[<p>在真实业务场景中，数据库中经常需要存储某些客户的关键性敏感信息如：身份证号、银行卡号、姓名、手机号码等，此类信息按照合规要求，通常需要实现加密存储以满足合规要求。</p>
-
-<h3>痛点一：</h3>
-
-<p>通常的解决方案是我们书写SQL的时候，把对应的加密字段手动进行加密再进行插入，在查询的时候使用之前再手动进行解密。此方法固然可行，但是使用起来非常不便捷且繁琐，使得日常的业务开发与存储合规的细节紧耦合</p>
-
-<h3>痛点二：</h3>
-
-<p>对于一些为了快速上线而一开始没有实现合规脱敏的系统，如何比较快速的使得已有业务满足合规要求的同时，尽量减少对原系统的改造。（通常的这个过程至少包括：1.新增脱敏列的存储 2.同时做数据迁移 3.业务的代码做兼容逻辑等）。</p>
-
-<p>Apache ShardingSphere下面存在一个数据脱敏模块，此模块集成的常用的数据脱敏的功能。其基本原理是对用户输入的SQL进行解析拦截，并依靠用户的脱敏配置进行SQL的改写，从而实现对原文字段的加密及加密字段的解密。最终实现对用户无感的加解密存储、查询。</p>
-
-<h2>脱敏配置Quick Start——Spring 显示配置：</h2>
-
-<p>以下介绍基于Spring如何快速让系统支持脱敏配置。</p>
-
-<h3>1.引入依赖</h3>
-
-<pre><code>&lt;!-- for spring namespace --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.apache.shardingsphere&lt;/groupId&gt;
-    &lt;artifactId&gt;sharding-jdbc-spring-namespace&lt;/artifactId&gt;
-    &lt;version&gt;${sharding-sphere.version}&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<h3>2.创建脱敏配置规则对象</h3>
-
-<p>在创建数据源之前，需要准备一个EncryptRuleConfiguration进行脱敏的配置，以下是一个例子，对于同一个数据源里两张表card_info，pay_order的不同字段进行AES的加密</p>
-
-<pre><code>private EncryptRuleConfiguration getEncryptRuleConfiguration() {
-Properties props = new Properties();
-
-//自带aes算法需要
-props.setProperty("aes.key.value", aeskey);
-EncryptorRuleConfiguration encryptorConfig = new EncryptorRuleConfiguration("AES", props);
-
-//自定义算法
-//props.setProperty("qb.finance.aes.key.value", aeskey);
-//EncryptorRuleConfiguration encryptorConfig = new EncryptorRuleConfiguration("QB-FINANCE-AES", props);
-
-EncryptRuleConfiguration encryptRuleConfig = new EncryptRuleConfiguration();
-encryptRuleConfig.getEncryptors().put("aes", encryptorConfig);
-
-//START: card_info 表的脱敏配置
-{
-    EncryptColumnRuleConfiguration columnConfig1 = new EncryptColumnRuleConfiguration("", "name", "", "aes");
-    EncryptColumnRuleConfiguration columnConfig2 = new EncryptColumnRuleConfiguration("", "id_no", "", "aes");
-    EncryptColumnRuleConfiguration columnConfig3 = new EncryptColumnRuleConfiguration("", "finshell_card_no", "", "aes");
-    Map&lt;String, EncryptColumnRuleConfiguration&gt; columnConfigMaps = new HashMap&lt;&gt;();
-    columnConfigMaps.put("name", columnConfig1);
-    columnConfigMaps.put("id_no", columnConfig2);
-    columnConfigMaps.put("finshell_card_no", columnConfig3);
-    EncryptTableRuleConfiguration tableConfig = new EncryptTableRuleConfiguration(columnConfigMaps);
-    encryptRuleConfig.getTables().put("card_info", tableConfig);
-}
-//END: card_info 表的脱敏配置
-
-//START: pay_order 表的脱敏配置
-{
-    EncryptColumnRuleConfiguration columnConfig1 = new EncryptColumnRuleConfiguration("", "card_no", "", "aes");
-    Map&lt;String, EncryptColumnRuleConfiguration&gt; columnConfigMaps = new HashMap&lt;&gt;();
-    columnConfigMaps.put("card_no", columnConfig1);
-    EncryptTableRuleConfiguration tableConfig = new EncryptTableRuleConfiguration(columnConfigMaps);
-    encryptRuleConfig.getTables().put("pay_order", tableConfig);
-}
-
-log.info("脱敏配置构建完成:{} ", encryptRuleConfig);
-return encryptRuleConfig;
-</code></pre>
-
-<p>}</p>
-
-<p>说明：</p>
-
-<ol>
-<li>创建 EncryptColumnRuleConfiguration 的时候有四个参数，前两个参数分表叫plainColumn、cipherColumn，其意思是数据库存储里面真实的两个列（名文列、脱敏列），对于新的系统，只需要设置脱敏列即可，所以以上示例为plainColumn为&#8221;&ldquo;。</li>
-<li>创建EncryptTableRuleConfiguration 的时候需要传入一个map，这个map存的value即#1中说明的EncryptColumnRuleConfiguration ，而其key则是一个逻辑列，对于新系统，此逻辑列即为真实的脱敏列。Sharding Shpere在拦截到SQL改写的时候，会按照用户的配置，把逻辑列映射为名文列或者脱敏列（默认）如下的示例</li>
-</ol>
-
-
-<p><img src="http://jaskey.github.io/images/shardingsphere/basic.png" title="shardings sphere basic" alt="shardings sphere basic" /></p>
-
-<h3>3.使用Sharding Sphere的数据源进行管理</h3>
-
-<p>把原始的数据源包装一层</p>
-
-<pre><code>@Bean("tradePlatformDataSource")
-public DataSource dataSource(@Qualifier("druidDataSource") DataSource ds) throws SQLException {
-    return EncryptDataSourceFactory.createDataSource(ds, getEncryptRuleConfiguration(), new Properties());
-
-}
-</code></pre>
-
-<h2>脱敏配置Quick Start——Spring Boot版：</h2>
-
-<p>以下步骤使用Spring Boot管理，可以仅用配置文件解决：</p>
-
-<p>1.引入依赖</p>
-
-<pre><code>&lt;!-- for spring boot --&gt;
-
-&lt;dependency&gt;
-&lt;groupId&gt;org.apache.shardingsphere&lt;/groupId&gt;
-    &lt;artifactId&gt;sharding-jdbc-spring-boot-starter&lt;/artifactId&gt;
-    &lt;version&gt;${sharding-sphere.version}&lt;/version&gt;
-&lt;/dependency&gt;
-
-&lt;!-- for spring namespace --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.apache.shardingsphere&lt;/groupId&gt;
-    &lt;artifactId&gt;sharding-jdbc-spring-namespace&lt;/artifactId&gt;
-    &lt;version&gt;${sharding-sphere.version}&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<ol>
-<li>Spring 配置文件</li>
-</ol>
-
-
-<pre><code>
-spring.shardingsphere.datasource.name=ds
-spring.shardingsphere.datasource.ds.type=com.alibaba.druid.pool.DruidDataSource
-spring.shardingsphere.datasource.ds.driver-class-name=com.mysql.jdbc.Driver
-spring.shardingsphere.datasource.ds.url=xxxxxxxxxxxxx
-spring.shardingsphere.datasource.ds.username=xxxxxxx
-spring.shardingsphere.datasource.ds.password=xxxxxxxxxxxx
-
-
-
-# 默认的AES加密器
-spring.shardingsphere.encrypt.encryptors.encryptor_aes.type=aes
-spring.shardingsphere.encrypt.encryptors.encryptor_aes.props.aes.key.value=hkiqAXU6Ur5fixGHaO4Lb2V2ggausYwW
-
-# card_info 姓名 AES加密
-spring.shardingsphere.encrypt.tables.card_info.columns.name.cipherColumn=name
-spring.shardingsphere.encrypt.tables.card_info.columns.name.encryptor=encryptor_aes
-
-# card_info 身份证 AES加密
-spring.shardingsphere.encrypt.tables.card_info.columns.id_no.cipherColumn=id_no
-spring.shardingsphere.encrypt.tables.card_info.columns.id_no.encryptor=encryptor_aes
-
-# card_info 银行卡号 AES加密
-spring.shardingsphere.encrypt.tables.card_info.columns.finshell_card_no.cipherColumn=finshell_card_no
-spring.shardingsphere.encrypt.tables.card_info.columns.finshell_card_no.encryptor=encryptor_aes
-
-# pay_order 银行卡号 AES加密
-spring.shardingsphere.encrypt.tables.pay_order.columns.card_no.cipherColumn=card_no
-spring.shardingsphere.encrypt.tables.pay_order.columns.card_no.encryptor=encryptor_aes
-</code></pre>
 ]]></content>
   </entry>
   

@@ -78,7 +78,7 @@ description: ReferenceConfig(null) is not DESTROYED when FINALIZE日志的分析
 
 
 
-Dubbo官方文档里http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html ，关于泛化调用有类似的代码，其中就会手动创建`ReferenceConfig`对象
+Dubbo官方文档里http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html  ，关于泛化调用有类似的代码，其中就会手动创建`ReferenceConfig`对象
 
 
 
@@ -102,7 +102,7 @@ Object result = genericService.$invoke("sayHello", new String[] {"java.lang.Stri
 
 
 
-由于以上代码会存在很容易导致连接等相关资源泄露等问题，详见：http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html，所以正常的泛化调用的使用方式则变成这样：
+由于以上代码会存在很容易导致连接等相关资源泄露等问题，详见：http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html ，所以正常的泛化调用的使用方式则变成这样：
 
 
 

@@ -141,7 +141,7 @@
 
 <p>通过日志搜索源码，发现这个日志是<code>ReferenceConfig</code>类中一个<code>finalizerGuardian</code>的实例变量下复写了<code>finalize</code>而打印出来的。而从其中的源码来看，原本应该是希望做到：在发现原本的对象没有被释放资源的时候，手动回收资源。但是后面缺代码被注释了（猜测是有巨坑），就只保留了一个告警。所以实际上这个对象现在只起到了WARN日志提示的作用，并无实际作用。</p>
 
-<p>注：复写<code>finalize</code>方法会导致一定的GC回收的性能问题，因为一个对象如果其中<code>finalize</code>被复写（哪怕只是写一个分号空实现），在垃圾回收的时候都会以单独的方法回收，简单说就是有一条独立的Finalizer线程（优先级很低）单独回收，如果对象分配频繁，会引起一定的性能问题。回到Dubbo的场景，假设在高并发的场景下不断创建ReferenceConfig对象，会影响这些对象的回收效率（并且这个过程中会产生一些<code>java.lang.ref.Finalizer</code>对象）甚至OOM，现在只是打印一个日志是一个不好的实践。对于finalize的原理和其对垃圾回收的影响可以参考<a href="https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin">https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin</a> ，这里摘抄其中一段供参考：</p>
+<p>注：复写<code>finalize</code>方法会导致一定的GC回收的性能问题，因为一个对象如果其中<code>finalize</code>被复写（哪怕只是写一个分号空实现），在垃圾回收的时候都会以单独的方法回收，简单说就是有一条独立的Finalizer线程（优先级很低）单独回收，如果对象分配频繁，会引起一定的性能问题。回到Dubbo的场景，假设在高并发的场景下不断创建ReferenceConfig对象，会影响这些对象的回收效率（并且这个过程中会产生一些<code>java.lang.ref.Finalizer</code>对象）甚至OOM，现在只是打印一个日志是一个不好的实践。对于finalize的原理和其对垃圾回收的影响可以参考<a href="https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin">https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin</a>  ，这里摘抄其中一段供参考：</p>
 
 <blockquote><p>Objects that have finalize() method are treated differently during garbage collection process than the ones which don’t have. During garbage collection phase, objects with finalize() method aren’t immediately evicted from the memory. Instead, as the first step, those objects are added to an internal queue of java.lang.ref.Finalizer. For entire JVM, there is only one low priority JVM thread by name ‘Finalizer’ that executes finalize() method of each object in the queue. Only after the execution of finalize() method, object becomes eligible for Garbage Collection. Assume if your application is producing a lot of objects which has finalize() method and low priority “Finalizer” thread isn’t able to keep up with executing finalize() method, then significant amount unfinalized objects will start to build up in the internal queue of java.lang.ref.Finalize, which would result in significant amount of memory wastage.</p></blockquote>
 
@@ -157,7 +157,7 @@
 
 <p>基于以上的分析，需要知道哪里我们会创建<code>ReferenceConfig</code>对象。通常情况下，这个对象我们是不会代码显示创建的，因为正常都是Dubbo基于我们的配置（注解或者配置文件）去管理内部的对象，只有我们在泛化调用的时候，可能会手动创建。</p>
 
-<p>Dubbo官方文档里<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html%EF%BC%8C%E5%85%B3%E4%BA%8E%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E6%9C%89%E7%B1%BB%E4%BC%BC%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%8C%E5%85%B6%E4%B8%AD%E5%B0%B1%E4%BC%9A%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA">http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html%EF%BC%8C%E5%85%B3%E4%BA%8E%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E6%9C%89%E7%B1%BB%E4%BC%BC%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%8C%E5%85%B6%E4%B8%AD%E5%B0%B1%E4%BC%9A%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA</a><code>ReferenceConfig</code>对象</p>
+<p>Dubbo官方文档里<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html">http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html</a> ，关于泛化调用有类似的代码，其中就会手动创建<code>ReferenceConfig</code>对象</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>

@@ -54,7 +54,7 @@ description: ReferenceConfig(null) is not DESTROYED when FINALIZE日志的分析
 
 
 
-注：复写`finalize`方法会导致一定的GC回收的性能问题，因为一个对象如果其中`finalize`被复写（哪怕只是写一个分号空实现），在垃圾回收的时候都会以单独的方法回收，简单说就是有一条独立的Finalizer线程（优先级很低）单独回收，如果对象分配频繁，会引起一定的性能问题。回到Dubbo的场景，假设在高并发的场景下不断创建ReferenceConfig对象，会影响这些对象的回收效率（并且这个过程中会产生一些`java.lang.ref.Finalizer`对象）甚至OOM，现在只是打印一个日志是一个不好的实践。对于finalize的原理和其对垃圾回收的影响可以参考https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin ，这里摘抄其中一段供参考：
+注：复写`finalize`方法会导致一定的GC回收的性能问题，因为一个对象如果其中`finalize`被复写（哪怕只是写一个分号空实现），在垃圾回收的时候都会以单独的方法回收，简单说就是有一条独立的Finalizer线程（优先级很低）单独回收，如果对象分配频繁，会引起一定的性能问题。回到Dubbo的场景，假设在高并发的场景下不断创建ReferenceConfig对象，会影响这些对象的回收效率（并且这个过程中会产生一些`java.lang.ref.Finalizer`对象）甚至OOM，现在只是打印一个日志是一个不好的实践。对于finalize的原理和其对垃圾回收的影响可以参考https://blog.heaphero.io/2018/04/13/heaphero-user-manual-2/#ObjFin  ，这里摘抄其中一段供参考：
 
 
 
@@ -78,7 +78,7 @@ description: ReferenceConfig(null) is not DESTROYED when FINALIZE日志的分析
 
 
 
-Dubbo官方文档里http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html，关于泛化调用有类似的代码，其中就会手动创建`ReferenceConfig`对象
+Dubbo官方文档里http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html ，关于泛化调用有类似的代码，其中就会手动创建`ReferenceConfig`对象
 
 
 

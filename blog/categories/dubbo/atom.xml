@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Dubbo | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/dubbo/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-05-26T21:38:24+08:00</updated>
+  <updated>2020-05-26T23:58:17+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -65,7 +65,7 @@
 
 <p>基于以上的分析，需要知道哪里我们会创建<code>ReferenceConfig</code>对象。通常情况下，这个对象我们是不会代码显示创建的，因为正常都是Dubbo基于我们的配置（注解或者配置文件）去管理内部的对象，只有我们在泛化调用的时候，可能会手动创建。</p>
 
-<p>Dubbo官方文档里<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html">http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html</a> ，关于泛化调用有类似的代码，其中就会手动创建<code>ReferenceConfig</code>对象</p>
+<p>Dubbo官方文档里<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html">http://dubbo.apache.org/zh-cn/docs/user/demos/generic-reference.html</a>  ，关于泛化调用有类似的代码，其中就会手动创建<code>ReferenceConfig</code>对象</p>
 
 <pre><code class="java">// 引用远程服务 
 // 该实例很重量，里面封装了所有与注册中心及服务提供方连接，请缓存
@@ -83,7 +83,7 @@ GenericService genericService = reference.get();
 Object result = genericService.$invoke("sayHello", new String[] {"java.lang.String"}, new Object[] {"world"}); 
 </code></pre>
 
-<p>由于以上代码会存在很容易导致连接等相关资源泄露等问题，详见：<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html%EF%BC%8C%E6%89%80%E4%BB%A5%E6%AD%A3%E5%B8%B8%E7%9A%84%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F%E5%88%99%E5%8F%98%E6%88%90%E8%BF%99%E6%A0%B7%EF%BC%9A">http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html%EF%BC%8C%E6%89%80%E4%BB%A5%E6%AD%A3%E5%B8%B8%E7%9A%84%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F%E5%88%99%E5%8F%98%E6%88%90%E8%BF%99%E6%A0%B7%EF%BC%9A</a></p>
+<p>由于以上代码会存在很容易导致连接等相关资源泄露等问题，详见：<a href="http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html">http://dubbo.apache.org/zh-cn/docs/user/demos/reference-config-cache.html</a> ，所以正常的泛化调用的使用方式则变成这样：</p>
 
 <pre><code class="java">ReferenceConfig&lt;XxxService&gt; reference = new ReferenceConfig&lt;XxxService&gt;();
 reference.setInterface(XxxService.class);

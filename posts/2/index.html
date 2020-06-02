@@ -77,6 +77,602 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2019/09/23/spring-boot-tomcat-mertic/">监控Spring Boot中的Tomcat性能数据</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2019-09-23T14:56:56+08:00'><span class='date'>2019-09-23 Mon</span> <span class='time'>14:56</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>现在，我们经常会使用Spring Boot以开发Web服务，其内嵌容器的方法的确使得开发效率大大提升。</p>
+
+<p>由于网关层通常是直接面对用户请求的一层，也是微服务里面最上游的一个服务，其请求量通常是所有服务中最大的，如果服务出现了性能上的问题，网关层通常都会出现阻塞、超时等现象，这时候就很可能需要性能的调优，其中最常见的则是参数调优。但如何知道哪些性能参数成为了瓶颈（如容器线程数是否不足等），则是调优的前提条件。</p>
+
+<p>本文总结介绍如何在使用了Spring  Boot的前提下，获取运行时的Tomcat性能运行情况。</p>
+
+<p>Spring Boot中有一个Spring Boot actuator的模块，用来监控和管理应用的运行状态，例如健康状况，线程运行情况等。</p>
+
+<p>Maven 依赖：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;dependencies&gt;
+</span><span class='line'>    &lt;dependency&gt;
+</span><span class='line'>    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+</span><span class='line'>    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+</span><span class='line'>    &lt;/dependency&gt;
+</span><span class='line'>&lt;/dependencies&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后当Spring Boot运行之后，Spring Boot会有很多服务暴露在http服务中，这些服务叫EndPoints， 通过 <a href="http://">http://</a>{应用路径}/actuator 这个 url 即可访问，例如  <a href="http://">http://</a>{应用路径}/actuator/info， <a href="http://">http://</a>{应用路径}/actuator/health 这两个endpoints是默认开启的。</p>
+
+<p>其中actuator这个路径可以通过配置修改：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>management.endpoints.web.base-path=/mypath</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下是获取健康状态的一个例子：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ curl 'http://localhost:8080/actuator/health' -i -X GET</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可能会得到类似这样的结果：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>    "status" : "UP"
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>比较简陋，如果希望这个接口有更多数据，可以尝试这样的配置：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>management.endpoint.health.show-details=always</span></code></pre></td></tr></table></div></figure>
+
+
+<p>结果就会丰富了（我的应用用了Redis）：类似</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  "status": "UP",
+</span><span class='line'>  "details": {
+</span><span class='line'>      "diskSpace": {
+</span><span class='line'>          "status": "UP",
+</span><span class='line'>          "details": {
+</span><span class='line'>              "total": 214745214976,
+</span><span class='line'>              "free": 174805827584,
+</span><span class='line'>              "threshold": 10485760
+</span><span class='line'>          }
+</span><span class='line'>      },
+</span><span class='line'>      "redis": {
+</span><span class='line'>          "status": "UP",
+</span><span class='line'>          "details": {
+</span><span class='line'>              "cluster_size": 3,
+</span><span class='line'>              "slots_up": 16384,
+</span><span class='line'>              "slots_fail": 0
+</span><span class='line'>          }
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是这还不够，我们需要详细的容器数据。监控状况只是一部分。而这些我们想要的数据，是在一个叫metric的EndPoint下面。 但是此endpoint 默认没有暴露到http接口的的，需要添加配置：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#默认只开启info, health 的http暴露，在此增加metric endpoint
+</span><span class='line'>management.endpoints.web.exposure.include=info, health,metric</span></code></pre></td></tr></table></div></figure>
+
+
+<p>之后我们就能访问这个metric有哪些数据了</p>
+
+<p>$ curl &lsquo;<a href="http://localhost:8080/actuator/metric">http://localhost:8080/actuator/metric</a>&rsquo; -i -X GET</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>    "names": [
+</span><span class='line'>        "jvm.memory.max",
+</span><span class='line'>        "jvm.threads.states",
+</span><span class='line'>        "process.files.max",
+</span><span class='line'>        "jvm.gc.memory.promoted",
+</span><span class='line'>        "tomcat.cache.hit",
+</span><span class='line'>        "tomcat.servlet.error",
+</span><span class='line'>        "system.load.average.1m",
+</span><span class='line'>        "tomcat.cache.access",
+</span><span class='line'>        "jvm.memory.used",
+</span><span class='line'>        "jvm.gc.max.data.size",
+</span><span class='line'>        "jvm.gc.pause",
+</span><span class='line'>        "jvm.memory.committed",
+</span><span class='line'>        "system.cpu.count",
+</span><span class='line'>        "logback.events",
+</span><span class='line'>        "tomcat.global.sent",
+</span><span class='line'>        "jvm.buffer.memory.used",
+</span><span class='line'>        "tomcat.sessions.created",
+</span><span class='line'>        "jvm.threads.daemon",
+</span><span class='line'>        "system.cpu.usage",
+</span><span class='line'>        "jvm.gc.memory.allocated",
+</span><span class='line'>        "tomcat.global.request.max",
+</span><span class='line'>        "tomcat.global.request",
+</span><span class='line'>        "tomcat.sessions.expired",
+</span><span class='line'>        "jvm.threads.live",
+</span><span class='line'>        "jvm.threads.peak",
+</span><span class='line'>        "tomcat.global.received",
+</span><span class='line'>        "process.uptime",
+</span><span class='line'>        "http.client.requests",
+</span><span class='line'>        "tomcat.sessions.rejected",
+</span><span class='line'>        "process.cpu.usage",
+</span><span class='line'>        "tomcat.threads.config.max",
+</span><span class='line'>        "jvm.classes.loaded",
+</span><span class='line'>        "http.server.requests",
+</span><span class='line'>        "jvm.classes.unloaded",
+</span><span class='line'>        "tomcat.global.error",
+</span><span class='line'>        "tomcat.sessions.active.current",
+</span><span class='line'>        "tomcat.sessions.alive.max",
+</span><span class='line'>        "jvm.gc.live.data.size",
+</span><span class='line'>        "tomcat.servlet.request.max",
+</span><span class='line'>        "tomcat.threads.current",
+</span><span class='line'>        "tomcat.servlet.request",
+</span><span class='line'>        "process.files.open",
+</span><span class='line'>        "jvm.buffer.count",
+</span><span class='line'>        "jvm.buffer.total.capacity",
+</span><span class='line'>        "tomcat.sessions.active.max",
+</span><span class='line'>        "tomcat.threads.busy",
+</span><span class='line'>        "process.start.time"
+</span><span class='line'>    ]
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中列出的是所有可以获取的监控数据，在其中我们发现了我们想要的</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>"tomcat.threads.config.max"
+</span><span class='line'>"tomcat.threads.current"
+</span><span class='line'>"tomcat.threads.busy"
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么如何获取其中的值呢？只需要在metric路径下加上希望获取的指标即可： curl &lsquo;<a href="http://localhost:8080/actuator/metric/tomcat.threads.busy">http://localhost:8080/actuator/metric/tomcat.threads.busy</a>&rsquo;</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  "name": "tomcat.threads.busy",
+</span><span class='line'>  "description": null,
+</span><span class='line'>  "baseUnit": "threads",
+</span><span class='line'>  "measurements": [{
+</span><span class='line'>      "statistic": "VALUE",
+</span><span class='line'>      "value": 1.0
+</span><span class='line'>  }],
+</span><span class='line'>  "availableTags": [{
+</span><span class='line'>      "tag": "name",
+</span><span class='line'>      "values": ["http-nio-10610"]
+</span><span class='line'>  }]
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在此，基本我们想要的数据都能实时的通过http服务接口的方式获取了，那么在流量峰值的时候，一些实时的状态便可获取到了。</p>
+
+<h2>监控数据</h2>
+
+<p>但是我们面对的情况是这样的，半个小时前，一个push活动带来了很大的量，但现在流量已经过去了，需要定位当时的性能问题意味着需要采集到过去的数据。所以我们可能需要一个服务定期去监控这些数据。Spring Boot已经考虑到了这种情况，所以其中有一个prometheus的模块，他是一个独立的服务去采集其中的监控数据并可视化，具体的介绍可以参考：<a href="https://www.callicoder.com/spring-boot-actuator-metrics-monitoring-dashboard-prometheus-grafana/">https://www.callicoder.com/spring-boot-actuator-metrics-monitoring-dashboard-prometheus-grafana/</a></p>
+
+<h2>以日志形式定期输出监控数据</h2>
+
+<p>很多时候，如果有日志的方法去定期输出监控的数据这样已经足够我们分析了。在Spring Boot 2.x里，只需要配置一个Bean</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@Configuration
+</span><span class='line'>class MetricsConfig {
+</span><span class='line'>    @Bean
+</span><span class='line'>    LoggingMeterRegistry loggingMeterRegistry() {
+</span><span class='line'>        return new LoggingMeterRegistry();
+</span><span class='line'>    }
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>之所以需要Spring Boot版本2.x，LoggingMeterRegistry是因为是micrometer-core里面的1.10以上才引入的，而Spring Boot 1.x都低于这个版本，如果不想升级Spring Boot版本，可以尝试显示变更此版本：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;dependency&gt;
+</span><span class='line'>    &lt;groupId&gt;io.micrometer&lt;/groupId&gt;
+</span><span class='line'>    &lt;artifactId&gt;micrometer-core&lt;/artifactId&gt;
+</span><span class='line'>    &lt;version&gt;1.1.3&lt;/version&gt;
+</span><span class='line'>&lt;/dependency&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后日志的内容就会每一分钟的打印出来：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>jvm.buffer.count{id=direct} value=26 buffers
+</span><span class='line'>jvm.buffer.count{id=mapped} value=0 buffers
+</span><span class='line'>jvm.buffer.memory.used{id=direct} value=632.600586 KiB
+</span><span class='line'>jvm.buffer.memory.used{id=mapped} value=0 B
+</span><span class='line'>jvm.buffer.total.capacity{id=direct} value=632.599609 KiB
+</span><span class='line'>jvm.buffer.total.capacity{id=mapped} value=0 B
+</span><span class='line'>jvm.classes.loaded{} value=12306 classes
+</span><span class='line'>jvm.gc.live.data.size{} value=39.339607 MiB
+</span><span class='line'>jvm.gc.max.data.size{} value=2.666992 GiB
+</span><span class='line'>jvm.memory.committed{area=nonheap,id=Compressed Class Space} value=8.539062 MiB
+</span><span class='line'>jvm.memory.committed{area=nonheap,id=Code Cache} value=26.8125 MiB
+</span><span class='line'>jvm.memory.committed{area=heap,id=PS Survivor Space} value=30 MiB
+</span><span class='line'>jvm.memory.committed{area=heap,id=PS Eden Space} value=416.5 MiB
+</span><span class='line'>jvm.memory.committed{area=heap,id=PS Old Gen} value=242 MiB
+</span><span class='line'>jvm.memory.committed{area=nonheap,id=Metaspace} value=66.773438 MiB
+</span><span class='line'>jvm.memory.max{area=heap,id=PS Survivor Space} value=30 MiB
+</span><span class='line'>jvm.memory.max{area=heap,id=PS Eden Space} value=1.272949 GiB
+</span><span class='line'>jvm.memory.max{area=heap,id=PS Old Gen} value=2.666992 GiB
+</span><span class='line'>jvm.memory.max{area=nonheap,id=Metaspace} value=-1 B
+</span><span class='line'>jvm.memory.max{area=nonheap,id=Compressed Class Space} value=1 GiB
+</span><span class='line'>jvm.memory.max{area=nonheap,id=Code Cache} value=240 MiB
+</span><span class='line'>jvm.memory.used{area=nonheap,id=Code Cache} value=26.635071 MiB
+</span><span class='line'>jvm.memory.used{area=heap,id=PS Survivor Space} value=25.214882 MiB
+</span><span class='line'>jvm.memory.used{area=heap,id=PS Eden Space} value=46.910545 MiB
+</span><span class='line'>jvm.memory.used{area=heap,id=PS Old Gen} value=39.34742 MiB
+</span><span class='line'>jvm.memory.used{area=nonheap,id=Metaspace} value=63.333778 MiB
+</span><span class='line'>jvm.memory.used{area=nonheap,id=Compressed Class Space} value=7.947166 MiB
+</span><span class='line'>jvm.threads.daemon{} value=52 threads
+</span><span class='line'>jvm.threads.live{} value=54 threads
+</span><span class='line'>jvm.threads.peak{} value=67 threads
+</span><span class='line'>jvm.threads.states{state=terminated} value=0 threads
+</span><span class='line'>jvm.threads.states{state=blocked} value=0 threads
+</span><span class='line'>jvm.threads.states{state=new} value=0 threads
+</span><span class='line'>jvm.threads.states{state=runnable} value=20 threads
+</span><span class='line'>jvm.threads.states{state=waiting} value=19 threads
+</span><span class='line'>jvm.threads.states{state=timed-waiting} value=15 threads
+</span><span class='line'>process.cpu.usage{} value=-1
+</span><span class='line'>process.start.time{} value=435900h 48m 53.344s
+</span><span class='line'>process.uptime{} value=56m 6.709s
+</span><span class='line'>system.cpu.count{} value=8
+</span><span class='line'>system.cpu.usage{} value=-1
+</span><span class='line'>tomcat.global.request.max{name=http-nio-10610} value=0.597s
+</span><span class='line'>tomcat.servlet.request.max{name=dispatcherServlet} value=0.567s
+</span><span class='line'>tomcat.sessions.active.current{} value=0 sessions
+</span><span class='line'>tomcat.sessions.active.max{} value=0 sessions
+</span><span class='line'>tomcat.threads.busy{name=http-nio-10610} value=0 threads
+</span><span class='line'>tomcat.threads.config.max{name=http-nio-10610} value=200 threads
+</span><span class='line'>tomcat.threads.current{name=http-nio-10610} value=10 threads
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果需要修改打印的频率，可修改LoggingRegistryConfig以更改其打印频率</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  //下面是单独的配置实现的参考，当需要修改配置时候可以使用
+</span><span class='line'>  return new LoggingMeterRegistry(new LoggingRegistryConfig() {
+</span><span class='line'>       @Override
+</span><span class='line'>     public Duration step() {
+</span><span class='line'>         return Duration.ofSeconds(10);//10秒输出一次
+</span><span class='line'>       }
+</span><span class='line'>
+</span><span class='line'>       @Override
+</span><span class='line'>       public String get(String key) {
+</span><span class='line'>            return null;
+</span><span class='line'>       }
+</span><span class='line'>   }, Clock.SYSTEM);
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2018/08/15/rabbitmq-delay-queue/">RabbitMQ实现延迟队列</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2018-08-15T14:56:56+08:00'><span class='date'>2018-08-15 Wed</span> <span class='time'>14:56</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>RabbitMQ本身没有延迟队列的支持，但是基于其本身的一些特性，可以做到类似延迟队列的效果：基于死信交换器+TTL。</p>
+
+<p>以下介绍下相关概念及方法</p>
+
+<h2>Dead Letter Exchanges</h2>
+
+<p>消息在队列满足达到一定的条件，会被认为是死信消息（dead-lettered），这时候，RabbitMQ会重新把这类消息发到另外一个的exchange，这个exchange称为Dead Letter Exchanges.</p>
+
+<p>以下任一条件满足，即可认为是死信：</p>
+
+<ul>
+<li>消息被拒绝消费(basic.reject or basic.nack)并且设置了requeue=fasle</li>
+<li>消息的TTL到了（消息过期）</li>
+<li>达到了队列的长度限制</li>
+</ul>
+
+
+<p>需要注意的是，Dead letter exchanges (DLXs) 其实就是普通的exchange，可以和正常的exchange一样的声明或者使用。</p>
+
+<h2>死信消息路由</h2>
+
+<p>队列中可以设置两个属性：</p>
+
+<ul>
+<li>x-dead-letter-exchange</li>
+<li>x-dead-letter-routing-key</li>
+</ul>
+
+
+<p>当这个队列里面的消息成为死信之后，就会投递到x-dead-letter-exchange指定的exchange中，其中带着的routing key就是中指定的值x-dead-letter-routing-key。</p>
+
+<p>而如果使用默认的exchange(routing key就是希望指定的队列)，则只需要把x-dead-letter-exchange设置为空（不能不设置），类似下面</p>
+
+<p><img src="http://jaskey.github.io/images/rabbitmq/delay-queue-param.png" title="rabbitmq 延迟队列的配置" alt="rabbitmq 延迟队列的配置" /></p>
+
+<p>死信消息的路由则会根据x-dead-letter-routing-key所指定的进行路由，如果这个值没有指定，则会按照消息一开始发送的时候指定的routing key进行路由</p>
+
+<blockquote><p>Dead-lettered messages are routed to their dead letter exchange either:</p>
+
+<p>with the routing key specified for the queue they were on; or, if this was not set,
+with the same routing keys they were originally published with.</p></blockquote>
+
+<p>例如，如果一开始你对exchange X发送消息，带着routing key &ldquo;foo&#8221;，进入了队列 Q然后消息变死信后，他会被重新发送到 dead letter exchange ，其中发给dead letter exchange带着的routing key 还是foo。 但如果这个队列Q本身是设置了x-dead-letter-routing-key  bar， 那么他发送到 dead letter exchange的时候，带着的routing key 就是bar。</p>
+
+<p>需要注意的是，当死信消息重新路由到新的队列的时候，在死信目标队列确认收到这条死信消息之前，原来队列的消息是不会删除的，也就是说在某些异常场景下例如broker突然shutdown，是有机会存在说一个消息既存在于原队列，又存在于死信目标队列。具体可参考官方说明：</p>
+
+<blockquote><p>Dead-lettered messages are re-published with publisher confirms turned on internally so, the &ldquo;dead-letter queues&rdquo; (DLX routing targets) the messages eventually land on must confirm the messages before they are removed from the original queue. In other words, the &ldquo;publishing&rdquo; (the one in which messages expired) queue will not remove messages before the dead-letter queues acknowledge receiving them (see Confirms for details on the guarantees made). Note that, in the event of an unclean broker shutdown, the same message may be duplicated on both the original queue and on the dead-lettering destination queues.</p></blockquote>
+
+<h2>Time-To-Live（TTL）</h2>
+
+<p>开头我们说过，实现延迟队列除了用死信消息外，还需要利用消息过期的TTL机制，因为只要消息过期了，就会触发死信。</p>
+
+<p>RabbitMQ有两种方法让设置消息的TTL：</p>
+
+<h3>直接在消息上设置</h3>
+
+<pre><code>byte[] messageBodyBytes = "Hello, world!".getBytes();
+AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
+.expiration("60000")
+.build();
+channel.basicPublish("my-exchange", "routing-key", properties, messageBodyBytes);
+</code></pre>
+
+<h3>为队列设置消息过期TTL</h3>
+
+<p><img src="http://jaskey.github.io/images/rabbitmq/x-message-ttl.png" title="rabbitmq x-message-ttl" alt="rabbitmq x-message-ttl" /></p>
+
+<p>注意，队列还有一个队列TTL，x-expires，这个的意思是队列空置经过一段时间（没有消费者，没有被重新声明，没有人在上面获取消息（basic.get））后，整个队列便会过期删除，不要混淆</p>
+
+<p><strong>如果同时设置了消息的过期和队列消息过期属性，则取两个较小值。</strong></p>
+
+<h2>设计延迟队列：</h2>
+
+<p>例如，我们需要触发一个推送新闻，30分钟后统计这个新闻的下发情况，我们就需要一个延迟队列，新闻推送后，往延迟队列发送一个消息，这个队列的消息在30分钟后被消费，这时候触发即可统计30分钟的下发情况。我们可以这样设计：</p>
+
+<p>定义一个正常的队列： ARRIVAL_STAT，统计程序监听此队列，进行消费。</p>
+
+<p>定义一个“延迟队列”（RabbitMQ没有这样的队列，这里只是人为的制造一个这样的队列）：DELAY_ARRIVAL_STAT，其中设置好对应的x-dead-letter-exchange，x-dead-letter-routing-key。为了简单说明，我使用默认的exchange，那么配置如下：</p>
+
+<pre><code>x-dead-letter-exchange=“”
+x-dead-letter-routing-key=“ARRIVAL_STAT”
+</code></pre>
+
+<p>意思是，消息当这个队列DELAY_ARRIVAL_STAT的消息变死信之后，就会带着routing key &ldquo;ARRIVAL_STAT&#8221;发送默认的空exchange，即队列ARRIVAL_STAT。</p>
+
+<p>并且这个队列不能有消费者消费消息。</p>
+
+<p>这样我们就实现了消息的死信转发。下一步，只需要让消息在这个DELAY_ARRIVAL_STAT在30分钟后过期变死信即可。按照上文所说，有两种方法，我们可以为队列的消息设置30分钟TTL，或者发送消息的时候指定消息的TTL为30分钟即可。</p>
+
+<p>示例如下：</p>
+
+<p><img src="http://jaskey.github.io/images/rabbitmq/delay-queue-demo.png" title="rabbitmq 延迟队列示意" alt="rabbitmq 延迟队列示意" /></p>
+
+<h2>“延迟队列”的堵塞缺陷</h2>
+
+<p>由于设置了x-dead-letter-exchange的队列本身也是普通队列，其过期的顺序是按照队列头部顺序的过期的。也就是说，如果你队列头的消息A过期时间是5分钟，后面对这个队列发送消息B的带着过期时间1分钟，那么后面的队列B要等队列A过期了才会触发过期：</p>
+
+<blockquote><p>Queues that had a per-message TTL applied to them retroactively (when they already had messages) will discard the messages when specific events occur. Only when expired messages reach the head of a queue will they actually be discarded (or dead-lettered).</p></blockquote>
+
+<p>所以，对于此类多延迟时间的，可以考虑设置多级延迟队列。例如1分钟，5分钟，10分钟，20分钟这样多级的延迟队列，使得延迟相近的尽量放到同一个队列中减少拥堵的最坏情况。</p>
+
+<p><img src="http://jaskey.github.io/images/rabbitmq/multi-delay-queue.png" title="rabbitmq 多级延迟队列" alt="rabbitmq 多级延迟队列" /></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2018/01/15/rabbitmq-note/">RabbitMQ常用命令与配置</a></h1>
     
     
@@ -2542,83 +3138,6 @@ private boolean k;// unitMode = false;
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-04-15T16:45:28+08:00'><span class='date'>2016-04-15 Fri</span> <span class='time'>16:45</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>对于一个Maven项目，如果又是一个tomcat项目，在运行tomcat之前应该要进行Maven的构建。</p>
-
-<p>以下是步骤：</p>
-
-<p>1.新建一个Maven Run/Debug configuration:</p>
-
-<p> <img src="/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
-
-<p>2.在Tomcat Run/Debug Configuration中新增#1的阶段在&#8221;Before Launch&#8221;中</p>
-
-<p> <img src="/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/">如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-04-05T15:15:48+08:00'><span class='date'>2016-04-05 Tue</span> <span class='time'>15:15</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>你很可能根据<a href="https://spring.io/guides/gs/rest-service/" title="官方教程">https://spring.io/guides/gs/rest-service/</a>搭起了一个Spring的Rest服务，然后打包成了jar包，不需要容器就可以在生成环境下通过运行jar包启动一个Web服务。</p>
-
-<p>但这样的服务怎么样正确的停止呢？或许你只是简单的<code>kill -9</code>对应的进程，但实际上，有更优雅的方式。</p>
-
-<p>Spring Boot里面有一个<code>spring-boot-starter-actuator</code>的项目，可以监控和管理Spring Boot应用。其中暴露了很多<a href="http://docs.spring.io/spring-boot/docs/1.3.3.RELEASE/reference/htmlsingle/#production-ready-customizing-endpoints" title="endpoint">endpoint</a>,可以方便的检测应用的健康情况。其中有一个<code>shutdown</code>的endpoint可以优雅地停止应用。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2016/04/05/shutdown-spring-boot-application-gracefully/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -2636,6 +3155,14 @@ private boolean k;// unitMode = false;
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/25/elastic-job-timmer-active-standby/">Elastic Job从单点到高可用、同城主备、同城双活</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
       </li>
     
@@ -2645,14 +3172,6 @@ private boolean k;// unitMode = false;
     
       <li class="post">
         <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
       </li>
     
   </ul>

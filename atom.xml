@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-06-01T01:22:35+08:00</updated>
+  <updated>2020-06-02T21:18:34+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,734 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[记一次因索引合并导致的MySQL死锁分析过程]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/06/01/mysql-deadlock-index-merge/"/>
+    <updated>2020-06-01T19:49:26+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/06/01/mysql-deadlock-index-merge</id>
+    <content type="html"><![CDATA[<p>生产上偶现这段代码会出现死锁，死锁日志如下。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="n">TRANSACTION</span><span class="p">:</span>
+</span><span class='line'><span class="n">TRANSACTION</span> <span class="mi">424487272</span><span class="p">,</span> <span class="n">ACTIVE</span> <span class="mi">0</span> <span class="n">sec</span> <span class="n">fetching</span> <span class="n">rows</span>
+</span><span class='line'><span class="n">mysql</span> <span class="kp">tables</span> <span class="k">in</span> <span class="k">use</span> <span class="mi">3</span><span class="p">,</span> <span class="n">locked</span> <span class="mi">3</span>
+</span><span class='line'><span class="k">LOCK</span> <span class="n">WAIT</span> <span class="mi">6</span> <span class="k">lock</span> <span class="nf">struct</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">heap</span> <span class="n">size</span> <span class="mi">1184</span><span class="p">,</span> <span class="mi">4</span> <span class="n">row</span> <span class="k">lock</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span class='line'><span class="n">MySQL</span> <span class="n">thread</span> <span class="n">id</span> <span class="mi">3205005</span><span class="p">,</span> <span class="n">OS</span> <span class="n">thread</span> <span class="n">handle</span> <span class="mi">0</span><span class="n">x7f39c21c8700</span><span class="p">,</span> <span class="n">query</span> <span class="n">id</span> <span class="mi">567774892</span> <span class="mi">10</span><span class="p">.</span><span class="mi">14</span><span class="p">.</span><span class="mi">34</span><span class="p">.</span><span class="mi">30</span> <span class="n">finance</span> <span class="n">Searching</span> <span class="n">rows</span> <span class="k">for</span> <span class="k">update</span>
+</span><span class='line'><span class="k">update</span> <span class="n">repay_plan_info_1</span>
+</span><span class='line'>     <span class="kt">SET</span> <span class="n">actual_pay_period_amount</span> <span class="o">=</span> <span class="mi">38027</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_principal_amount</span> <span class="o">=</span> <span class="mi">36015</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_interest_amount</span> <span class="o">=</span> <span class="mi">1980</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fee</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fine</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_discount_amount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_status</span> <span class="o">=</span> <span class="s1">&#39;PAYOFF&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_type</span> <span class="o">=</span> <span class="s1">&#39;OVERDUE&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_repay_time</span> <span class="o">=</span> <span class="s1">&#39;2019-08-12 15:48:15.025&#39;</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">WHERE</span> <span class="p">(</span>  <span class="n">user_id</span> <span class="o">=</span> <span class="s1">&#39;938467411690006528&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">loan_order_no</span> <span class="o">=</span> <span class="s1">&#39;LN201907120655461690006528458116&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">seq_no</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">repay_status</span> <span class="o">&lt;&gt;</span> <span class="s1">&#39;PAYOFF&#39;</span> <span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487272</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span>
+</span><span class='line'><span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">64</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">33</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span><span class='line'> <span class="mi">0</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">800000000000051</span><span class="n">e</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">1</span><span class="p">:</span> <span class="n">len</span> <span class="mi">6</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">0000193</span><span class="n">d35df</span><span class="p">;</span> <span class="k">asc</span>    <span class="o">=</span><span class="mi">5</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">2</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">06000001</span><span class="n">d402e7</span><span class="p">;</span> <span class="k">asc</span>        <span class="p">;;</span>
+</span><span class='line'> <span class="mi">3</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">323031393036313332303532303634323936303534323130353730303030</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">201906132052064296054210570000</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">4</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">c4e32303139303631333031323934303136393030303635323831373534</span><span class="p">;</span> <span class="k">asc</span> <span class="n">LN2019061301294016900065281754</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">5</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000002</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">6</span><span class="p">:</span> <span class="n">len</span> <span class="mi">18</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">393338343637343131363930303036353238</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">938467411690006528</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">7</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000003</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">8</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000258</span><span class="p">;</span> <span class="k">asc</span>    <span class="n">X</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">9</span><span class="p">:</span> <span class="n">len</span> <span class="mi">3</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">646179</span><span class="p">;</span> <span class="k">asc</span> <span class="n">day</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">10</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">11</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">12</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000005106</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">Q</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">13</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">14</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000004</span><span class="n">e1e</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">N</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">15</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">16</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000000000002</span><span class="n">d6</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">17</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">18</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">19</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">20</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000012</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">21</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">22</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">23</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">24</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">3230313930383131</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">20190811</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">25</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">f564552445545</span><span class="p">;</span> <span class="k">asc</span> <span class="n">OVERDUE</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">26</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">27</span><span class="p">:</span> <span class="n">len</span> <span class="mi">1</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">59</span><span class="p">;</span> <span class="k">asc</span> <span class="n">Y</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">28</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">29</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a35a1768</span><span class="p">;</span> <span class="k">asc</span>   <span class="n">Z</span> <span class="n">h</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">30</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">5</span><span class="n">d503dd8</span><span class="p">;</span> <span class="k">asc</span> <span class="p">]</span><span class="n">P</span><span class="o">=</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">31</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">32</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a3d80281</span><span class="p">;</span> <span class="k">asc</span>      <span class="p">;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">TRANSACTION</span><span class="p">:</span>
+</span><span class='line'><span class="n">TRANSACTION</span> <span class="mi">424487271</span><span class="p">,</span> <span class="n">ACTIVE</span> <span class="mi">0</span> <span class="n">sec</span> <span class="n">fetching</span> <span class="n">rows</span>
+</span><span class='line'><span class="n">mysql</span> <span class="kp">tables</span> <span class="k">in</span> <span class="k">use</span> <span class="mi">3</span><span class="p">,</span> <span class="n">locked</span> <span class="mi">3</span>
+</span><span class='line'><span class="mi">5</span> <span class="k">lock</span> <span class="nf">struct</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">heap</span> <span class="n">size</span> <span class="mi">1184</span><span class="p">,</span> <span class="mi">3</span> <span class="n">row</span> <span class="k">lock</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span class='line'><span class="n">MySQL</span> <span class="n">thread</span> <span class="n">id</span> <span class="mi">3204980</span><span class="p">,</span> <span class="n">OS</span> <span class="n">thread</span> <span class="n">handle</span> <span class="mi">0</span><span class="n">x7f3db0cf6700</span><span class="p">,</span> <span class="n">query</span> <span class="n">id</span> <span class="mi">567774893</span> <span class="mi">10</span><span class="p">.</span><span class="mi">14</span><span class="p">.</span><span class="mi">34</span><span class="p">.</span><span class="mi">30</span> <span class="n">finance</span> <span class="n">Searching</span> <span class="n">rows</span> <span class="k">for</span> <span class="k">update</span>
+</span><span class='line'><span class="k">update</span> <span class="n">repay_plan_info_1</span>
+</span><span class='line'>     <span class="kt">SET</span> <span class="n">actual_pay_period_amount</span> <span class="o">=</span> <span class="mi">20742</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_principal_amount</span> <span class="o">=</span> <span class="mi">19998</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_interest_amount</span> <span class="o">=</span> <span class="mi">726</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fee</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fine</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_discount_amount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_status</span> <span class="o">=</span> <span class="s1">&#39;PAYOFF&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_type</span> <span class="o">=</span> <span class="s1">&#39;OVERDUE&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_repay_time</span> <span class="o">=</span> <span class="s1">&#39;2019-08-12 15:48:15.025&#39;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">WHERE</span> <span class="p">(</span>  <span class="n">user_id</span> <span class="o">=</span> <span class="s1">&#39;938467411690006528&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">loan_order_no</span> <span class="o">=</span> <span class="s1">&#39;LN201906130129401690006528175485&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">seq_no</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">repay_status</span> <span class="o">&lt;&gt;</span> <span class="s1">&#39;PAYOFF&#39;</span> <span class="p">)</span>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">HOLDS</span> <span class="n">THE</span> <span class="k">LOCK</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span>
+</span><span class='line'><span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">64</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">33</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span><span class='line'> <span class="mi">0</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">800000000000051</span><span class="n">e</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">1</span><span class="p">:</span> <span class="n">len</span> <span class="mi">6</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">0000193</span><span class="n">d35df</span><span class="p">;</span> <span class="k">asc</span>    <span class="o">=</span><span class="mi">5</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">2</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">06000001</span><span class="n">d402e7</span><span class="p">;</span> <span class="k">asc</span>        <span class="p">;;</span>
+</span><span class='line'> <span class="mi">3</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">323031393036313332303532303634323936303534323130353730303030</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">201906132052064296054210570000</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">4</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">c4e32303139303631333031323934303136393030303635323831373534</span><span class="p">;</span> <span class="k">asc</span> <span class="n">LN2019061301294016900065281754</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">5</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000002</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">6</span><span class="p">:</span> <span class="n">len</span> <span class="mi">18</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">393338343637343131363930303036353238</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">938467411690006528</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">7</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000003</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">8</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000258</span><span class="p">;</span> <span class="k">asc</span>    <span class="n">X</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">9</span><span class="p">:</span> <span class="n">len</span> <span class="mi">3</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">646179</span><span class="p">;</span> <span class="k">asc</span> <span class="n">day</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">10</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">11</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">12</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000005106</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">Q</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">13</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">14</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000004</span><span class="n">e1e</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">N</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">15</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">16</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000000000002</span><span class="n">d6</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">17</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">18</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">19</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">20</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000012</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">21</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">22</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">23</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">24</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">3230313930383131</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">20190811</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">25</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">f564552445545</span><span class="p">;</span> <span class="k">asc</span> <span class="n">OVERDUE</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">26</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">27</span><span class="p">:</span> <span class="n">len</span> <span class="mi">1</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">59</span><span class="p">;</span> <span class="k">asc</span> <span class="n">Y</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">28</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">29</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a35a1768</span><span class="p">;</span> <span class="k">asc</span>   <span class="n">Z</span> <span class="n">h</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">30</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">5</span><span class="n">d503dd8</span><span class="p">;</span> <span class="k">asc</span> <span class="p">]</span><span class="n">P</span><span class="o">=</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">31</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">32</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a3d80281</span><span class="p">;</span> <span class="k">asc</span>      <span class="p">;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">137</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">464</span> <span class="k">index</span> <span class="ss">`idx_user_id`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span>
+</span><span class='line'><span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">161</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">2</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span><span class='line'> <span class="mi">0</span><span class="p">:</span> <span class="n">len</span> <span class="mi">18</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">393338343637343131363930303036353238</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">938467411690006528</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">1</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">800000000000051</span><span class="n">e</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="n">WE</span> <span class="n">ROLL</span> <span class="n">BACK</span> <span class="nf">TRANSACTION</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>代码定位</h1>
+
+<p>按照死锁的update sql语句，我们先定位这个死锁SQL中代码是哪个代码片段导致的。后面我们定位到，是如下代码片段导致的：</p>
+
+<p><img src="http://jaskey.github.io/images/mysql-deadlock/deadlock-code.png" alt="deadlock-codedeadlock-code" /></p>
+
+<p>实际上一眼看上去，这段代码有一个很典型的业务开发场景问题：开启事务在for循环写SQL。</p>
+
+<p>注：这在实际的问题定位过程中并不容易，因为死锁日志并不能反向直接定位到方法的对账、线程名等，如果一个库被多个服务同时连接，甚至定位是哪个服务都不容易。</p>
+
+<h1>死锁分析（1）——猜测可能消息重发</h1>
+
+<p>按照死锁的必要条件：<strong>循环等待条件</strong>。即 T1事务应该持有了某把锁L1，然后去申请锁L2，而这时候发现T2事务已经持有了L2，而T2事务又去申请L1，这时候就发生循环等待而死锁。</p>
+
+<p>一开始会猜测，是否我们更新表的顺序在两个事务里面是反方向的，即T1事务更新ta、tb表，锁ta表的记录，准备去拿tb表记录的锁；T2事务更新tb、ta表，锁了tb记录准备去拿ta的锁，这是比较常见的死锁情况。但是从SQL看，我们死锁的SQL是同一张表的，即同一张表不同的记录。</p>
+
+<p>而且从死锁日志中可以发现，两个死锁的SQL居然是“一样”的，也就是说是“同一条”SQL/同一段代码（不同的where条件参数）导致的，。即上图代码中的这段for循环更新还款计划的代码。</p>
+
+<p>但是光这段For循环来看，如果要发生死锁，有可能同一批请求，更新记录的顺序是反过来的，然后又并发执行的时候，可能出现。</p>
+
+<p>一开始会猜测上游触发了两条一样的请求（我们这个场景是MQ重发），出现了并发，两条消息分在两个事务中并发执行。但是如果是MQ导致的原因，FOR循环更新的记录顺序是一样的，一样的顺序意味着一样的一样的加锁顺序，一样的加锁顺序意味着最多出现获取锁超时，不会满足【循环等待】的条件，不可能死锁。所以排除MQ重发的可能。</p>
+
+<h1>死锁分析（2）</h1>
+
+<p>仔细阅读出现问题的两条SQL，可以发现一个规律，这里面都带一个相同的where条件：<code>userId= 938467411690006528</code>，意味着这两个事务的请求都来自一个用户发起的，然后从<code>actual_repay_time = '2019-08-12 15:48:15.025'</code> 来看，的确是瞬间一起执行的两个事务，但是却是不一样的两个借据。对应到真实的用户的操作上，用户的确有可能发起两个借据的同时还款，例如同时结清多笔借据。</p>
+
+<p>通过出现了几次的死锁，总结出了其相同的规律：每次的死锁SQL条件都有一样的特征——<strong>相同的userId+不同的借据+并发</strong>。基本可以断定，相同的用户在同时还款多笔的时候，可能会发现死锁，但很可惜，测试环境、生产环境我们模拟这个场景都无法复现死锁的情况。</p>
+
+<p>只能靠技术手段分析原因了。</p>
+
+<p>思路：这是了两个完全不同的借据环境计划，操作完全不一样的数据记录，为什么会发生死锁呢？是不是锁的不是行而是锁了表？</p>
+
+<h1>死锁日志分析</h1>
+
+<p>从事务1中的</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487272</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>事务2中的</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">HOLDS</span> <span class="n">THE</span> <span class="k">LOCK</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从RECORD LOCKS的标示可知，的确<strong>锁的是行锁</strong>不是表锁。且从&#8221;but not gap&#8221;的信息来看，也不存在间隙锁（注：我们线上隔离级别是read committed,本来就不存在间隙锁问题）。所以锁的位置应该的确是我们操作的行记录才对。但是非常奇怪的是，实际业务上操作的记录的确是完全隔离的（因为是不同的借据，记录没有交集），为什么会冲突呢？</p>
+
+<p>  再细节阅读死锁日志从事务2中获取到了一点线索：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">137</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">464</span> <span class="k">index</span> <span class="ss">`idx_user_id`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span> <span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">161</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">2</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个索引很奇怪，是userid的索引？</p>
+
+<p>分析之前，我们先看先看锁持有情况：</p>
+
+<p>T1等待锁space id 3680 page no 30</p>
+
+<p>T2持有锁space id 3680 page no 30</p>
+
+<p>T2等待锁space id 3680 page no 137</p>
+
+<p>最后回滚了T2</p>
+
+<p>可以<strong>推断space id 3680 page no 137应该被T1持有了</strong>，但是日志中没有显示出来。</p>
+
+<ul>
+<li><p>3680 page no 30这个锁是一个主键索引PRIMARY导致的，实际上我们没有用到我们的自增主键，是非聚集索引，所以这是先锁的非主键索引最后找到的主键去加锁。</p></li>
+<li><p>3680 page no 137这个锁就比较奇怪了，他锁在了idx_user_id这个索引，这个索引是加在userId上的，也就是T2<strong>他正在尝试锁所有这个用户的还款计划的记录！</strong></p></li>
+</ul>
+
+
+<p>如果是这样，问题就解释通了：</p>
+
+<p>T1： 锁了某行记录X（具体怎么锁的，从死锁日志中未能获取），然后准备去获取LN201907120655461690006528458116，SEQ=1的记录的锁。</p>
+
+<p>T2： 锁了LN201907120655461690006528458116，SEQ=1的锁，而他想去锁所有userId=938467411690006528的记录，这里面肯定包含了记录X，所以他无法获得X的锁。</p>
+
+<p>这样就造成死锁了，因为X已经被T1持有了，而T1又在等T2释放LN201907120655461690006528458116，SEQ=1这个锁。</p>
+
+<p>至于为什么T2明明准备操作LN201906130129401690006528175485，SEQ=2的记录，却之前持有了LN201907120655461690006528458116，SEQ=1的锁，大概率不是因为之前的SQL真的操作LN201907120655461690006528458116，SEQ=1的记录，也是因为他之前本想持有别的记录（从锁的详细信息上猜，可能是LN2019061301294016900065281754的相关记录），但是因为这个idx_user_id的索引问题，顺带锁着了LN201907120655461690006528458116，SEQ=1，因为都属于一个userId。</p>
+
+<p>所以从时间线上分析，顺序应该是：</p>
+
+<ol>
+<li><p>T1锁了某记录X</p></li>
+<li><p>T2锁了某记录Y（从hold this lock的日志细节中推断，是LN2019061301294016900065281754），然后准备锁LN201906130129401690006528175485，SEQ=2，这时候的这条SQL触发了idx_user_id，连带一起锁锁住了LN201907120655461690006528458116，SEQ=1并准备锁其它同用户记录</p></li>
+<li><p>T1 执行下一条sql，准备获取LN201907120655461690006528458116，SEQ=1的锁，发现被T2获取了，等待。</p></li>
+<li><p>T2在锁其它记录的过程中发现了X，但是锁不住，发现X被T1持有。而自己又持有了LN201907120655461690006528458116，SEQ=1这行记录的锁。</p></li>
+</ol>
+
+
+<p>这时候循环等待，死锁！</p>
+
+<p>所以根源是为什么SQL会使用idx_user_id这个索引呢？</p>
+
+<h2>索引信息</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="ss">`id`</span><span class="p">),</span>
+</span><span class='line'><span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="ss">`uk_repay_order`</span> <span class="p">(</span><span class="ss">`loan_order_no`</span><span class="p">,</span><span class="ss">`seq_no`</span><span class="p">),</span>
+</span><span class='line'><span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="ss">`uk_repay_plan_no`</span> <span class="p">(</span><span class="ss">`repay_plan_no`</span><span class="p">),</span>
+</span><span class='line'><span class="k">KEY</span> <span class="ss">`idx_user_id`</span> <span class="p">(</span><span class="ss">`user_id`</span><span class="p">),</span>
+</span><span class='line'><span class="k">KEY</span> <span class="ss">`idx_create_time`</span> <span class="p">(</span><span class="ss">`create_time`</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从唯一主键是UNIQUE KEY <code>uk_repay_order</code> (<code>loan_order_no</code>,<code>seq_no</code>)</p>
+
+<p>从我们SQL上看<code>loan_order_no</code>+<code>seq_no</code>是唯一主键，应该肯定能唯一定位一行记录，索引应该使用这个是最优的才对。</p>
+
+<p>这时候我们去看T2的那条SQL的执行计划得知：其没有使用索引uk_repay_order，而使用了一个type: index_merge，走的索引是uk_repay_order_,idx_user_id，也就是他居然两个索引同时生效了。</p>
+
+<p><img src="http://jaskey.github.io/images/mysql-deadlock/deadlock-explain.png" alt="deadlock-codedeadlock-code" /></p>
+
+<h1>解决方案</h1>
+
+<p>实际上，由于index merge，客观上就会增加update语句的死锁可能性，相关bug连接如下：<a href="https://bugs.mysql.com/bug.php?id=77209">https://bugs.mysql.com/bug.php?id=77209</a></p>
+
+<p>而其实如果出现了index merge，在很多情况下意味着我们索引的建立可能并不合理。</p>
+
+<p>解决方案有两个：</p>
+
+<ol>
+<li>建立联合索引，以避免index merge，让联合索引生效则不会因此锁住所有该userId的记录</li>
+<li>取消index merge的优化</li>
+</ol>
+
+
+<h1>遗留问题</h1>
+
+<p>什么时候才会触发index merge，这个在文档中似乎并没有很明确的触发实际，从这些死锁的SQL来看，某些SQL在事后explain的时候，并没有走index merge，而有些却走了。从本案例来看，事务1的SQL并没有走index merge，但是事务2这样类似的SQL却走了。</p>
+
+<p>只查到一个必要条件是：</p>
+
+<blockquote><p>Intersect和Union都需要使用的索引是ROR的，也就时ROWID ORDERED，即针对不同的索引扫描出来的数据必须是同时按照ROWID排序的，这里的 ROWID其实也就是InnoDB的主键(如果不定义主键，InnoDB会隐式添加ROWID列作为主键)。只有每个索引是ROR的，才能进行归并排序，你懂的。 当然你可能会有疑惑，查不记录后内部进行一次sort不一样么，何必必须要ROR呢，不错，所以有了SORT-UNION。SORT-UNION就是每个非ROR的索引 排序后再进行Merge
+– 来自 <a href="http://www.cnblogs.com/nocode/archive/2013/01/28/2880654.html">http://www.cnblogs.com/nocode/archive/2013/01/28/2880654.html</a></p></blockquote>
+
+<p>为此我在stackoverflow 提了一个问题看后续有结论再更新：<a href="https://stackoverflow.com/questions/57987713/why-mysql-decide-to-use-index-merge-though-i-have-already-use-a-unique-key-index">https://stackoverflow.com/questions/57987713/why-mysql-decide-to-use-index-merge-though-i-have-already-use-a-unique-key-index</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Elastic Job从单点到高可用、同城主备、同城双活]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/05/25/elastic-job-timmer-active-standby/"/>
+    <updated>2020-05-25T20:49:13+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/05/25/elastic-job-timmer-active-standby</id>
+    <content type="html"><![CDATA[<p>在使用Elastic  Job Lite做定时任务的时候，我发现很多开发的团队都是直接部署单点，这对于一些离线的非核心业务（如对账、监控等）或许无关紧要，但对于一些高可用补偿、核心数据定时修改（如金融场景的利息更新等），单点部署则“非常危险”。实际上，Elastic  Job Lite是支持高可用的。网上关于Elastic Job的较高级的博文甚少，本文试图结合自身实践的一些经验，大致讲解其方案原理，并延伸至同城双机房的架构实践。</p>
+
+<p>注：本文所有讨论均基于开源版本的Elastic Job Lite， 不涉及Elastic Job Cloud部分。</p>
+
+<h2>单点部署到高可用</h2>
+
+<p>如本文开头所说，很多系统的部署是采取以下部署架构：</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-single.png" alt="esjob-single" /></p>
+
+<p>原因是开发者<strong>担心定时任务在同一时刻被触发多次</strong>，导致业务有问题。实际上这是对于框架最基本的原理不了解。在官方文档的功能列表里<a href="http://elasticjob.io/docs/elastic-job-lite/00-overview/%EF%BC%8C%E4%B8%80%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E5%8A%9F%E8%83%BD%E5%B0%B1%E6%98%AF%EF%BC%9A">http://elasticjob.io/docs/elastic-job-lite/00-overview/%EF%BC%8C%E4%B8%80%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E5%8A%9F%E8%83%BD%E5%B0%B1%E6%98%AF%EF%BC%9A</a></p>
+
+<blockquote><p>作业分片一致性，保证同一分片在分布式环境中仅一个执行实例</p></blockquote>
+
+<p>Elastic Job会依赖zookeeper选举出对应的实例做sharding，从而保证只有一个实例在执行同一个分片（如果任务没有采取分片，及分片数是0，就意味着这个任务只有一个实例在执行）</p>
+
+<p><img src="https://camo.githubusercontent.com/f4d957e95b07c98cc1fe899b68915ad8e44c8f81/687474703a2f2f656c61737469636a6f622e696f2f646f63732f656c61737469632d6a6f622d6c6974652f696d672f6172636869746563747572652f656c61737469635f6a6f625f6c6974652e706e67" alt="elastic-job-架构" /></p>
+
+<p>所以如下图所示的部署架构是完全没问题的——一来，服务只会被一个实例调用，二来，如果某个服务挂了，其他实例也能接管继续提供服务从而实现高可用。</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster.png" alt="esjob-single" /></p>
+
+<h1>双机房高可用</h1>
+
+<p>随着互联网业务的发展，慢慢地，对架构的高可用会有更高的要求。下一步可能就是需要同城两机房部署，那这时候为了保证定时服务在两个机房的高可用，我们架构上可能会变成这样的：</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc.png" alt="esjob-single" /></p>
+
+<p>这样如果A机房的定时任务全部不可用了，B机房的确也能接手提供服务。而且由于集群是一个，Elastic Job能保证同一个分片在两个机房也只有一个实例运行。看似挺完美的。</p>
+
+<p>注：本文不讨论zookeeper如何实现双机房的高可用，实际上从zookeeper的原理来看，仅仅两个机房组成一个大集群并不可以实现双机房高可用。</p>
+
+<h1>优先级调度？</h1>
+
+<p>以上的架构解决了定时任务在两个机房都可用的问题，但是实际的生产中，定时任务很可能是依赖存储的数据源的。而这个数据源，通常是有主备之分（这里不考虑单元化的架构的情况）：例如主在A机房，备在B机房做实时同步。</p>
+
+<p>如果这个定时任务只有读操作，可能没问题，因为只要配置数据源连接同机房的数据源即可。但是如果是要写入的，就有一个问题——如果所有任务都在B机房被调度了，那么这些数据的写入都会跨机房地往A机房写入，这样延迟就大大提升了，如下图所示。</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc-problem.png" alt="esjob-single" /></p>
+
+<p>如图所示，如果Elastic Job把任务都调度到了B机房，那么流量就一直跨机房写了，这样对于性能来说是不好的事情。</p>
+
+<p>那么有没有办法达到如下效果了：</p>
+
+<ol>
+<li>保证两个机房都随时可用，也就是一个机房的服务如果全部不可用了，另外一个机房能提供对等的服务</li>
+<li>但一个任务可以优先指定A机房执行</li>
+</ol>
+
+
+<h2>Elastic Job分片策略</h2>
+
+<p>在回答这个问题之前，我们需要了解下Elastic Job的分片策略，根据官网的说明（<a href="http://elasticjob.io/docs/elastic-job-lite/02-guide/job-sharding-strategy/">http://elasticjob.io/docs/elastic-job-lite/02-guide/job-sharding-strategy/</a>  ） ，Elastic Job是内置了一些分片策略可选的，其中有平均分配算法，作业名的哈希值奇偶数决定IP升降序算法和作业名的哈希值对服务器列表进行轮转；同时也是支持自定义的策略，实现实现<code>JobShardingStrategy</code>接口并实现<code>sharding</code>方法即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="nf">sharding</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstances</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">,</span> <span class="kt">int</span> <span class="n">shardingTotalCount</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>假设我们可以实现这一的自定义策略：让做分片的时候知道哪些实例是A机房的，哪些是B机房的，然后我们知道A机房是优先的，在做分片策略的时候先把B机房的实例踢走，再复用原来的策略做分配。这不就解决我们的就近接入问题（接近数据源）了吗？</p>
+
+<p>以下是利用装饰器模式自定义的一个装饰器类（抽象类，由子类判断哪些实例属于standby的实例），读者可以结合自身业务场景配合使用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">JobShardingStrategyActiveStandbyDecorator</span> <span class="kd">implements</span> <span class="n">JobShardingStrategy</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//内置的分配策略采用原来的默认策略：平均</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">JobShardingStrategy</span> <span class="n">inner</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">AverageAllocationJobShardingStrategy</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 判断一个实例是否是备用的实例，在每次触发sharding方法之前会遍历所有实例调用此方法。</span>
+</span><span class='line'><span class="cm">     * 如果主备实例同时存在于列表中，那么备实例将会被剔除后才进行sharding</span>
+</span><span class='line'><span class="cm">     * @param jobInstance</span>
+</span><span class='line'><span class="cm">     * @return</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kd">abstract</span> <span class="kt">boolean</span> <span class="nf">isStandby</span><span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="nf">sharding</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstances</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">,</span> <span class="kt">int</span> <span class="n">shardingTotalCount</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstancesCandidates</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">jobInstances</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">removeInstance</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="kt">boolean</span> <span class="n">removeSelf</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span> <span class="o">:</span> <span class="n">jobInstances</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="kt">boolean</span> <span class="n">isStandbyInstance</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">isStandbyInstance</span> <span class="o">=</span> <span class="n">isStandby</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">,</span> <span class="n">jobName</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;isStandBy throws error, consider as not standby&quot;</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">isStandbyInstance</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="o">(</span><span class="n">IpUtils</span><span class="o">.</span><span class="na">getIp</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">.</span><span class="na">getIp</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>                    <span class="n">removeSelf</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>                <span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">removeInstance</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span><span class="c1">//移除后发现没有实例了，就不移除了，用原来的列表（后备）的顶上</span>
+</span><span class='line'>            <span class="n">jobInstancesCandidates</span> <span class="o">=</span> <span class="n">jobInstances</span><span class="o">;</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] ATTENTION!! Only backup job instances exist, but do sharding with them anyway {}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">jobInstances</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] remove backup before really do sharding, removeSelf :{} , remove instances: {}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">removeSelf</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">removeInstance</span><span class="o">));</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] after remove backups :{}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">//全部都是master或者全部都是slave</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] job instances just remain the same {}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//保险一点，排序一下，保证每个实例拿到的列表肯定是一样的</span>
+</span><span class='line'>        <span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">sort</span><span class="o">((</span><span class="n">o1</span><span class="o">,</span> <span class="n">o2</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">o1</span><span class="o">.</span><span class="na">getJobInstanceId</span><span class="o">().</span><span class="na">compareTo</span><span class="o">(</span><span class="n">o2</span><span class="o">.</span><span class="na">getJobInstanceId</span><span class="o">()));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">inner</span><span class="o">.</span><span class="na">sharding</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">shardingTotalCount</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>利用自定义策略实现同城双机房下的优先级调度</h2>
+
+<p>以下是一个很简单的就近接入的例子： 指定在ip白名单的，就是优先执行的，不在的都认为是备用的。我们看如何实现。</p>
+
+<h3>一、继承此装饰器策略，指定哪些实例是standby实例</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ActiveStandbyESJobStrategy</span> <span class="kd">extends</span> <span class="n">JobShardingStrategyActiveStandbyDecorator</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isStandby</span><span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">activeIps</span> <span class="o">=</span> <span class="s">&quot;10.10.10.1,10.10.10.2&quot;</span><span class="o">;</span><span class="c1">//只有这两个ip的实例才是优先执行的，其他都是备用的</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">ss</span><span class="o">[]</span> <span class="o">=</span> <span class="n">activeIps</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;,&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">!</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">ss</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">.</span><span class="na">getIp</span><span class="o">());</span><span class="c1">//不在active名单的就是后备</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很简单吧！这样实现之后，就能达到以下类似的效果</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc-active-standby.png" alt="esjob-single" /></p>
+
+<h3>二、 在任务启动前，指定使用这个策略</h3>
+
+<p>以下以Java的方式示意，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">JobCoreConfiguration</span> <span class="n">simpleCoreConfig</span> <span class="o">=</span> <span class="n">JobCoreConfiguration</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">(</span><span class="n">jobClass</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">cron</span><span class="o">,</span> <span class="n">shardingTotalCount</span><span class="o">).</span><span class="na">shardingItemParameters</span><span class="o">(</span><span class="n">shardingItemParameters</span><span class="o">).</span><span class="na">build</span><span class="o">();</span>
+</span><span class='line'><span class="n">SimpleJobConfiguration</span> <span class="n">simpleJobConfiguration</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SimpleJobConfiguration</span><span class="o">(</span><span class="n">simpleCoreConfig</span><span class="o">,</span> <span class="n">jobClass</span><span class="o">.</span><span class="na">getCanonicalName</span><span class="o">());</span>
+</span><span class='line'><span class="k">return</span> <span class="n">LiteJobConfiguration</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">(</span><span class="n">simpleJobConfiguration</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">jobShardingStrategyClass</span><span class="o">(</span><span class="s">&quot;com.xxx.yyy.job.ActiveStandbyESJobStrategy&quot;</span><span class="o">)</span><span class="c1">//使用主备的分配策略，分主备实例（输入你的实现类类名）</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样就大功告成了。</p>
+
+<h1>同城双活模式</h1>
+
+<p>以上这样改造后，针对定时任务就已经解决了两个问题：</p>
+
+<p>1、定时任务能实现在两个机房下的高可用</p>
+
+<p>2、任务能优先调度到指定机房</p>
+
+<p>这种模式下，对于定时任务来说，B机房其实只是个备机房——因为A机房永远都是优先调度的。</p>
+
+<p>对于B机房是否有一些实际问题其实我们可能是不知道的（常见的例如数据库权限没申请），由于没有流量的验证，这时候真的出现容灾问题，B机房是否能安全接受其实并不是100%稳妥的。</p>
+
+<p>我们能否再进一步做到同城双活呢？也就是，B机房也会承担一部分的流量？例如10%？</p>
+
+<p>回到自定义策略的sharding接口：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="nf">sharding</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstances</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">,</span> <span class="kt">int</span> <span class="n">shardingTotalCount</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在做分配的时候，是能拿到一个任务实例的全景图（所有实例列表），当前的任务名，和分片数。</p>
+
+<p>基于此其实是可以做一些事情把流量引流到B机房实例的，例如：</p>
+
+<ol>
+<li>指定任务的主机房让其是B机房优先调度（例如挑选部分只读任务，占10%的任务数）</li>
+<li>对于分片的分配，把末尾（如1/10）的分片优先分配给B机房。</li>
+</ol>
+
+
+<p>以上两种方案都能实现让A、B两个机房都有流量（有任务在被调度），从而实现所谓的双活。</p>
+
+<p>以下针对上面抛出来的方案一，给出一个双活的示意代码和架构。</p>
+
+<p>假设我们定时任务有两个任务，TASK_A_FIRST，TASK_B_FIRST，其中TASK_B_FIRST是一个只读的任务，那么我们可以让他配置读B机房的备库让他优先运行在B机房，而TASK_A_FIRST是一个更为频繁的任务，而且带有写操作，我们则优先运行在A机房，从而实现双机房均有流量。</p>
+
+<p>注：这里任意一个机房不可用了，任务均能在另外一个机房调度，这里增强的只是对于不同任务做针对性的优先调度实现双活</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ActiveStandbyESJobStrategy</span> <span class="kd">extends</span> <span class="n">JobShardingStrategyActiveStandbyDecorator</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isStandby</span><span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>         <span class="n">String</span> <span class="n">activeIps</span> <span class="o">=</span> <span class="s">&quot;10.10.10.1,10.10.10.2&quot;</span><span class="o">;</span><span class="c1">//默认只有这两个ip的实例才是优先执行的，其他都是备用的</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;TASK_B_FIRST&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">jobName</span><span class="o">)){</span><span class="c1">//选择这个任务优先调度到B机房</span>
+</span><span class='line'>           <span class="n">activeIps</span> <span class="o">=</span> <span class="s">&quot;10.11.10.1,10.11.10.2&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">ss</span><span class="o">[]</span> <span class="o">=</span> <span class="n">activeIps</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;,&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">!</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">ss</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">.</span><span class="na">getIp</span><span class="o">());</span><span class="c1">//不在active名单的就是后备</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc-2live.png" alt="esjob-single" /></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决]]></title>
@@ -4359,110 +5087,6 @@ private boolean k;// unitMode = false;
 <li>使用 Java class上传作为过滤表达式是一个双刃剑——一方面方便了应用的过滤操作且节省网卡资源，另一方面也带来了服务器端的安全风险。这就需要应用来保证过滤代码安全——例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
 </ul>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在IntilliJ中运行Maven的Tomcat项目]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij/"/>
-    <updated>2016-04-15T16:45:28+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/04/15/run-maven-tomcat-app-in-intelij</id>
-    <content type="html"><![CDATA[<p>对于一个Maven项目，如果又是一个tomcat项目，在运行tomcat之前应该要进行Maven的构建。</p>
-
-<p>以下是步骤：</p>
-
-<p>1.新建一个Maven Run/Debug configuration:</p>
-
-<p> <img src="https://Jaskey.github.io/images/intellij/new_maven_config.jpg" title="新建一个Maven Run/Debug configuration" alt="新建一个Maven Run/Debug configuration" /></p>
-
-<p>2.在Tomcat Run/Debug Configuration中新增#1的阶段在&#8221;Before Launch&#8221;中</p>
-
-<p> <img src="https://Jaskey.github.io/images/intellij/add_maven_build_to_tomcat_config.jpg" title="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" alt="在Tomcat Run/Debug Configuration中新增#1的阶段在&quot;Before Launch&quot;中" /></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[如何优雅地停止运行中的内嵌Tomcat的Spring Boot应用]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully/"/>
-    <updated>2016-04-05T15:15:48+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/04/05/shutdown-spring-boot-application-gracefully</id>
-    <content type="html"><![CDATA[<p>你很可能根据<a href="https://spring.io/guides/gs/rest-service/" title="官方教程">https://spring.io/guides/gs/rest-service/</a>搭起了一个Spring的Rest服务，然后打包成了jar包，不需要容器就可以在生成环境下通过运行jar包启动一个Web服务。</p>
-
-<p>但这样的服务怎么样正确的停止呢？或许你只是简单的<code>kill -9</code>对应的进程，但实际上，有更优雅的方式。</p>
-
-<p>Spring Boot里面有一个<code>spring-boot-starter-actuator</code>的项目，可以监控和管理Spring Boot应用。其中暴露了很多<a href="http://docs.spring.io/spring-boot/docs/1.3.3.RELEASE/reference/htmlsingle/#production-ready-customizing-endpoints" title="endpoint">endpoint</a>,可以方便的检测应用的健康情况。其中有一个<code>shutdown</code>的endpoint可以优雅地停止应用。</p>
-
-<!--more-->
-
-
-<h2>Maven基本配置</h2>
-
-<p>使用Maven的话，可以用以下方式配置：</p>
-
-<h3>增加依赖</h3>
-
-<pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<h3>配置文件配置启用shutdown的HTTP访问</h3>
-
-<pre><code>#启用 shutdown endpoint的HTTP访问
-endpoints.shutdown.enabled=true
-#不需要用户名密码验证 
-endpoints.shutdown.sensitive=false
-</code></pre>
-
-<h3>POST请求到shutdown路径</h3>
-
-<p>以上配置完成后，可以使用<code>curl -X POST localhost:port/shutdown</code>发动post请求，即可优雅的停止应用：</p>
-
-<pre><code>curl -X POST localhost:8088/manage/shutdown      
-{"message":"Shutting down, bye..."}
-</code></pre>
-
-<h2>密码安全配置</h2>
-
-<p>若需要安全验证，则需要以下依赖：</p>
-
-<pre><code>&lt;dependency&gt;
-  &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-  &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<p>并配置你想要密码验证的endpoint的<code>sensitive=true</code>.</p>
-
-<pre><code>endpoints.shutdown.sensitive=true
-</code></pre>
-
-<p>在<code>application.properties文件</code>配置对应的密码：</p>
-
-<pre><code>security.user.name=admin
-security.user.password=secret
-management.security.role=SUPERUSER
-</code></pre>
-
-<h2>路径/端口/ip访问限制</h2>
-
-<p>很可能这种监控你只需要在本机访问（如只有本机才能关闭应用），若需要如此，可以考虑以下管理配置</p>
-
-<pre><code>##management endpoint的路径，默认为/
-management.context-path=/manage
-
-##management endpoint的监听端口
-management.port=8081
-
-##management endpoint只允许来自本机的连接
-management.address=127.0.0.1
-</code></pre>
-
-<hr />
-
-<p>参考：
-<a href="https://github.com/spring-projects/spring-boot/blob/master/spring-boot-docs/src/main/asciidoc/production-ready-features.adoc#endpoints" title="spring boot文档">Spring Boot文档</a></p>
 ]]></content>
   </entry>
   

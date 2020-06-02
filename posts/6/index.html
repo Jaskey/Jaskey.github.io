@@ -77,6 +77,191 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
+
+<h2>准备工作：</h2>
+
+<p>和  <a href="http://jaskey.github.io/blog/2014/09/04/how-to-octopress/">之前写的“如何开始使用octopress”</a>一样，要先安装相应的软件</p>
+
+<ol>
+<li><a href="http://git-scm.com/">安装Git</a></li>
+<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
+<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
+<li>建立一个文件夹，例如在C：/github</li>
+</ol>
+
+
+<h1>克隆项目</h1>
+
+<p>接下来我们需要把已经建好的博客项目clone下来。</p>
+
+<h2>克隆source分支</h2>
+
+<pre><code>$ git clone -b source git@github.com:username/username.github.com.git octopress ##octopress 为你的项目文件夹
+</code></pre>
+
+<h2>克隆master分支</h2>
+
+<pre><code>$ cd octopress ##进入项目
+$ git clone git@github.com:username/username.github.com.git _deploy ##克隆master分支到_deploy 
+</code></pre>
+
+<h1>配置环境</h1>
+
+<pre><code>$ gem install bundler
+$ rbenv rehash    # If you use rbenv, rehash to be able to run the bundle command
+$ bundle install
+$ rake setup_github_pages
+</code></pre>
+
+<p>然后它会询问你的项目仓库的URL:</p>
+
+<blockquote><p>Enter the read/write url for your repository
+(For example, &lsquo;git@github.com:your_username/your_username.github.com)</p></blockquote>
+
+<p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
+
+<h1>更新变化（重要）</h1>
+
+<p>每次使用前，先确保拿到最新的文件</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+
+<h1>提交</h1>
+
+<p>提交的时候，由于需要多台机器协作，需要把source分支push到origin中，这样另外一台机器才能拿到最新的源文件。</p>
+
+<pre><code>$ rake generate
+$ git add .
+$ git commit -am "提交评论" 
+$ git push origin source  # 更新远程 source branch 
+$ rake deploy             # 更新远程 master branch，并部署博文
+</code></pre>
+
+<h1>另外的机器更新变化</h1>
+
+<p>在另外的机器上，就可以获取到相应的变化。</p>
+
+<pre><code>$ cd octopress  #进入项目目录
+$ git pull origin source  # 更新本地source branch
+$ cd ./_deploy  #进入_deploy目录
+$ git pull origin master  # 更新本地master branch
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/13/java-synchronization/">谈谈Java同步机制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'>2014-10-13 Mon</span> <span class='time'>21:11</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
+今天简单谈谈Java的同步机制。</p>
+
+<p>我们以一个十分简单的例子讲起。</p>
+
+<pre><code>int i=0
+public int getNextI(){
+    return ++i;
+}
+</code></pre>
+
+<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
+
+<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
+
+<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
+
+<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
+
+<h2>volatile</h2>
+
+<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
+
+<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
+
+<h2>synchronized</h2>
+
+<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
+
+<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
+
+<p>我们可以改成</p>
+
+<pre><code>public synchronized int getNextI(){
+    return i++;
+}
+</code></pre>
+
+<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
+
+<p>注：
+如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
+
+<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
+
+<pre><code>public  int getNextI(){
+    synchronized(this){
+        return i++;
+    }
+}
+</code></pre>
+
+<p>更多文档可参考：</p>
+
+<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/10/11/understanding-soa/">初探SOA</a></h1>
     
     
@@ -672,137 +857,9 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/09/04/how-to-octopress/">Windows7上配置和使用Octopress</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-04T17:26:00+08:00'><span class='date'>2014-09-04 Thu</span> <span class='time'>17:26</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>本文翻译自：
-<a href="http://www.techelex.org/setup-octopress-on-windows7/">setup octopress on windows 7</a></p>
-
-<hr />
-
-<h2>准备工作：</h2>
-
-<ol>
-<li><a href="http://git-scm.com/">安装Git</a></li>
-<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
-<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 use <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
-<li>建立一个文件夹，例如在C：/github</li>
-</ol>
-
-
-<p>配置Octopress:</p>
-
-<pre><code>cd c:/github
-git clone git://github.com/imathis/octopress.git octopress #clone一个仓库，此处替换 octopress 成为 username.github.io
-cd octopress #进入clone出来的项目
-ruby --version # 应该会报出ruby 版本如 Ruby 1.9.3
-</code></pre>
-
-<p>然后进行相关初始化：</p>
-
-<pre><code>cd C:/RubyDevKit
-ruby dk.rb init
-ruby dk.rb install
-</code></pre>
-
-<p>安装依赖：</p>
-
-<pre><code>cd c:/github/octopress #replace octopress with username.github.io
-gem install bundler//若出现https连接不上，到home目录下找.gemrc文件，然后在source修改https为http
-bundle install   //若需要代理，提前设置相关环境变量：export http_proxy=http://user:password@host:port。若https连接不上，到GemFile中的source的https修改为http
-</code></pre>
-
-<p>安装默认的OctoPress 主题：</p>
-
-<pre><code>rake install
-</code></pre>
-
-<hr />
-
-<h2>建立Github的仓库</h2>
-
-<p>命名为：你的名字.github.io</p>
-
-<h2>部署</h2>
-
-<pre><code>rake setup_github_pages
-</code></pre>
-
-<p>这样做的结果是：</p>
-
-<ol>
-<li>询问你的Github Pages 的仓库URL。</li>
-<li>从origin重命名指向imathis/octopress 的remote 到octopress</li>
-<li>增加你的Github pages 的仓库为默认的 origin remote</li>
-<li>当前branch 从master 转换到source</li>
-<li>配置你的博客url</li>
-<li>在_deploy文件下下配置一个master 分支用于开发</li>
-</ol>
-
-
-<hr />
-
-<h2>发布：</h2>
-
-<pre><code>rake generate
-rake deploy
-</code></pre>
-
-<hr />
-
-<p>这样就会生成你的博客，复制生成的文件到_deploy/下，并增加到git，commit 和push到master分支。</p>
-
-<p>最后，commit源文件</p>
-
-<pre><code>git add .
-git commit -m '提交信息'
-git push origin source
-</code></pre>
-
-<p>现在，访问你的用户名.github.io就可以访问你的博客了。（第一次可能会延迟十几分钟）</p>
-
-<hr />
-
-<h2>新增博文</h2>
-
-<pre><code>rake new_post["title"]
-</code></pre>
-
-<p>这里会生成一个markdown文件到source/_posts下</p>
-
-<p>修改此markdown文件，再次发布，即可看到新的博文。</p>
-
-<hr />
-
-<p>有关markdown的语法和使用请参看<a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a></p>
-
-<p>更多octopress命令是查看：<a href="http://octopress.org/docs/blogging/">http://octopress.org/docs/blogging/</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/posts/7">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -817,6 +874,14 @@ git push origin source
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/25/elastic-job-timmer-active-standby/">Elastic Job从单点到高可用、同城主备、同城双活</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
       </li>
     
@@ -826,14 +891,6 @@ git push origin source
     
       <li class="post">
         <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
       </li>
     
   </ul>

@@ -1,0 +1,639 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Elastic Job从单点到高可用、同城主备、同城双活 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="Elastic Job如何实现高可用？又如何实现同城双活？">
+  <meta name="keywords" content="Elastic-Job, java">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="https://Jaskey.github.io/blog/2020/05/25/elastic-job-timmer-active-standby">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+
+  <!--linkedin source-->
+  <script type="text/javascript" src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">主页</a></li>
+  <li><a href="/blog/archives/">所有博文</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Elastic Job从单点到高可用、同城主备、同城双活</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2020-05-25T20:49:13+08:00'><span class='date'>2020-05-25 Mon</span> <span class='time'>20:49</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>在使用Elastic  Job Lite做定时任务的时候，我发现很多开发的团队都是直接部署单点，这对于一些离线的非核心业务（如对账、监控等）或许无关紧要，但对于一些高可用补偿、核心数据定时修改（如金融场景的利息更新等），单点部署则“非常危险”。实际上，Elastic  Job Lite是支持高可用的。网上关于Elastic Job的较高级的博文甚少，本文试图结合自身实践的一些经验，大致讲解其方案原理，并延伸至同城双机房的架构实践。</p>
+
+<p>注：本文所有讨论均基于开源版本的Elastic Job Lite， 不涉及Elastic Job Cloud部分。</p>
+
+<h2>单点部署到高可用</h2>
+
+<p>如本文开头所说，很多系统的部署是采取以下部署架构：</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-single.png" alt="esjob-single" /></p>
+
+<p>原因是开发者<strong>担心定时任务在同一时刻被触发多次</strong>，导致业务有问题。实际上这是对于框架最基本的原理不了解。在官方文档的功能列表里<a href="http://elasticjob.io/docs/elastic-job-lite/00-overview/%EF%BC%8C%E4%B8%80%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E5%8A%9F%E8%83%BD%E5%B0%B1%E6%98%AF%EF%BC%9A">http://elasticjob.io/docs/elastic-job-lite/00-overview/%EF%BC%8C%E4%B8%80%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E5%8A%9F%E8%83%BD%E5%B0%B1%E6%98%AF%EF%BC%9A</a></p>
+
+<blockquote><p>作业分片一致性，保证同一分片在分布式环境中仅一个执行实例</p></blockquote>
+
+<p>Elastic Job会依赖zookeeper选举出对应的实例做sharding，从而保证只有一个实例在执行同一个分片（如果任务没有采取分片，及分片数是0，就意味着这个任务只有一个实例在执行）</p>
+
+<p><img src="https://camo.githubusercontent.com/f4d957e95b07c98cc1fe899b68915ad8e44c8f81/687474703a2f2f656c61737469636a6f622e696f2f646f63732f656c61737469632d6a6f622d6c6974652f696d672f6172636869746563747572652f656c61737469635f6a6f625f6c6974652e706e67" alt="elastic-job-架构" /></p>
+
+<p>所以如下图所示的部署架构是完全没问题的——一来，服务只会被一个实例调用，二来，如果某个服务挂了，其他实例也能接管继续提供服务从而实现高可用。</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster.png" alt="esjob-single" /></p>
+
+<h1>双机房高可用</h1>
+
+<p>随着互联网业务的发展，慢慢地，对架构的高可用会有更高的要求。下一步可能就是需要同城两机房部署，那这时候为了保证定时服务在两个机房的高可用，我们架构上可能会变成这样的：</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc.png" alt="esjob-single" /></p>
+
+<p>这样如果A机房的定时任务全部不可用了，B机房的确也能接手提供服务。而且由于集群是一个，Elastic Job能保证同一个分片在两个机房也只有一个实例运行。看似挺完美的。</p>
+
+<p>注：本文不讨论zookeeper如何实现双机房的高可用，实际上从zookeeper的原理来看，仅仅两个机房组成一个大集群并不可以实现双机房高可用。</p>
+
+<h1>优先级调度？</h1>
+
+<p>以上的架构解决了定时任务在两个机房都可用的问题，但是实际的生产中，定时任务很可能是依赖存储的数据源的。而这个数据源，通常是有主备之分（这里不考虑单元化的架构的情况）：例如主在A机房，备在B机房做实时同步。</p>
+
+<p>如果这个定时任务只有读操作，可能没问题，因为只要配置数据源连接同机房的数据源即可。但是如果是要写入的，就有一个问题——如果所有任务都在B机房被调度了，那么这些数据的写入都会跨机房地往A机房写入，这样延迟就大大提升了，如下图所示。</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc-problem.png" alt="esjob-single" /></p>
+
+<p>如图所示，如果Elastic Job把任务都调度到了B机房，那么流量就一直跨机房写了，这样对于性能来说是不好的事情。</p>
+
+<p>那么有没有办法达到如下效果了：</p>
+
+<ol>
+<li>保证两个机房都随时可用，也就是一个机房的服务如果全部不可用了，另外一个机房能提供对等的服务</li>
+<li>但一个任务可以优先指定A机房执行</li>
+</ol>
+
+
+<h2>Elastic Job分片策略</h2>
+
+<p>在回答这个问题之前，我们需要了解下Elastic Job的分片策略，根据官网的说明（<a href="http://elasticjob.io/docs/elastic-job-lite/02-guide/job-sharding-strategy/">http://elasticjob.io/docs/elastic-job-lite/02-guide/job-sharding-strategy/</a>  ） ，Elastic Job是内置了一些分片策略可选的，其中有平均分配算法，作业名的哈希值奇偶数决定IP升降序算法和作业名的哈希值对服务器列表进行轮转；同时也是支持自定义的策略，实现实现<code>JobShardingStrategy</code>接口并实现<code>sharding</code>方法即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="nf">sharding</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstances</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">,</span> <span class="kt">int</span> <span class="n">shardingTotalCount</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>假设我们可以实现这一的自定义策略：让做分片的时候知道哪些实例是A机房的，哪些是B机房的，然后我们知道A机房是优先的，在做分片策略的时候先把B机房的实例踢走，再复用原来的策略做分配。这不就解决我们的就近接入问题（接近数据源）了吗？</p>
+
+<p>以下是利用装饰器模式自定义的一个装饰器类（抽象类，由子类判断哪些实例属于standby的实例），读者可以结合自身业务场景配合使用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">JobShardingStrategyActiveStandbyDecorator</span> <span class="kd">implements</span> <span class="n">JobShardingStrategy</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//内置的分配策略采用原来的默认策略：平均</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">JobShardingStrategy</span> <span class="n">inner</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">AverageAllocationJobShardingStrategy</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 判断一个实例是否是备用的实例，在每次触发sharding方法之前会遍历所有实例调用此方法。</span>
+</span><span class='line'><span class="cm">     * 如果主备实例同时存在于列表中，那么备实例将会被剔除后才进行sharding</span>
+</span><span class='line'><span class="cm">     * @param jobInstance</span>
+</span><span class='line'><span class="cm">     * @return</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kd">abstract</span> <span class="kt">boolean</span> <span class="nf">isStandby</span><span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="nf">sharding</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstances</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">,</span> <span class="kt">int</span> <span class="n">shardingTotalCount</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstancesCandidates</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">jobInstances</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">removeInstance</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="kt">boolean</span> <span class="n">removeSelf</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span> <span class="o">:</span> <span class="n">jobInstances</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="kt">boolean</span> <span class="n">isStandbyInstance</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">isStandbyInstance</span> <span class="o">=</span> <span class="n">isStandby</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">,</span> <span class="n">jobName</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;isStandBy throws error, consider as not standby&quot;</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">isStandbyInstance</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="o">(</span><span class="n">IpUtils</span><span class="o">.</span><span class="na">getIp</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">.</span><span class="na">getIp</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>                    <span class="n">removeSelf</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>                <span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">removeInstance</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span><span class="c1">//移除后发现没有实例了，就不移除了，用原来的列表（后备）的顶上</span>
+</span><span class='line'>            <span class="n">jobInstancesCandidates</span> <span class="o">=</span> <span class="n">jobInstances</span><span class="o">;</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] ATTENTION!! Only backup job instances exist, but do sharding with them anyway {}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">jobInstances</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] remove backup before really do sharding, removeSelf :{} , remove instances: {}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">removeSelf</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">removeInstance</span><span class="o">));</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] after remove backups :{}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">//全部都是master或者全部都是slave</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;[{}] job instances just remain the same {}&quot;</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//保险一点，排序一下，保证每个实例拿到的列表肯定是一样的</span>
+</span><span class='line'>        <span class="n">jobInstancesCandidates</span><span class="o">.</span><span class="na">sort</span><span class="o">((</span><span class="n">o1</span><span class="o">,</span> <span class="n">o2</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">o1</span><span class="o">.</span><span class="na">getJobInstanceId</span><span class="o">().</span><span class="na">compareTo</span><span class="o">(</span><span class="n">o2</span><span class="o">.</span><span class="na">getJobInstanceId</span><span class="o">()));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">inner</span><span class="o">.</span><span class="na">sharding</span><span class="o">(</span><span class="n">jobInstancesCandidates</span><span class="o">,</span> <span class="n">jobName</span><span class="o">,</span> <span class="n">shardingTotalCount</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>利用自定义策略实现同城双机房下的优先级调度</h2>
+
+<p>以下是一个很简单的就近接入的例子： 指定在ip白名单的，就是优先执行的，不在的都认为是备用的。我们看如何实现。</p>
+
+<h3>一、继承此装饰器策略，指定哪些实例是standby实例</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ActiveStandbyESJobStrategy</span> <span class="kd">extends</span> <span class="n">JobShardingStrategyActiveStandbyDecorator</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isStandby</span><span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">activeIps</span> <span class="o">=</span> <span class="s">&quot;10.10.10.1,10.10.10.2&quot;</span><span class="o">;</span><span class="c1">//只有这两个ip的实例才是优先执行的，其他都是备用的</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">ss</span><span class="o">[]</span> <span class="o">=</span> <span class="n">activeIps</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;,&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">!</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">ss</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">.</span><span class="na">getIp</span><span class="o">());</span><span class="c1">//不在active名单的就是后备</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很简单吧！这样实现之后，就能达到以下类似的效果</p>
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc-active-standby.png" alt="esjob-single" /></p>
+
+<h3>二、 在任务启动前，指定使用这个策略</h3>
+
+<p>以下以Java的方式示意，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">JobCoreConfiguration</span> <span class="n">simpleCoreConfig</span> <span class="o">=</span> <span class="n">JobCoreConfiguration</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">(</span><span class="n">jobClass</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">cron</span><span class="o">,</span> <span class="n">shardingTotalCount</span><span class="o">).</span><span class="na">shardingItemParameters</span><span class="o">(</span><span class="n">shardingItemParameters</span><span class="o">).</span><span class="na">build</span><span class="o">();</span>
+</span><span class='line'><span class="n">SimpleJobConfiguration</span> <span class="n">simpleJobConfiguration</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SimpleJobConfiguration</span><span class="o">(</span><span class="n">simpleCoreConfig</span><span class="o">,</span> <span class="n">jobClass</span><span class="o">.</span><span class="na">getCanonicalName</span><span class="o">());</span>
+</span><span class='line'><span class="k">return</span> <span class="n">LiteJobConfiguration</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">(</span><span class="n">simpleJobConfiguration</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">jobShardingStrategyClass</span><span class="o">(</span><span class="s">&quot;com.xxx.yyy.job.ActiveStandbyESJobStrategy&quot;</span><span class="o">)</span><span class="c1">//使用主备的分配策略，分主备实例（输入你的实现类类名）</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样就大功告成了。</p>
+
+<h1>同城双活模式</h1>
+
+<p>以上这样改造后，针对定时任务就已经解决了两个问题：</p>
+
+<p>1、定时任务能实现在两个机房下的高可用</p>
+
+<p>2、任务能优先调度到指定机房</p>
+
+<p>这种模式下，对于定时任务来说，B机房其实只是个备机房——因为A机房永远都是优先调度的。</p>
+
+<p>对于B机房是否有一些实际问题其实我们可能是不知道的（常见的例如数据库权限没申请），由于没有流量的验证，这时候真的出现容灾问题，B机房是否能安全接受其实并不是100%稳妥的。</p>
+
+<p>我们能否再进一步做到同城双活呢？也就是，B机房也会承担一部分的流量？例如10%？</p>
+
+<p>回到自定义策略的sharding接口：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="nf">sharding</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobInstance</span><span class="o">&gt;</span> <span class="n">jobInstances</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">,</span> <span class="kt">int</span> <span class="n">shardingTotalCount</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在做分配的时候，是能拿到一个任务实例的全景图（所有实例列表），当前的任务名，和分片数。</p>
+
+<p>基于此其实是可以做一些事情把流量引流到B机房实例的，例如：</p>
+
+<ol>
+<li>指定任务的主机房让其是B机房优先调度（例如挑选部分只读任务，占10%的任务数）</li>
+<li>对于分片的分配，把末尾（如1/10）的分片优先分配给B机房。</li>
+</ol>
+
+
+<p>以上两种方案都能实现让A、B两个机房都有流量（有任务在被调度），从而实现所谓的双活。</p>
+
+<p>以下针对上面抛出来的方案一，给出一个双活的示意代码和架构。</p>
+
+<p>假设我们定时任务有两个任务，TASK_A_FIRST，TASK_B_FIRST，其中TASK_B_FIRST是一个只读的任务，那么我们可以让他配置读B机房的备库让他优先运行在B机房，而TASK_A_FIRST是一个更为频繁的任务，而且带有写操作，我们则优先运行在A机房，从而实现双机房均有流量。</p>
+
+<p>注：这里任意一个机房不可用了，任务均能在另外一个机房调度，这里增强的只是对于不同任务做针对性的优先调度实现双活</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ActiveStandbyESJobStrategy</span> <span class="kd">extends</span> <span class="n">JobShardingStrategyActiveStandbyDecorator</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isStandby</span><span class="o">(</span><span class="n">JobInstance</span> <span class="n">jobInstance</span><span class="o">,</span> <span class="n">String</span> <span class="n">jobName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>         <span class="n">String</span> <span class="n">activeIps</span> <span class="o">=</span> <span class="s">&quot;10.10.10.1,10.10.10.2&quot;</span><span class="o">;</span><span class="c1">//默认只有这两个ip的实例才是优先执行的，其他都是备用的</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;TASK_B_FIRST&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">jobName</span><span class="o">)){</span><span class="c1">//选择这个任务优先调度到B机房</span>
+</span><span class='line'>           <span class="n">activeIps</span> <span class="o">=</span> <span class="s">&quot;10.11.10.1,10.11.10.2&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">ss</span><span class="o">[]</span> <span class="o">=</span> <span class="n">activeIps</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;,&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">!</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">ss</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">jobInstance</span><span class="o">.</span><span class="na">getIp</span><span class="o">());</span><span class="c1">//不在active名单的就是后备</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://jaskey.github.io/images/esjob/esjob-cluster-2idc-2live.png" alt="esjob-single" /></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2020-05-25T20:49:13+08:00'><span class='date'>2020-05-25 Mon</span> <span class='time'>20:49</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/elastic-job/'>elastic-job</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="horizontal" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a>
+     </div>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="https://Jaskey.github.io/blog/2020/05/25/elastic-job-timmer-active-standby/" data-via="" data-counturl="https://Jaskey.github.io/blog/2020/05/25/elastic-job-timmer-active-standby/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/" title="Previous Post: [DUBBO] ReferenceConfig(null) is not DESTROYED when FINALIZE分析及解决">&laquo; [DUBBO] ReferenceConfig(null) is not DESTROYED when FINALIZE分析及解决</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2020/06/01/mysql-deadlock-index-merge/" title="Next Post: 记一次因索引合并导致的MySQL死锁分析过程">记一次因索引合并导致的MySQL死锁分析过程 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近博文</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/25/elastic-job-timmer-active-standby/">Elastic Job从单点到高可用、同城主备、同城双活</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+    <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="vertical" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a></div>
+</section>
+
+
+<section>
+  <h1>StackOverflow</h1>
+  <a href="http://stackoverflow.com/users/">
+	<img src="http://stackoverflow.com/users/flair/2087628.png" width="208" height="58" 
+		 alt="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers" 
+		 title="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers"
+	>
+  </a>
+</section>
+
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="https://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2020 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

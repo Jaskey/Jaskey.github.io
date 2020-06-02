@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>https://jaskey.github.io/blog/2020/06/01/mysql-deadlock-index-merge/</loc>
+<lastmod>2020-06-01T19:49:26+08:00</lastmod>
+</url>
+<url>
+<loc>https://jaskey.github.io/blog/2020/05/25/elastic-job-timmer-active-standby/</loc>
+<lastmod>2020-05-25T20:49:13+08:00</lastmod>
+</url>
+<url>
 <loc>https://jaskey.github.io/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/</loc>
 <lastmod>2020-05-22T18:14:58+08:00</lastmod>
 </url>
@@ -348,6 +356,9 @@
 <loc>https://jaskey.github.io/blog/categories/dubbo/</loc>
 </url>
 <url>
+<loc>https://jaskey.github.io/blog/categories/elastic-job/</loc>
+</url>
+<url>
 <loc>https://jaskey.github.io/posts/2/</loc>
 </url>
 <url>
@@ -361,6 +372,9 @@
 </url>
 <url>
 <loc>https://jaskey.github.io/posts/6/</loc>
+</url>
+<url>
+<loc>https://jaskey.github.io/posts/7/</loc>
 </url>
 <url>
 <loc>https://jaskey.github.io/baidu_verify_fEOrou9JEs.html</loc>

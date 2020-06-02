@@ -1,0 +1,747 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>记一次因索引合并导致的MySQL死锁分析过程 - 薛定谔的风口猪</title>
+  <meta name="author" content="Jaskey Lam">
+
+  
+  <meta name="description" content="记一次因索引合并导致的MySQL死锁分析过程">
+  <meta name="keywords" content="mysql, 死锁, index merge">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="https://Jaskey.github.io/blog/2020/06/01/mysql-deadlock-index-merge">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="薛定谔的风口猪" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+
+  <!--linkedin source-->
+  <script type="text/javascript" src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">薛定谔的风口猪</a></h1>
+  
+    <h2>站在巨人的肩膀上学习，猪都能看得很远</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:Jaskey.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation"><!--导航栏-->
+  <li><a href="/">主页</a></li>
+  <li><a href="/blog/archives/">所有博文</a></li>
+  <!-- <li><a href="/about" target="_blank">关于作者</a></li> &#8211;>  <!--about 文件夹下的index.html-->
+  <li><a href="http://www.zhihu.com/people/linjunjie1103/answers?order_by=vote_num" target="_blank" >知乎主页</a></li><!--跳转到知乎主页-->
+</ul>
+
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">记一次因索引合并导致的MySQL死锁分析过程</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2020-06-01T19:49:26+08:00'><span class='date'>2020-06-01 Mon</span> <span class='time'>19:49</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>生产上偶现这段代码会出现死锁，死锁日志如下。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="n">TRANSACTION</span><span class="p">:</span>
+</span><span class='line'><span class="n">TRANSACTION</span> <span class="mi">424487272</span><span class="p">,</span> <span class="n">ACTIVE</span> <span class="mi">0</span> <span class="n">sec</span> <span class="n">fetching</span> <span class="n">rows</span>
+</span><span class='line'><span class="n">mysql</span> <span class="kp">tables</span> <span class="k">in</span> <span class="k">use</span> <span class="mi">3</span><span class="p">,</span> <span class="n">locked</span> <span class="mi">3</span>
+</span><span class='line'><span class="k">LOCK</span> <span class="n">WAIT</span> <span class="mi">6</span> <span class="k">lock</span> <span class="nf">struct</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">heap</span> <span class="n">size</span> <span class="mi">1184</span><span class="p">,</span> <span class="mi">4</span> <span class="n">row</span> <span class="k">lock</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span class='line'><span class="n">MySQL</span> <span class="n">thread</span> <span class="n">id</span> <span class="mi">3205005</span><span class="p">,</span> <span class="n">OS</span> <span class="n">thread</span> <span class="n">handle</span> <span class="mi">0</span><span class="n">x7f39c21c8700</span><span class="p">,</span> <span class="n">query</span> <span class="n">id</span> <span class="mi">567774892</span> <span class="mi">10</span><span class="p">.</span><span class="mi">14</span><span class="p">.</span><span class="mi">34</span><span class="p">.</span><span class="mi">30</span> <span class="n">finance</span> <span class="n">Searching</span> <span class="n">rows</span> <span class="k">for</span> <span class="k">update</span>
+</span><span class='line'><span class="k">update</span> <span class="n">repay_plan_info_1</span>
+</span><span class='line'>     <span class="kt">SET</span> <span class="n">actual_pay_period_amount</span> <span class="o">=</span> <span class="mi">38027</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_principal_amount</span> <span class="o">=</span> <span class="mi">36015</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_interest_amount</span> <span class="o">=</span> <span class="mi">1980</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fee</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fine</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_discount_amount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_status</span> <span class="o">=</span> <span class="s1">&#39;PAYOFF&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_type</span> <span class="o">=</span> <span class="s1">&#39;OVERDUE&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_repay_time</span> <span class="o">=</span> <span class="s1">&#39;2019-08-12 15:48:15.025&#39;</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">WHERE</span> <span class="p">(</span>  <span class="n">user_id</span> <span class="o">=</span> <span class="s1">&#39;938467411690006528&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">loan_order_no</span> <span class="o">=</span> <span class="s1">&#39;LN201907120655461690006528458116&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">seq_no</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">repay_status</span> <span class="o">&lt;&gt;</span> <span class="s1">&#39;PAYOFF&#39;</span> <span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487272</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span>
+</span><span class='line'><span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">64</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">33</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span><span class='line'> <span class="mi">0</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">800000000000051</span><span class="n">e</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">1</span><span class="p">:</span> <span class="n">len</span> <span class="mi">6</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">0000193</span><span class="n">d35df</span><span class="p">;</span> <span class="k">asc</span>    <span class="o">=</span><span class="mi">5</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">2</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">06000001</span><span class="n">d402e7</span><span class="p">;</span> <span class="k">asc</span>        <span class="p">;;</span>
+</span><span class='line'> <span class="mi">3</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">323031393036313332303532303634323936303534323130353730303030</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">201906132052064296054210570000</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">4</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">c4e32303139303631333031323934303136393030303635323831373534</span><span class="p">;</span> <span class="k">asc</span> <span class="n">LN2019061301294016900065281754</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">5</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000002</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">6</span><span class="p">:</span> <span class="n">len</span> <span class="mi">18</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">393338343637343131363930303036353238</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">938467411690006528</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">7</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000003</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">8</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000258</span><span class="p">;</span> <span class="k">asc</span>    <span class="n">X</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">9</span><span class="p">:</span> <span class="n">len</span> <span class="mi">3</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">646179</span><span class="p">;</span> <span class="k">asc</span> <span class="n">day</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">10</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">11</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">12</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000005106</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">Q</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">13</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">14</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000004</span><span class="n">e1e</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">N</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">15</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">16</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000000000002</span><span class="n">d6</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">17</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">18</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">19</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">20</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000012</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">21</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">22</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">23</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">24</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">3230313930383131</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">20190811</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">25</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">f564552445545</span><span class="p">;</span> <span class="k">asc</span> <span class="n">OVERDUE</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">26</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">27</span><span class="p">:</span> <span class="n">len</span> <span class="mi">1</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">59</span><span class="p">;</span> <span class="k">asc</span> <span class="n">Y</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">28</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">29</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a35a1768</span><span class="p">;</span> <span class="k">asc</span>   <span class="n">Z</span> <span class="n">h</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">30</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">5</span><span class="n">d503dd8</span><span class="p">;</span> <span class="k">asc</span> <span class="p">]</span><span class="n">P</span><span class="o">=</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">31</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">32</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a3d80281</span><span class="p">;</span> <span class="k">asc</span>      <span class="p">;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">TRANSACTION</span><span class="p">:</span>
+</span><span class='line'><span class="n">TRANSACTION</span> <span class="mi">424487271</span><span class="p">,</span> <span class="n">ACTIVE</span> <span class="mi">0</span> <span class="n">sec</span> <span class="n">fetching</span> <span class="n">rows</span>
+</span><span class='line'><span class="n">mysql</span> <span class="kp">tables</span> <span class="k">in</span> <span class="k">use</span> <span class="mi">3</span><span class="p">,</span> <span class="n">locked</span> <span class="mi">3</span>
+</span><span class='line'><span class="mi">5</span> <span class="k">lock</span> <span class="nf">struct</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">heap</span> <span class="n">size</span> <span class="mi">1184</span><span class="p">,</span> <span class="mi">3</span> <span class="n">row</span> <span class="k">lock</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span class='line'><span class="n">MySQL</span> <span class="n">thread</span> <span class="n">id</span> <span class="mi">3204980</span><span class="p">,</span> <span class="n">OS</span> <span class="n">thread</span> <span class="n">handle</span> <span class="mi">0</span><span class="n">x7f3db0cf6700</span><span class="p">,</span> <span class="n">query</span> <span class="n">id</span> <span class="mi">567774893</span> <span class="mi">10</span><span class="p">.</span><span class="mi">14</span><span class="p">.</span><span class="mi">34</span><span class="p">.</span><span class="mi">30</span> <span class="n">finance</span> <span class="n">Searching</span> <span class="n">rows</span> <span class="k">for</span> <span class="k">update</span>
+</span><span class='line'><span class="k">update</span> <span class="n">repay_plan_info_1</span>
+</span><span class='line'>     <span class="kt">SET</span> <span class="n">actual_pay_period_amount</span> <span class="o">=</span> <span class="mi">20742</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_principal_amount</span> <span class="o">=</span> <span class="mi">19998</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_interest_amount</span> <span class="o">=</span> <span class="mi">726</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fee</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_pay_fine</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_discount_amount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_status</span> <span class="o">=</span> <span class="s1">&#39;PAYOFF&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">repay_type</span> <span class="o">=</span> <span class="s1">&#39;OVERDUE&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">actual_repay_time</span> <span class="o">=</span> <span class="s1">&#39;2019-08-12 15:48:15.025&#39;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">WHERE</span> <span class="p">(</span>  <span class="n">user_id</span> <span class="o">=</span> <span class="s1">&#39;938467411690006528&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">loan_order_no</span> <span class="o">=</span> <span class="s1">&#39;LN201906130129401690006528175485&#39;</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">seq_no</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span class='line'>                  <span class="k">and</span> <span class="n">repay_status</span> <span class="o">&lt;&gt;</span> <span class="s1">&#39;PAYOFF&#39;</span> <span class="p">)</span>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">HOLDS</span> <span class="n">THE</span> <span class="k">LOCK</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span>
+</span><span class='line'><span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">64</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">33</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span><span class='line'> <span class="mi">0</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">800000000000051</span><span class="n">e</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">1</span><span class="p">:</span> <span class="n">len</span> <span class="mi">6</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">0000193</span><span class="n">d35df</span><span class="p">;</span> <span class="k">asc</span>    <span class="o">=</span><span class="mi">5</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">2</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">06000001</span><span class="n">d402e7</span><span class="p">;</span> <span class="k">asc</span>        <span class="p">;;</span>
+</span><span class='line'> <span class="mi">3</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">323031393036313332303532303634323936303534323130353730303030</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">201906132052064296054210570000</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">4</span><span class="p">:</span> <span class="n">len</span> <span class="mi">30</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">c4e32303139303631333031323934303136393030303635323831373534</span><span class="p">;</span> <span class="k">asc</span> <span class="n">LN2019061301294016900065281754</span><span class="p">;</span> <span class="p">(</span><span class="n">total</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">);</span>
+</span><span class='line'> <span class="mi">5</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000002</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">6</span><span class="p">:</span> <span class="n">len</span> <span class="mi">18</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">393338343637343131363930303036353238</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">938467411690006528</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">7</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000003</span><span class="p">;</span> <span class="k">asc</span>     <span class="p">;;</span>
+</span><span class='line'> <span class="mi">8</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000258</span><span class="p">;</span> <span class="k">asc</span>    <span class="n">X</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">9</span><span class="p">:</span> <span class="n">len</span> <span class="mi">3</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">646179</span><span class="p">;</span> <span class="k">asc</span> <span class="n">day</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">10</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">11</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">12</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000005106</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">Q</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">13</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">14</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000004</span><span class="n">e1e</span><span class="p">;</span> <span class="k">asc</span>       <span class="n">N</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">15</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">16</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">80000000000002</span><span class="n">d6</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">17</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">18</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">19</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">20</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000012</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">21</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">22</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">23</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">8000000000000000</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'> <span class="mi">24</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">3230313930383131</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">20190811</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">25</span><span class="p">:</span> <span class="n">len</span> <span class="mi">7</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">4</span><span class="n">f564552445545</span><span class="p">;</span> <span class="k">asc</span> <span class="n">OVERDUE</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">26</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">27</span><span class="p">:</span> <span class="n">len</span> <span class="mi">1</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">59</span><span class="p">;</span> <span class="k">asc</span> <span class="n">Y</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">28</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">29</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a35a1768</span><span class="p">;</span> <span class="k">asc</span>   <span class="n">Z</span> <span class="n">h</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">30</span><span class="p">:</span> <span class="n">len</span> <span class="mi">4</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">5</span><span class="n">d503dd8</span><span class="p">;</span> <span class="k">asc</span> <span class="p">]</span><span class="n">P</span><span class="o">=</span> <span class="p">;;</span>
+</span><span class='line'> <span class="mi">31</span><span class="p">:</span> <span class="k">SQL</span> <span class="no">NULL</span><span class="p">;</span>
+</span><span class='line'> <span class="mi">32</span><span class="p">:</span> <span class="n">len</span> <span class="mi">5</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">99</span><span class="n">a3d80281</span><span class="p">;</span> <span class="k">asc</span>      <span class="p">;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">137</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">464</span> <span class="k">index</span> <span class="ss">`idx_user_id`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span>
+</span><span class='line'><span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">161</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">2</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span><span class='line'> <span class="mi">0</span><span class="p">:</span> <span class="n">len</span> <span class="mi">18</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">393338343637343131363930303036353238</span><span class="p">;</span> <span class="k">asc</span> <span class="mi">938467411690006528</span><span class="p">;;</span>
+</span><span class='line'> <span class="mi">1</span><span class="p">:</span> <span class="n">len</span> <span class="mi">8</span><span class="p">;</span> <span class="n">hex</span> <span class="mi">800000000000051</span><span class="n">e</span><span class="p">;</span> <span class="k">asc</span>         <span class="p">;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">***</span> <span class="n">WE</span> <span class="n">ROLL</span> <span class="n">BACK</span> <span class="nf">TRANSACTION</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>代码定位</h1>
+
+<p>按照死锁的update sql语句，我们先定位这个死锁SQL中代码是哪个代码片段导致的。后面我们定位到，是如下代码片段导致的：</p>
+
+<p><img src="http://jaskey.github.io/images/mysql-deadlock/deadlock-code.png" alt="deadlock-codedeadlock-code" /></p>
+
+<p>实际上一眼看上去，这段代码有一个很典型的业务开发场景问题：开启事务在for循环写SQL。</p>
+
+<p>注：这在实际的问题定位过程中并不容易，因为死锁日志并不能反向直接定位到方法的对账、线程名等，如果一个库被多个服务同时连接，甚至定位是哪个服务都不容易。</p>
+
+<h1>死锁分析（1）——猜测可能消息重发</h1>
+
+<p>按照死锁的必要条件：<strong>循环等待条件</strong>。即 T1事务应该持有了某把锁L1，然后去申请锁L2，而这时候发现T2事务已经持有了L2，而T2事务又去申请L1，这时候就发生循环等待而死锁。</p>
+
+<p>一开始会猜测，是否我们更新表的顺序在两个事务里面是反方向的，即T1事务更新ta、tb表，锁ta表的记录，准备去拿tb表记录的锁；T2事务更新tb、ta表，锁了tb记录准备去拿ta的锁，这是比较常见的死锁情况。但是从SQL看，我们死锁的SQL是同一张表的，即同一张表不同的记录。</p>
+
+<p>而且从死锁日志中可以发现，两个死锁的SQL居然是“一样”的，也就是说是“同一条”SQL/同一段代码（不同的where条件参数）导致的，。即上图代码中的这段for循环更新还款计划的代码。</p>
+
+<p>但是光这段For循环来看，如果要发生死锁，有可能同一批请求，更新记录的顺序是反过来的，然后又并发执行的时候，可能出现。</p>
+
+<p>一开始会猜测上游触发了两条一样的请求（我们这个场景是MQ重发），出现了并发，两条消息分在两个事务中并发执行。但是如果是MQ导致的原因，FOR循环更新的记录顺序是一样的，一样的顺序意味着一样的一样的加锁顺序，一样的加锁顺序意味着最多出现获取锁超时，不会满足【循环等待】的条件，不可能死锁。所以排除MQ重发的可能。</p>
+
+<h1>死锁分析（2）</h1>
+
+<p>仔细阅读出现问题的两条SQL，可以发现一个规律，这里面都带一个相同的where条件：<code>userId= 938467411690006528</code>，意味着这两个事务的请求都来自一个用户发起的，然后从<code>actual_repay_time = '2019-08-12 15:48:15.025'</code> 来看，的确是瞬间一起执行的两个事务，但是却是不一样的两个借据。对应到真实的用户的操作上，用户的确有可能发起两个借据的同时还款，例如同时结清多笔借据。</p>
+
+<p>通过出现了几次的死锁，总结出了其相同的规律：每次的死锁SQL条件都有一样的特征——<strong>相同的userId+不同的借据+并发</strong>。基本可以断定，相同的用户在同时还款多笔的时候，可能会发现死锁，但很可惜，测试环境、生产环境我们模拟这个场景都无法复现死锁的情况。</p>
+
+<p>只能靠技术手段分析原因了。</p>
+
+<p>思路：这是了两个完全不同的借据环境计划，操作完全不一样的数据记录，为什么会发生死锁呢？是不是锁的不是行而是锁了表？</p>
+
+<h1>死锁日志分析</h1>
+
+<p>从事务1中的</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487272</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>事务2中的</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">HOLDS</span> <span class="n">THE</span> <span class="k">LOCK</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">30</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">136</span> <span class="k">index</span> <span class="ss">`PRIMARY`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从RECORD LOCKS的标示可知，的确<strong>锁的是行锁</strong>不是表锁。且从&#8221;but not gap&#8221;的信息来看，也不存在间隙锁（注：我们线上隔离级别是read committed,本来就不存在间隙锁问题）。所以锁的位置应该的确是我们操作的行记录才对。但是非常奇怪的是，实际业务上操作的记录的确是完全隔离的（因为是不同的借据，记录没有交集），为什么会冲突呢？</p>
+
+<p>  再细节阅读死锁日志从事务2中获取到了一点线索：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="o">***</span> <span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="n">WAITING</span> <span class="k">FOR</span> <span class="n">THIS</span> <span class="k">LOCK</span> <span class="k">TO</span> <span class="n">BE</span> <span class="n">GRANTED</span><span class="p">:</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">RECORD</span> <span class="n">LOCKS</span> <span class="n">space</span> <span class="n">id</span> <span class="mi">3680</span> <span class="n">page</span> <span class="n">no</span> <span class="mi">137</span> <span class="n">n</span> <span class="n">bits</span> <span class="mi">464</span> <span class="k">index</span> <span class="ss">`idx_user_id`</span> <span class="n">of</span> <span class="k">table</span> <span class="ss">`db_loan_core_2`</span><span class="p">.</span><span class="ss">`repay_plan_info_1`</span> <span class="n">trx</span> <span class="n">id</span> <span class="mi">424487271</span> <span class="n">lock_mode</span> <span class="n">X</span> <span class="n">locks</span> <span class="n">rec</span> <span class="n">but</span> <span class="k">not</span> <span class="n">gap</span> <span class="n">waiting</span> <span class="n">Record</span> <span class="k">lock</span><span class="p">,</span> <span class="n">heap</span> <span class="n">no</span> <span class="mi">161</span> <span class="n">PHYSICAL</span> <span class="n">RECORD</span><span class="p">:</span> <span class="n">n_fields</span> <span class="mi">2</span><span class="p">;</span> <span class="n">compact</span> <span class="n">format</span><span class="p">;</span> <span class="n">info</span> <span class="n">bits</span> <span class="mi">0</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个索引很奇怪，是userid的索引？</p>
+
+<p>分析之前，我们先看先看锁持有情况：</p>
+
+<p>T1等待锁space id 3680 page no 30</p>
+
+<p>T2持有锁space id 3680 page no 30</p>
+
+<p>T2等待锁space id 3680 page no 137</p>
+
+<p>最后回滚了T2</p>
+
+<p>可以<strong>推断space id 3680 page no 137应该被T1持有了</strong>，但是日志中没有显示出来。</p>
+
+<ul>
+<li><p>3680 page no 30这个锁是一个主键索引PRIMARY导致的，实际上我们没有用到我们的自增主键，是非聚集索引，所以这是先锁的非主键索引最后找到的主键去加锁。</p></li>
+<li><p>3680 page no 137这个锁就比较奇怪了，他锁在了idx_user_id这个索引，这个索引是加在userId上的，也就是T2<strong>他正在尝试锁所有这个用户的还款计划的记录！</strong></p></li>
+</ul>
+
+
+<p>如果是这样，问题就解释通了：</p>
+
+<p>T1： 锁了某行记录X（具体怎么锁的，从死锁日志中未能获取），然后准备去获取LN201907120655461690006528458116，SEQ=1的记录的锁。</p>
+
+<p>T2： 锁了LN201907120655461690006528458116，SEQ=1的锁，而他想去锁所有userId=938467411690006528的记录，这里面肯定包含了记录X，所以他无法获得X的锁。</p>
+
+<p>这样就造成死锁了，因为X已经被T1持有了，而T1又在等T2释放LN201907120655461690006528458116，SEQ=1这个锁。</p>
+
+<p>至于为什么T2明明准备操作LN201906130129401690006528175485，SEQ=2的记录，却之前持有了LN201907120655461690006528458116，SEQ=1的锁，大概率不是因为之前的SQL真的操作LN201907120655461690006528458116，SEQ=1的记录，也是因为他之前本想持有别的记录（从锁的详细信息上猜，可能是LN2019061301294016900065281754的相关记录），但是因为这个idx_user_id的索引问题，顺带锁着了LN201907120655461690006528458116，SEQ=1，因为都属于一个userId。</p>
+
+<p>所以从时间线上分析，顺序应该是：</p>
+
+<ol>
+<li><p>T1锁了某记录X</p></li>
+<li><p>T2锁了某记录Y（从hold this lock的日志细节中推断，是LN2019061301294016900065281754），然后准备锁LN201906130129401690006528175485，SEQ=2，这时候的这条SQL触发了idx_user_id，连带一起锁锁住了LN201907120655461690006528458116，SEQ=1并准备锁其它同用户记录</p></li>
+<li><p>T1 执行下一条sql，准备获取LN201907120655461690006528458116，SEQ=1的锁，发现被T2获取了，等待。</p></li>
+<li><p>T2在锁其它记录的过程中发现了X，但是锁不住，发现X被T1持有。而自己又持有了LN201907120655461690006528458116，SEQ=1这行记录的锁。</p></li>
+</ol>
+
+
+<p>这时候循环等待，死锁！</p>
+
+<p>所以根源是为什么SQL会使用idx_user_id这个索引呢？</p>
+
+<h2>索引信息</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='mysql'><span class='line'><span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="ss">`id`</span><span class="p">),</span>
+</span><span class='line'><span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="ss">`uk_repay_order`</span> <span class="p">(</span><span class="ss">`loan_order_no`</span><span class="p">,</span><span class="ss">`seq_no`</span><span class="p">),</span>
+</span><span class='line'><span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="ss">`uk_repay_plan_no`</span> <span class="p">(</span><span class="ss">`repay_plan_no`</span><span class="p">),</span>
+</span><span class='line'><span class="k">KEY</span> <span class="ss">`idx_user_id`</span> <span class="p">(</span><span class="ss">`user_id`</span><span class="p">),</span>
+</span><span class='line'><span class="k">KEY</span> <span class="ss">`idx_create_time`</span> <span class="p">(</span><span class="ss">`create_time`</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从唯一主键是UNIQUE KEY <code>uk_repay_order</code> (<code>loan_order_no</code>,<code>seq_no</code>)</p>
+
+<p>从我们SQL上看<code>loan_order_no</code>+<code>seq_no</code>是唯一主键，应该肯定能唯一定位一行记录，索引应该使用这个是最优的才对。</p>
+
+<p>这时候我们去看T2的那条SQL的执行计划得知：其没有使用索引uk_repay_order，而使用了一个type: index_merge，走的索引是uk_repay_order_,idx_user_id，也就是他居然两个索引同时生效了。</p>
+
+<p><img src="http://jaskey.github.io/images/mysql-deadlock/deadlock-explain.png" alt="deadlock-codedeadlock-code" /></p>
+
+<h1>解决方案</h1>
+
+<p>实际上，由于index merge，客观上就会增加update语句的死锁可能性，相关bug连接如下：<a href="https://bugs.mysql.com/bug.php?id=77209">https://bugs.mysql.com/bug.php?id=77209</a></p>
+
+<p>而其实如果出现了index merge，在很多情况下意味着我们索引的建立可能并不合理。</p>
+
+<p>解决方案有两个：</p>
+
+<ol>
+<li>建立联合索引，以避免index merge，让联合索引生效则不会因此锁住所有该userId的记录</li>
+<li>取消index merge的优化</li>
+</ol>
+
+
+<h1>遗留问题</h1>
+
+<p>什么时候才会触发index merge，这个在文档中似乎并没有很明确的触发实际，从这些死锁的SQL来看，某些SQL在事后explain的时候，并没有走index merge，而有些却走了。从本案例来看，事务1的SQL并没有走index merge，但是事务2这样类似的SQL却走了。</p>
+
+<p>只查到一个必要条件是：</p>
+
+<blockquote><p>Intersect和Union都需要使用的索引是ROR的，也就时ROWID ORDERED，即针对不同的索引扫描出来的数据必须是同时按照ROWID排序的，这里的 ROWID其实也就是InnoDB的主键(如果不定义主键，InnoDB会隐式添加ROWID列作为主键)。只有每个索引是ROR的，才能进行归并排序，你懂的。 当然你可能会有疑惑，查不记录后内部进行一次sort不一样么，何必必须要ROR呢，不错，所以有了SORT-UNION。SORT-UNION就是每个非ROR的索引 排序后再进行Merge
+– 来自 <a href="http://www.cnblogs.com/nocode/archive/2013/01/28/2880654.html">http://www.cnblogs.com/nocode/archive/2013/01/28/2880654.html</a></p></blockquote>
+
+<p>为此我在stackoverflow 提了一个问题看后续有结论再更新：<a href="https://stackoverflow.com/questions/57987713/why-mysql-decide-to-use-index-merge-though-i-have-already-use-a-unique-key-index">https://stackoverflow.com/questions/57987713/why-mysql-decide-to-use-index-merge-though-i-have-already-use-a-unique-key-index</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Jaskey Lam</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2020-06-01T19:49:26+08:00'><span class='date'>2020-06-01 Mon</span> <span class='time'>19:49</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/mysql/'>mysql</a>
+  
+</span>
+
+
+    </p>
+	
+	<p class="meta">
+    <div class="about">
+     <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="horizontal" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a>
+     </div>
+     <span class="about-desc">
+          <span>站在风口，只有猪才能飞起来</span>
+          <br/>
+          <hr/>
+		  转载请注明出处，作者，Jaskey Lam，软件工程师<br>
+		  联系邮箱：<a href="mailto:linjunjie1103@gmail.com">linjunjie1103@gmail.com</a><br>
+		  知乎主页：<a href="http://www.zhihu.com/people/linjunjie1103">www.zhihu.com/people/linjunjie1103</a><br>
+     </span>
+</div> <!-- added to show author infomation,refering to http://www.undefinednull.com/2013/10/15/octopress-blog-tweaks-adding-author-information-section-below-each-posts/-->
+    </p>
+    
+	
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="https://Jaskey.github.io/blog/2020/06/01/mysql-deadlock-index-merge/" data-via="" data-counturl="https://Jaskey.github.io/blog/2020/06/01/mysql-deadlock-index-merge/" >Tweet</a>
+  
+  
+  
+  
+  
+	<!-- JiaThis Button BEGIN -->
+<div class="jiathis_style_24x24">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share?uid=1977417" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+</div>
+<script type="text/javascript">
+var jiathis_config = {data_track_clickback:'true'};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1406536767120932" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+	
+<!-- UY BEGIN -->
+<div id="uyan_frame"></div>
+<script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid=1977417"></script>
+<!-- UY END -->
+
+  
+</div>
+
+    
+	
+
+
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2020/05/25/elastic-job-timmer-active-standby/" title="Previous Post: Elastic Job从单点到高可用、同城主备、同城双活">&laquo; Elastic Job从单点到高可用、同城主备、同城双活</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近博文</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/25/elastic-job-timmer-active-standby/">Elastic Job从单点到高可用、同城主备、同城双活</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+    <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="en_US" data-type="vertical" data-theme="light" data-vanity="jaskeylam"><a class="LI-simple-link" href='https://cn.linkedin.com/in/jaskeylam?trk=profile-badge'>Jaskey Lam</a></div>
+</section>
+
+
+<section>
+  <h1>StackOverflow</h1>
+  <a href="http://stackoverflow.com/users/">
+	<img src="http://stackoverflow.com/users/flair/2087628.png" width="208" height="58" 
+		 alt="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers" 
+		 title="profile for Jaskey at Stack Overflow, Q&amp;A for professional and enthusiast programmers"
+	>
+  </a>
+</section>
+
+
+<section>
+  <h1>Jaskey Lam的微博</h1>
+  <ul id="weibo">
+    <li>
+		<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="yes" 
+				src="https://widget.weibo.com/weiboshow/index.php?
+				language=&
+				width=0&
+				height=550&
+				fansRow=0& 
+				ptype=1&
+				speed=300&
+				skin=9&
+				isTitle=0&
+				noborder=0&
+				isWeibo=1&
+				isFans=0&
+				uid=1762728080&
+				verifier=4b318246&
+				dpc=1">
+		</iframe>
+    </li>
+  </ul>
+</section>
+
+<section>
+	<h1>我的豆瓣<h1>
+  <div>
+    <script type="text/javascript" 
+    src="http://www.douban.com/service/badge/linjunjie1103/?
+    selection=&
+    amp;picsize=small&
+    amp;hidelogo=&
+    amp;show=collection&
+    amp;n=9&
+    amp;cat=movie%7Cbook&
+    amp;columns=3">
+    </script>  
+  </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Jaskey">@Jaskey</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Jaskey',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2020 - Jaskey Lam -
+  <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

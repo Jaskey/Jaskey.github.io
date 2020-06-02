@@ -77,6 +77,259 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014/11/25/bae-maven-setup/">Maven 配置 BAE SDK</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-25T23:38:51+08:00'><span class='date'>2014-11-25 Tue</span> <span class='time'>23:38</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>百度BAE的官方文档没有一个完整的使用Maven配置BAE SDK的例子，而<a href="http://godbae.duapp.com/?p=366">BAE官方博客</a>上的配置也不可用。</p>
+
+<p>经过多日的调试和BAE客服的交流，最后成功配置出了一个maven 配置的 pom.xml文件。今天决定分享一下，可能是现在网上能搜到的第一篇可用的配置步骤了。</p>
+
+<p>1.建立Maven项目</p>
+
+<p>2.下载BAE SDK 这里使用的是<a href="http://bcs.duapp.com/baev3-sdk/java-runtime/baev3-sdk-1.0.0.zip">baev3-sdk-1.0.1</a>（下载还是必须的）</p>
+
+<p>3.添加如下repository 到pom.xml中</p>
+
+<pre><code>&lt;repositories&gt;
+   &lt;repository&gt;
+        &lt;id&gt;bae&lt;/id&gt;
+        &lt;url&gt;http://maven.duapp.com/nexus/content/groups/public/&lt;/url&gt;
+        &lt;releases&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+        &lt;/releases&gt;
+   &lt;/repository&gt;
+&lt;/repositories&gt;
+</code></pre>
+
+<p>4.添加依赖包：</p>
+
+<pre><code>    &lt;!-- ===================bae=============================== --&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;junit&lt;/groupId&gt;
+        &lt;artifactId&gt;junit&lt;/artifactId&gt;
+        &lt;version&gt;3.8.1&lt;/version&gt;
+        &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu.bae&lt;/groupId&gt;
+        &lt;artifactId&gt;baev3-sdk&lt;/artifactId&gt;
+        &lt;version&gt;1.0.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.baidu&lt;/groupId&gt;
+        &lt;artifactId&gt;mcpack&lt;/artifactId&gt;
+        &lt;version&gt;1.0.9&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.thrift&lt;/groupId&gt;
+        &lt;artifactId&gt;libthrift&lt;/artifactId&gt;
+        &lt;version&gt;0.9.1&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.google.code.gson&lt;/groupId&gt;
+        &lt;artifactId&gt;gson&lt;/artifactId&gt;
+        &lt;version&gt;2.2.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.ezmorph&lt;/groupId&gt;
+        &lt;artifactId&gt;ezmorph&lt;/artifactId&gt;
+        &lt;version&gt;1.0.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+     &lt;dependency&gt;
+        &lt;groupId&gt;net.sf.json-lib&lt;/groupId&gt;
+        &lt;artifactId&gt;json-lib&lt;/artifactId&gt;
+        &lt;version&gt;2.4&lt;/version&gt;
+        &lt;classifier&gt;jdk15&lt;/classifier&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-beanutils&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-beanutils&lt;/artifactId&gt;
+        &lt;version&gt;1.8.0&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpmime&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpcore&lt;/artifactId&gt;
+        &lt;version&gt;4.2&lt;/version&gt;
+        &lt;type&gt;jar&lt;/type&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.httpcomponents&lt;/groupId&gt;
+        &lt;artifactId&gt;httpclient&lt;/artifactId&gt;
+        &lt;version&gt;4.2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-codec&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-codec&lt;/artifactId&gt;
+        &lt;version&gt;1.6&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-io&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+        &lt;version&gt;1.4&lt;/version&gt;
+    &lt;/dependency&gt; 
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;commons-lang&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang&lt;/artifactId&gt;
+        &lt;version&gt;2.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
+        &lt;artifactId&gt;commons-lang3&lt;/artifactId&gt;
+        &lt;version&gt;3.1&lt;/version&gt;
+    &lt;/dependency&gt;   
+
+    &lt;!-- Log4j --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;log4j&lt;/groupId&gt;
+        &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+        &lt;version&gt;1.2.17&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+        &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+        &lt;version&gt;1.7.5&lt;/version&gt;
+    &lt;/dependency&gt;   
+</code></pre>
+
+<p>5.到这一步，你可能会发现如下错误：</p>
+
+<pre><code>Missing artifact com.baidu:mcpack:jar:1.0.0.9
+</code></pre>
+
+<p>这时候，去到下载的BAE SDK下载的dependencies目录下，找到<code>mcpack-1.0.0.9.jar</code></p>
+
+<p>在cmd命令行中使用如下命令（需要配置好maven的环境变量）：</p>
+
+<pre><code>mvn install:install-file -Dfile=下载路径\baev3-sdk-1.0.1\dependencies\mcpack-1.0.0.9.jar -DgroupId=com.baidu -DartifactId=mcpack -Dversion=1.0.9 -Dpackaging=jar
+</code></pre>
+
+<p><img src="/images/bae/install_mcpack.jpg" title="安装mcpack到本地路径" alt="安装mcpack到本地路径" /></p>
+
+<p>然后去本地repo下查看是否存在此依赖包（默认在window用户目录下.m2）去查看本地安装的mcpack包。</p>
+
+<p><img src="/images/bae/repo_mcpack.jpg" title="查看mcpack是否安装成功" alt="查看mcpack是否安装成功" /></p>
+
+<p>6.更新maven 项目，应该就可以了。</p>
+
+<h2>测试分布式日志</h2>
+
+<p>在<code>log4j.properties</code>中加入如下类似配置：</p>
+
+<pre><code>log4j.rootLogger=DEBUG,BAE
+##################分布式日志###############
+log4j.appender.BAE=com.baidu.bae.api.log.BaeLogAppender
+log4j.appender.BAE.ak=BAE的API KEY
+log4j.appender.BAE.sk=BAE的的Secrete Key
+log4j.appender.BAE.Threshold = DEBUG
+log4j.appender.BAE.layout=org.apache.log4j.SimpleLayout
+</code></pre>
+
+<p>maven install 并发布。在扩展服务中测试分布式日志</p>
+
+<p><img src="/images/bae/BAE_distrubuted_logs.jpg" alt="测试分布式日志" /></p>
+
+<p>如果能看到日志打印成功，则证明BAE的SDK配置成功了</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/11/23/git-push-fails-rpc-failed-result-equals-22-http-code-equals-411/">Git Push Error: RPC Failed; Result=22, HTTP Code = 411 解决方案</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-11-23T23:10:43+08:00'><span class='date'>2014-11-23 Sun</span> <span class='time'>23:10</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有时候git push 会报类似的错误，如在BAE上push一个项目较大的时候，可能就会报此错误。由于遇到很多次，今天记录下解决方法：</p>
+
+<p>默认情况下，Git设置了HTTP操作的最大值为一MB，所以当你push代码的时候如果超过这个值，则可能发生错误。</p>
+
+<p>解决方法如下：</p>
+
+<ol>
+<li>进入git 目录</li>
+<li><p>扩大允许的最大值：</p>
+
+<pre><code> git config http.postBuffer *bytes*
+</code></pre></li>
+</ol>
+
+
+<p>如：扩大到500MB:</p>
+
+<pre><code>    git config http.postBuffer 524288000
+</code></pre>
+
+<p>再次push，问题应该就解决了。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/11/10/stateful-vs-stateless/">Stateless的web架构</a></h1>
     
     
@@ -1148,191 +1401,6 @@ city from memcached: shenzhen
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-17T00:55:09+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>00:55</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>在现在云端时代，在多台机器上操作同一份文档是十分常见的需求。而需要多台机器上使用octopress,git提供了很好的支持。今天分享下如何使用git在多台机器上使用octopress.</p>
-
-<h2>准备工作：</h2>
-
-<p>和  <a href="http://jaskey.github.io/blog/2014/09/04/how-to-octopress/">之前写的“如何开始使用octopress”</a>一样，要先安装相应的软件</p>
-
-<ol>
-<li><a href="http://git-scm.com/">安装Git</a></li>
-<li>安装ruby,例如：<a href="http://rubyforge.org/frs/download.php/76054/rubyinstaller-1.9.3-p194.exe">Ruby 1.9.3-p194</a>,并配置环境变量PATH 到rubyhome/bin</li>
-<li>安装<a href="http://rubyinstaller.org/downloads/"> Development Kit</a>.如 <a href="https://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exehttps://github.com/downloads/oneclick/rubyinstaller/DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe">DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe</a> and 解压到文件夹 C:/RubyDevKit.</li>
-<li>建立一个文件夹，例如在C：/github</li>
-</ol>
-
-
-<h1>克隆项目</h1>
-
-<p>接下来我们需要把已经建好的博客项目clone下来。</p>
-
-<h2>克隆source分支</h2>
-
-<pre><code>$ git clone -b source git@github.com:username/username.github.com.git octopress ##octopress 为你的项目文件夹
-</code></pre>
-
-<h2>克隆master分支</h2>
-
-<pre><code>$ cd octopress ##进入项目
-$ git clone git@github.com:username/username.github.com.git _deploy ##克隆master分支到_deploy 
-</code></pre>
-
-<h1>配置环境</h1>
-
-<pre><code>$ gem install bundler
-$ rbenv rehash    # If you use rbenv, rehash to be able to run the bundle command
-$ bundle install
-$ rake setup_github_pages
-</code></pre>
-
-<p>然后它会询问你的项目仓库的URL:</p>
-
-<blockquote><p>Enter the read/write url for your repository
-(For example, &lsquo;git@github.com:your_username/your_username.github.com)</p></blockquote>
-
-<p>输入仓库的URL，这样你就完成了全新的一个本地博客副本。</p>
-
-<h1>更新变化（重要）</h1>
-
-<p>每次使用前，先确保拿到最新的文件</p>
-
-<pre><code>$ cd octopress  #进入项目目录
-$ git pull origin source  # 更新本地source branch
-$ cd ./_deploy  #进入_deploy目录
-$ git pull origin master  # 更新本地master branch
-</code></pre>
-
-<h1>提交</h1>
-
-<p>提交的时候，由于需要多台机器协作，需要把source分支push到origin中，这样另外一台机器才能拿到最新的源文件。</p>
-
-<pre><code>$ rake generate
-$ git add .
-$ git commit -am "提交评论" 
-$ git push origin source  # 更新远程 source branch 
-$ rake deploy             # 更新远程 master branch，并部署博文
-</code></pre>
-
-<h1>另外的机器更新变化</h1>
-
-<p>在另外的机器上，就可以获取到相应的变化。</p>
-
-<pre><code>$ cd octopress  #进入项目目录
-$ git pull origin source  # 更新本地source branch
-$ cd ./_deploy  #进入_deploy目录
-$ git pull origin master  # 更新本地master branch
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/10/13/java-synchronization/">谈谈Java同步机制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-13T21:11:20+08:00'><span class='date'>2014-10-13 Mon</span> <span class='time'>21:11</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>在多线程中，有两个核心的问题需要解决。一个是多个线程对于资源的竞争问题，我们需要同步，另外一个则是多个线程之间的交互。
-今天简单谈谈Java的同步机制。</p>
-
-<p>我们以一个十分简单的例子讲起。</p>
-
-<pre><code>int i=0
-public int getNextI(){
-    return ++i;
-}
-</code></pre>
-
-<p>这是一个极为简单的方法，但是在多线程的环境中则增加了许多其他复杂的因素。</p>
-
-<p>首先，++i不是一个原子操作。进行i+1的操作，是分多步的，最后重新赋值写给i。</p>
-
-<p>其次，在多线程的环境中，每个线程都会有一个working memory, 所以如果我们启动一个新线程操作<code>getNextI()</code>，i的操作是出现在working memory 中的，最后操作完成后一段时间才会重新写入main memory.</p>
-
-<p>这样第一个问题就是，如何保证i的可见性。也就是说，假如两个线程T1，T2。T1对i进行操作后把i变成了2，但在T1把2这个值写入main memory之前，T2是读取不到2这个值的，也就是说他读到的是老的数据。</p>
-
-<h2>volatile</h2>
-
-<p>这时候，我们就可以把i用<code>volatile</code>修饰。 <code>volatile</code>的变量，线程不会复制到working memory，而是直接在main memory上操作。</p>
-
-<p><code>volotile</code>特别适用于多线程环境中某个循环的结束条件。 如 <code>while(condition){//do someting}</code>, 这里面的condition应该声明为volatile，这样每一个线程对condition的修改都会立刻被其他线程读取到。</p>
-
-<h2>synchronized</h2>
-
-<p><code>volatile</code>只能保证变量的可见性，并不能保证i++的原子性。如果我们需要串行化的处理这个方法，我们需要谨慎使用volatile，而使用<code>synchronized</code>。</p>
-
-<p>假如T1,T2同时进入<code>getNextI()</code>,然后T1和T2都读到了1，然后分别的进行++i,最后有可能i只是变成了2。我们希望T1和T2是有秩序的访问这个方法，这时候我们要使用到Synchronized机制了。</p>
-
-<p>我们可以改成</p>
-
-<pre><code>public synchronized int getNextI(){
-    return i++;
-}
-</code></pre>
-
-<p>这样在每个线程进入<code>getNextI()</code>之前，都会尝试去获取当前对象的intrinsic锁，并且只有一个线程可以获取。当结束该方法时候，就会释放，这样其他线程就可以获取到，这样就可以就可以保证T1和T2对方法操作是串行的。</p>
-
-<p>注：
-如果当前方法为静态方法，则锁是打在当前类的Class对象，而非对象本身。所以静态方法的控制和实例方法的控制是区分开来的。</p>
-
-<p>但有些时候整个方法都加锁会影响性能，因为我们可能很多操作都不涉及共享资源，也就没有资源竞争的问题存在，所以synchronized 除了可以修饰方法，还可以修饰一段代码块，以便最小粒度的限制加锁的范围。当修饰代码块时候，必须要指定获取intrinsic锁的对象。如：</p>
-
-<pre><code>public  int getNextI(){
-    synchronized(this){
-        return i++;
-    }
-}
-</code></pre>
-
-<p>更多文档可参考：</p>
-
-<p><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/6">&larr; Older</a>
@@ -1350,6 +1418,14 @@ public int getNextI(){
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2020/05/25/elastic-job-timmer-active-standby/">Elastic Job从单点到高可用、同城主备、同城双活</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
       </li>
     
@@ -1359,14 +1435,6 @@ public int getNextI(){
     
       <li class="post">
         <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/13/stat-gc-with-process-name/">利用Java进程名进行jstat -gc</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/04/29/user-defined-shardingsphere-encryptor/">自定义ShardingSphere的加解密器</a>
       </li>
     
   </ul>

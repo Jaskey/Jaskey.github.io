@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Elastic-job | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/elastic-job/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-06-02T21:18:34+08:00</updated>
+  <updated>2020-06-02T21:25:16+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -28,11 +28,11 @@
 
 <p><img src="http://jaskey.github.io/images/esjob/esjob-single.png" alt="esjob-single" /></p>
 
-<p>原因是开发者<strong>担心定时任务在同一时刻被触发多次</strong>，导致业务有问题。实际上这是对于框架最基本的原理不了解。在官方文档的功能列表里<a href="http://elasticjob.io/docs/elastic-job-lite/00-overview/%EF%BC%8C%E4%B8%80%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E5%8A%9F%E8%83%BD%E5%B0%B1%E6%98%AF%EF%BC%9A">http://elasticjob.io/docs/elastic-job-lite/00-overview/%EF%BC%8C%E4%B8%80%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E5%8A%9F%E8%83%BD%E5%B0%B1%E6%98%AF%EF%BC%9A</a></p>
+<p>原因是开发者<strong>担心定时任务在同一时刻被触发多次</strong>，导致业务有问题。实际上这是对于框架最基本的原理不了解。在官方文档的功能列表里<a href="http://elasticjob.io/docs/elastic-job-lite/00-overview/">http://elasticjob.io/docs/elastic-job-lite/00-overview/</a>  就已说明其最基本的功能之一就是：</p>
 
 <blockquote><p>作业分片一致性，保证同一分片在分布式环境中仅一个执行实例</p></blockquote>
 
-<p>Elastic Job会依赖zookeeper选举出对应的实例做sharding，从而保证只有一个实例在执行同一个分片（如果任务没有采取分片，及分片数是0，就意味着这个任务只有一个实例在执行）</p>
+<p>Elastic Job会依赖zookeeper选举出对应的实例做sharding，从而保证只有一个实例在执行同一个分片（如果任务没有采取分片（即分片数是0），就意味着这个任务只有一个实例在执行）</p>
 
 <p><img src="https://camo.githubusercontent.com/f4d957e95b07c98cc1fe899b68915ad8e44c8f81/687474703a2f2f656c61737469636a6f622e696f2f646f63732f656c61737469632d6a6f622d6c6974652f696d672f6172636869746563747572652f656c61737469635f6a6f625f6c6974652e706e67" alt="elastic-job-架构" /></p>
 

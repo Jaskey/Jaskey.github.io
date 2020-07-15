@@ -77,6 +77,78 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/12/14/rocketmq-component/">RocketMQ——组件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'>2016-12-14 Wed</span> <span class='time'>20:54</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img src="/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
+
+<p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
+
+<p>下面分别介绍三个组件：</p>
+
+<h1>Name Server</h1>
+
+<p>Name Server是RocketMQ的寻址服务。用于把Broker的路由信息做聚合。用户端依靠Name Server决定去获取对应topic的路由信息，从而决定对哪些Broker做连接。</p>
+
+<ul>
+<li><p>Name Server是一个几乎无状态的结点，Name Server之间采取share-nothing的设计，互不通信。</p></li>
+<li><p>对于一个Name Server集群列表，客户端连接Name Server的时候，只会选择随机连接一个结点，以做到负载均衡。</p></li>
+<li><p>Name Server所有状态都从Broker上报而来，本身不存储任何状态，所有数据均在内存。</p></li>
+<li><p>如果中途所有Name Server全都挂了，影响到路由信息的更新，不会影响和Broker的通信。</p></li>
+</ul>
+
+
+<h1>Broker</h1>
+
+<p>Broker是处理消息存储，转发等处理的服务器。</p>
+
+<ul>
+<li>Broker以group分开，每个group只允许一个master，若干个slave。</li>
+<li>只有master才能进行写入操作，slave不允许。</li>
+<li>slave从master中同步数据。同步策略取决于master的配置，可以采用同步双写，异步复制两种。</li>
+<li>客户端消费可以从master和slave消费。在默认情况下，消费者都从master消费，在master挂后，客户端由于从Name Server中感知到Broker挂机，就会从slave消费。</li>
+<li>Broker向所有的NameServer结点建立长连接，注册Topic信息。</li>
+</ul>
+
+
+<h1>Filter Server（可选）</h1>
+
+<p>RocketMQ可以允许消费者上传一个Java类给Filter Server进行过滤。</p>
+
+<ul>
+<li>Filter Server只能起在Broker所在的机器</li>
+<li>可以有若干个Filter Server进程</li>
+<li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
+<li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
+<li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
+<li>使用 Java class上传作为过滤表达式是一个双刃剑——一方面方便了应用的过滤操作且节省网卡资源，另一方面也带来了服务器端的安全风险。这就需要应用来保证过滤代码安全——例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2016/04/15/run-maven-tomcat-app-in-intelij/">在IntilliJ中运行Maven的Tomcat项目</a></h1>
     
     
@@ -645,73 +717,6 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/05/07/insert-sql-with-dictionary-python/">Python中用dictionary操作SQL Select, Insert</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-07T16:19:49+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>16:19</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>MySQLdb中可以轻松地使用dictionary操作SQL。</p>
-
-<p>首先，连接数据库</p>
-
-<pre><code>conn = MySQLdb.connect(host=host,
-                       user=user,
-                       passwd=passwd,
-                       db=db,
-                       charset=charset)
-</code></pre>
-
-<h1>SELECT:</h1>
-
-<p>在获取cursor的时候，传入<code>MySQLdb.cursors.DictCursor</code>即可</p>
-
-<pre><code>cursor = conn.cursor(MySQLdb.cursors.DictCursor)  ##结果集成为dictionary
-cursor.execute(select_sql )  # query
-
-for row in cursor:
-    print type(row),row
-    name = row["name"]  # 直接使用key获取
-    id = row["id"]      # 直接使用key获取
-</code></pre>
-
-<p>会发现,row的类型已经是一个dict, 其中每一列都可以使用key值获取
-    <type 'dict'> {id:123L,&lsquo;name&rsquo;:u&#8217;abc&#8217; }</p>
-
-<h1>INSERT</h1>
-
-<p>如果需要把一个准备好的dict插入到数据库，不想一个个对应的赋值，可以考虑使用如下方式:</p>
-
-<pre><code>myDict = {'name':'abc','age':16L}
-insert_table = 'mytable'
-placeholders = ', '.join(['%s']* len(mydict))  ##按照dict长度返回如：%s, %s 的占位符
-columns = ', '.join(mydict.keys())    ##按照dict返回列名，如：age, name
-insert_sql =  "INSERT INTO %s ( %s ) VALUES ( %s )" % (insert_table, columns, placeholders) #INSERT INTO mytable ( age, name ) VALUES ( %s, %s )
-
-cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的参数
-</code></pre>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -729,6 +734,10 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/06/08/rocketmq-message-dedup/">消息幂等（去重）通用解决方案，RocketMQ</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
       </li>
     
@@ -742,10 +751,6 @@ cursor.execute(insert_sql, mobileDict.values())  ##执行SQL,绑定dict对应的
     
       <li class="post">
         <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
       </li>
     
   </ul>

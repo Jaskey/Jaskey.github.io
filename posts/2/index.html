@@ -77,6 +77,126 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/">SpringBoot+Dubbo优雅退出分析及方案</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2019-09-30T14:56:56+08:00'><span class='date'>2019-09-30 Mon</span> <span class='time'>14:56</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>背景：</p>
+
+<p>当我们使用SpringBoot+D做微服务的时候，可能再服务停机的过程，发现在一瞬间出现一些报错，最典型的如比如拿到的数据库连接已经关闭等问题，如下图所示：</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-problem.png" alt="img" /></p>
+
+<p>从日志错误可以看到，停机时还存在正在处理的请求，而此请求需要访问数据源，但数据源的资源被 Spring 容器关闭了，导致获取不到而报错。</p>
+
+<p>但是实际上，无论Dubbo和Spring其实都实现了优雅退出，为什么最后退出还是不那么优雅呢？</p>
+
+<p>要分析这个问题，首先得分析它们两者的优雅退出实现。</p>
+
+<h1>Dubbo优雅退出</h1>
+
+<p>dubbo框架本身基于ShutdownHook注册了一个优雅退出的钩子，背后会调用其destroyAll来实现自身的优雅关闭。</p>
+
+<p>以下是Dubbo 2.6.2的源码：</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-1.png" alt="img" /></p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-2.png" alt="img" /></p>
+
+<p>Dubbo发现程序退出的时候，钩子方法会通知注册中心取消自身的注册——以便告知消费者不要调用自己了，然后关闭自身的端口连接——在关闭自身连接的时候还会sleep自旋的方法等待已有的处理请求先完成）</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/dubbo-shutdown-sourcecode-3.png" alt="img" /></p>
+
+<p>但是，Dubbo服务的优雅退出，不代表服务背后的代码是优雅的，也就是说在Dubbo优雅退出的完成前，我们的服务能否能保证可用——背后的资源/服务是否仍然可用。</p>
+
+<p>本文一开始截图的错误，原因就是服务停机的时候，依赖的数据库资源因为某些原因已经回收了，这时候正在处理的请求自然报错而显得不优雅了。</p>
+
+<p>而回收的人并不是别人，就是Spring的优雅退出。</p>
+
+<h1>Spring的优雅退出</h1>
+
+<p>Spring回收资源也是基于ShutdownHook实现的，Spring在启动的时候会调用<code>refreshContext</code>接口，这个接口默认会帮我们注册优雅退出的钩子方法。</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-hook-sourcecode-1.png" alt="img" /></p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/spring-shutdown-hook-sourcecode-2.png" alt="img" /></p>
+
+<p>这个钩子方法最后会销毁Spring容器，其中自然包括其背后的依赖的资源。</p>
+
+<p>因为大部分情况下，我们的Dubbo服务是依赖于Spring的资源的，要真正实现优雅退出，除了双方本身退出的过程是优雅的，还需要保证Dubbo退出的过程中Spring的资源是可用的——也就是退出应该要是有顺序的：Dubbo退出→Spring退出。</p>
+
+<p>但是Java的ShutdownHook背后的退出是并发执行而没有顺序依赖的，这是背后表现不优雅的原因。以下是JDK文档的描述：</p>
+
+<p><img src="http://jaskey.github.io/images/dubbo-shutdown-hook/jdk-shudownhook-coments.png" alt="img" /></p>
+
+<p>正是由于本身应该有顺序关系的退出逻辑，在并行的处理，导致部分的流量正在处理过程中，依赖的资源已经释放了，最终导致退出的不优雅。</p>
+
+<p>要解决这个问题，可简单可行的思路是：给Dubbo退出一定的时间去处理，然后再执行Spring容器的关闭。但由于钩子方法的时机并不能程序员控制，那么怎么样才能做到呢——禁用原生Spring的钩子方法，在合适的时机手动销毁Spring容器。</p>
+
+<h1>优雅退出方案：</h1>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SpringApplication</span> <span class="n">application</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="n">Main</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'><span class="n">application</span><span class="o">.</span><span class="na">setRegisterShutdownHook</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span><span class="c1">//关闭spring的shutdown hook，后续手动触发</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">ConfigurableApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+</span><span class='line'><span class="n">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">addShutdownHook</span><span class="o">(</span><span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="s">&quot;T_SHUTDOWN_HOOK&quot;</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;”====================shutdown App====================“。&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//....这里可以做其他优雅退出处理，例如回收本地线程池、关闭定时调度器等的操作</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">2000</span><span class="o">);</span><span class="c1">//等待一段时间，这里给时间dubbo的shutdownhook执行，</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//关闭spring容器</span>
+</span><span class='line'>        <span class="n">context</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2019/09/23/spring-boot-tomcat-mertic/">监控Spring Boot中的Tomcat性能数据</a></h1>
     
     
@@ -3066,78 +3186,6 @@ private boolean k;// unitMode = false;
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/12/14/rocketmq-component/">RocketMQ——组件</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-12-14T20:54:20+08:00'><span class='date'>2016-12-14 Wed</span> <span class='time'>20:54</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img src="/images/rocketmq/cluster.png" title="RocketMQ部署" alt="rocketmq部署" /></p>
-
-<p>RocketMQ服务端的组件有三个，NameServer，Broker，FilterServer（可选，部署于和Broker同一台机器）</p>
-
-<p>下面分别介绍三个组件：</p>
-
-<h1>Name Server</h1>
-
-<p>Name Server是RocketMQ的寻址服务。用于把Broker的路由信息做聚合。用户端依靠Name Server决定去获取对应topic的路由信息，从而决定对哪些Broker做连接。</p>
-
-<ul>
-<li><p>Name Server是一个几乎无状态的结点，Name Server之间采取share-nothing的设计，互不通信。</p></li>
-<li><p>对于一个Name Server集群列表，客户端连接Name Server的时候，只会选择随机连接一个结点，以做到负载均衡。</p></li>
-<li><p>Name Server所有状态都从Broker上报而来，本身不存储任何状态，所有数据均在内存。</p></li>
-<li><p>如果中途所有Name Server全都挂了，影响到路由信息的更新，不会影响和Broker的通信。</p></li>
-</ul>
-
-
-<h1>Broker</h1>
-
-<p>Broker是处理消息存储，转发等处理的服务器。</p>
-
-<ul>
-<li>Broker以group分开，每个group只允许一个master，若干个slave。</li>
-<li>只有master才能进行写入操作，slave不允许。</li>
-<li>slave从master中同步数据。同步策略取决于master的配置，可以采用同步双写，异步复制两种。</li>
-<li>客户端消费可以从master和slave消费。在默认情况下，消费者都从master消费，在master挂后，客户端由于从Name Server中感知到Broker挂机，就会从slave消费。</li>
-<li>Broker向所有的NameServer结点建立长连接，注册Topic信息。</li>
-</ul>
-
-
-<h1>Filter Server（可选）</h1>
-
-<p>RocketMQ可以允许消费者上传一个Java类给Filter Server进行过滤。</p>
-
-<ul>
-<li>Filter Server只能起在Broker所在的机器</li>
-<li>可以有若干个Filter Server进程</li>
-<li>拉取消息的时候，消息先经过Filter Server，Filter Server靠上传的Java类过滤消息后才推给Consumer消费。</li>
-<li>客户端完全可以消费消息的时候做过滤，不需要Filter Server</li>
-<li>FilterServer存在的目的是用Broker的CPU资源换取网卡资源。因为Broker的瓶颈往往在网卡，而且CPU资源很闲。在客户端过滤会导致无需使用的消息在占用网卡资源。</li>
-<li>使用 Java class上传作为过滤表达式是一个双刃剑——一方面方便了应用的过滤操作且节省网卡资源，另一方面也带来了服务器端的安全风险。这就需要应用来保证过滤代码安全——例如在过滤程序里尽可能不做申请大内存，创建线程等操作。避免 Broker 服务器资源泄漏。</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -3155,6 +3203,10 @@ private boolean k;// unitMode = false;
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/06/08/rocketmq-message-dedup/">消息幂等（去重）通用解决方案，RocketMQ</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
       </li>
     
@@ -3168,10 +3220,6 @@ private boolean k;// unitMode = false;
     
       <li class="post">
         <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
       </li>
     
   </ul>

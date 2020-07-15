@@ -77,6 +77,86 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014/10/17/performance/">浅谈网站性能优化</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-17T18:41:50+08:00'><span class='date'>2014-10-17 Fri</span> <span class='time'>18:41</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>今天简单从上层的角度聊一下如何对有一个网站进行优化。</p>
+
+<p>从用户在浏览器敲下回车，到数据回来，至少可以分为三个路径</p>
+
+<ol>
+<li>在浏览器端，发送用户请求，并且接受服务器返回的响应数据进行页面渲染。</li>
+<li>请求数据在网络进行传输，发送到服务器。服务器把响应数据在网络传输返回。</li>
+<li>服务器端进行数据解析处理（访问文件，数据库等），最后返回响应数据。</li>
+</ol>
+
+
+<p>我们把第一路径简要称为“前端”，第三路径称为“后端”，看看能在这三层如何对网站的性能做出优化。</p>
+
+<h2>前端的过程</h2>
+
+<p>1 . 本地DNS解析域名，得到IP地址（并将IP地址缓存起来），向目标IP发送请求（通常为HTTP）</p>
+
+<p>以上过程可以优化的地方主要依靠减少DNS解析的次数。如果用户的浏览器设置了缓存，那么第二次访问相同域名的时候就不会请求DNS服务器了，而是直接用缓存中的IP发送请求。这主要依靠浏览器的相关设置，但我们也可以在页面告知浏览器需要做DNS的预取：</p>
+
+<pre><code>&lt;meta http-equiv="x-dns-prefetch-control" content="on" /&gt;
+</code></pre>
+
+<p>2 . 浏览器得到相应数据做出渲染计算</p>
+
+<p>在这阶段，浏览器主要做的是解析相应数据，创建DOM树，下载CSS样式应用到DOM树中，下载JS文件开始解析。</p>
+
+<p>为了提高页面的访问速度，我们应该尽可能让CSS样式放到<code>&lt;head&gt;</code>中并且让下载js的语句放到<code>&lt;body&gt;</code>的末尾，这样就可以使得页面先渲染起来再执行js脚本，用户的等待时间将减小。</p>
+
+<p>注：HTML5支持<code>async</code>属性支持脚本的异步执行，如：</p>
+
+<pre><code>&lt;script type="text/javascript" src="demo_async.js" async="async"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>同时，我们可以设置浏览器的缓存，让浏览器下次防蚊时从缓存中读取内容，减小HTTP请求。</p>
+
+<h2>网络传输（第二阶段）</h2>
+
+<p>这是阶段的速度取决于网络情况，由于用户的请求的数据很小但往往接受的响应数据很大，所以这要求企业的网络带宽要有快的上行速度，这和用户的带宽是相反的。</p>
+
+<h2>后端过程</h2>
+
+<p>后端是主要可以发挥的地方，这里包括处理请求，访问数据库等资源的过程。</p>
+
+<p>我们主要可以优化的地方有：</p>
+
+<p>1 .   <strong>使用缓存，减缓数据库压力</strong></p>
+
+<p>我们应该尽可能使用缓存提高常用数据的读取数据，减少访问数据库的次数。现在分布式的场景下，可以使用Memcached搭建起分布式缓存。</p>
+
+<p>2 .  <strong>使用异步操作代替同步操作，避免阻塞的等待时间，提高性能。</strong></p>
+
+<p>在高并发的情况，同步的请求操作（如数据库插入）会对数据库造成很大压力，同时也会导致用户的等待时间增长，我们应该尽可能使用异步的请求操作代替同步操作，以提高整体服务的响应速度，具体的操作将进入消息队列处理。最终的结果可以使用其他的方式告知用户，如邮件提醒的方式。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/10/17/how-to-write-octopress-in-two-machines/">如何在两台机器上使用octopress</a></h1>
     
     
@@ -809,54 +889,6 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/09/24/difference-between-cookies-and-sessions/">Cookie 与 Session的区别</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-09-24T18:20:05+08:00'><span class='date'>2014-09-24 Wed</span> <span class='time'>18:20</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>我们有时候会对于<code>cookie</code>和<code>session</code>糊涂，因为总的来说，他们都是保存用户信息的，而有时候我们在浏览器中选择“delete cookies”的时候，为什么session就没了呢？感觉这两个东西是不是一样的？</p>
-
-<p>其实不是。</p>
-
-<p><code>session</code>是服务端的文件用于存储用户信息，而<code>cookie</code>是存储用户信息的客户端文件。</p>
-
-<p><code>cookie</code>是一个短的字符串，用于在客户端和服务端来回发送。我们可以保存类似于name=bob&amp;password=asdf在cookie然后在两端来回发送。
-这样做就像，去银行办业务，而银行的业务员极为健忘，然后他需要我们每次进行交易的时候都出示身份。当然，如果我们用cookie取存储这种敏感的信息的话是极为不安全的，而且cookie本身也有大小的限制。</p>
-
-<p>那么，如果这个业务员意识到了自己的健忘病，他可以在纸上记下你的相关信息然后递给你一个号码，然后以后你再办业务的时候你就可以简单的说
-“我是12号客户”，这样就不需要每次都出示身份证啊，银行个人账号去标识自己了。</p>
-
-<p>对应着在Web服务器，服务器会记录相关的信息在一个<code>session</code>对象，然后创建一个<code>session ID</code>然后发送给客户端保存在<code>cookie</code>中。当客户端发送这个cookie回来的时候，服务端就能简单的用<code>session ID</code>去查找<code>session</code>对象。</p>
-
-<p>所以，如果我们删除了<code>cookie</code>(如在浏览器中清空历史记录)，这个<code>session</code>就丢失了。</p>
-
-<p>还有一种方法是，用URL来交换<code>session id</code>，例如有一个link www.myserver.com/myApp.jsp, 然后我们可以重写每一个url让他成为类似于www.myserver.com/myApp.jsp?sessionID=asdf 甚至even www.myserver.com/asdf/myApp.jsp 用于标识<code>session id</code>。</p>
-
-<p>更多解析，可参考stackoverflow:
-<a href="http://stackoverflow.com/questions/359434/differences-between-cookies-and-sessions">Differences between cookies and sessions?</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/7">&larr; Older</a>
@@ -874,6 +906,10 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/06/08/rocketmq-message-dedup/">消息幂等（去重）通用解决方案，RocketMQ</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/06/01/mysql-deadlock-index-merge/">记一次因索引合并导致的MySQL死锁分析过程</a>
       </li>
     
@@ -887,10 +923,6 @@ class CheckPersonEligibleForSelectiveService implements CheckPerson {具体的Ch
     
       <li class="post">
         <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/18/dubbo-filter-trace-consumer/">Dubbo Provider中获取调用者的应用名与IP</a>
       </li>
     
   </ul>

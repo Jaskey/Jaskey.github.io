@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Rocketmq | 薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/blog/categories/rocketmq/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2020-07-30T23:50:51+08:00</updated>
+  <updated>2021-02-24T21:41:53+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,208 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）]]></title>
+    <link href="https://Jaskey.github.io/blog/2020/11/26/rocketmq-consumer-allocate/"/>
+    <updated>2020-11-26T15:37:53+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2020/11/26/rocketmq-consumer-allocate</id>
+    <content type="html"><![CDATA[<p>之前的文章有提到过，消费者大概是怎么做负载均衡的（集群模式），如下图所示：</p>
+
+<p><img src="https://jaskey.github.io/images/rocketmq/consumer-loadbalance1.png" alt="消费者负载均衡" /></p>
+
+<p>集群模式下，每个消费者实例会被分配到若干条队列。正因为消费者拿到了明确的队列，所以它们才能针对对应的队列做循环拉取消息的处理，以下是消费者客户端和broker通信的部分代码，可以看到通信的参数里有一个重要的参数，就是queueId</p>
+
+<pre><code class="java">            PullMessageRequestHeader requestHeader = new PullMessageRequestHeader();
+            requestHeader.setConsumerGroup(this.consumerGroup);
+            requestHeader.setTopic(mq.getTopic());
+            requestHeader.setQueueId(mq.getQueueId());//消息拉取必须显示的告诉broker拉取哪个queue的消息
+            requestHeader.setQueueOffset(offset);
+            requestHeader.setMaxMsgNums(maxNums);
+            requestHeader.setSysFlag(sysFlagInner);
+            requestHeader.setCommitOffset(commitOffset);
+            requestHeader.setSuspendTimeoutMillis(brokerSuspendMaxTimeMillis);
+            requestHeader.setSubscription(subExpression);
+            requestHeader.setSubVersion(subVersion);
+            requestHeader.setExpressionType(expressionType);
+
+            String brokerAddr = findBrokerResult.getBrokerAddr();
+            if (PullSysFlag.hasClassFilterFlag(sysFlagInner)) {
+                brokerAddr = computPullFromWhichFilterServer(mq.getTopic(), brokerAddr);
+            }
+
+            PullResult pullResult = this.mQClientFactory.getMQClientAPIImpl().pullMessage(
+                brokerAddr,
+                requestHeader,
+                timeoutMillis,
+                communicationMode,
+                pullCallback);
+</code></pre>
+
+<p>这侧面也再次印证，RocketMQ的消费模型是Pull模式。</p>
+
+<p>同时，对于每个消费者实例来说，在每个消息拉取之前，实际上都是确定了队列的（不会轻易发生改变），如下图控制台所示：</p>
+
+<p><img src="https://jaskey.github.io/images/rocketmq/rocketmq-queue-allocation.png" alt="消费者负载均衡控制台示例" /></p>
+
+<p>本文尝试对RocketMQ负载均衡（哪个消费者消费哪些队列）的原理进行解析，希望能让大家对其中的基本原理进行了解，并对部分问题能作出合理解析和正确规避。</p>
+
+<h2>所谓Rebalance到底在解决什么问题</h2>
+
+<p>RocketMQ每次分配队列的过程，代码里叫Relalance，本文在某些场景下也称为重排，实际上是一个负载均衡的过程。之所以说分配队列的过程就是负载均衡的过程的原因是，RocketMQ是负载均衡分配的就是队列，而不是消息。如果这个过程RocketMQ给了较高负载高，其实并不肯定意味着你能接受更多的消息（虽然绝大部分场景你可以这样理解），而只是说我给你分配了更多的队列。为什么说有更多的队列可能并不代表你有更多消息消费呢？</p>
+
+<p>例如我们举一个例子，两个消费者一个消费者实例A获得了1个队列q0，一个消费者实例B获得了两个队列，这个负载均衡的过程分配了给B更多的&#8221;负载&#8221;（队列），但是假设消费者B获得的两个队列q1 q2中的q2本身是不可写的（topic可以配置读队列数量，写队列数量，所以是可能存在一些队列可读，但是不可写的情况），又或者生产者手动的选择了发送topic的queue目标（利用selector），这个过程从来都不选择q2，只有q0,和q1在做发送，甚至大部分情况下都往q0发，这时候消费者B实例其实都没有真正意义上的更高负载。</p>
+
+<p>总结一下：就是所谓的消费者Rebalance，其实是分配队列的过程，它本质上希望解决的是一个消费者的负载问题，但是实际的工作其并不直接改变一个消费者实例的真实负载（消息），而是间接的决定的——通过管理分配队列的数量。而平时我们绝大部分可以认为队列的负载就是真实的消息负载的原因是基于这样一个前提：消息的分布基本是均匀分配在不同的队列上的，所以在这个前提下，获得了更多的队列实际上就是获得了更多的消息负载。</p>
+
+<h2>Relance具体是如何决定分配的数量的</h2>
+
+<p>RocketMQ的Rebalance实际上是<strong>无中心</strong>的，这和Kafka有本质区别，Kafka虽然也是客户端做的负载均衡，但是Kafka在做负载均衡之前会选定一个Leader，由这个Leader全局把控分配的过程，而后再把每个消费者对partion的分配结果广播给各个消费者。</p>
+
+<p>而RocketMQ实际上没有人做这个统一分配的，而是每个消费者自己&#8221;有秩序地&#8221;计算出自己应该获取哪些队列，你可能会觉得很神奇，到底为啥大家能如此有秩序而不打架呢？我们下面来看看。</p>
+
+<p>你可能知道RocketMQ是支持很多负载均衡的算法的，甚至还支持用户自己实现一个负载均衡算法。具体的这个分配算法需要实现以下接口：</p>
+
+<pre><code class="java">/** * Strategy Algorithm for message allocating between consumers */public interface AllocateMessageQueueStrategy {    
+
+
+    /**     
+    * Allocating by consumer id     
+    *     
+    * @param consumerGroup current consumer group     
+    * @param currentCID current consumer id     
+    * @param mqAll message queue set in current topic     
+    * @param cidAll consumer set in current consumer group     
+    * @return The allocate result of given strategy     */   
+    List&lt;MessageQueue&gt; allocate(final String consumerGroup,final String currentCID,        final List&lt;MessageQueue&gt; mqAll, final List&lt;String&gt; cidAll);
+
+
+    /** * Algorithm name    
+    *     * @return The strategy name     
+    */   
+    String getName();}
+</code></pre>
+
+<p>这个接口的getName()只是一个唯一标识，用以标识该消费者实例是用什么负载均衡算法去分配队列。</p>
+
+<p>关键在于<code>allocate</code>这个方法，这个方法的出参就是这次Rebalace的结果——本消费者实例应该去获取的队列列表。</p>
+
+<p>其余四个入参分别是：</p>
+
+<p>1.消费者组名</p>
+
+<p>2.当前的消费者实例的唯一ID，实际上就是client 的ip@instanceName。</p>
+
+<p>3.全局这个消费者组可以分配的队列集合</p>
+
+<p>4.当前这个消费者组消费者集合（值是消费者实例的唯一id）</p>
+
+<p>试想下，假设要你去做一个分配队列的算法，实际上最关键的就是两个视图：1.这个topic下全局当前在线的消费者列表，2.topic在全局下有哪些队列。</p>
+
+<p>例如，你知道当前有4个消费者 c1 c2 c3 c4在线，也知道topic 下有 8个队列 q0,q1,q2,q3,q4,&hellip;q6，那么8/4=2，你就能知道每个消费者应该获取两个队列。例如： c1&ndash;>q0,q1, c2&ndash;>q2,q3, c3&ndash;>q4,q5, c4&ndash;>q5,q6。</p>
+
+<p>实际上，这就是rocketmq默认的分配方案。</p>
+
+<p>但现在唯一的问题在于，我们刚刚说的，我们没有一个中心节点统一地做分配，所以RocketMQ需要做一定的修改。如对于C1：</p>
+
+<p>“我是C1，我知道当前有4个消费者 c1 c2 c3 c4在线，也知道topic 下有 8个队列 q0,q1,q2,q3,q4,&hellip;q6，那么8/4=2，我就能知道每个消费者应该获取两个队列，而我算出来我要的队列是c1&ndash;>q0,q1&#8221;。</p>
+
+<p>同理对于C2：</p>
+
+<p>“我是C2，我知道当前有4个消费者 c1 c2 c3 c4在线，也知道topic 下有 8个队列 q0,q1,q2,q3,q4,&hellip;q6，那么8/4=2，我就能知道每个消费者应该获取两个队列，而我算出来我要的队列是c2&ndash;>q2,q3。</p>
+
+<p>要做到无中心的完成这个目标，唯一需要增加的输入项就是“我是C1”，&#8221;我是C2&#8221;这样的入参，所以上文提到的<code>allocate</code>方法下面<strong>当前的消费者实例</strong>的唯一ID就是干这个事用的。以下是一个默认的策略，本人添加了中文注释，以达到的就是上文例子中的分配结果：</p>
+
+<pre><code class="java">    @Override
+    public List&lt;MessageQueue&gt; allocate(String consumerGroup, String currentCID, List&lt;MessageQueue&gt; mqAll,List&lt;String&gt; cidAll) {
+
+        //START: 一些前置的判断
+        if (currentCID == null || currentCID.length() &lt; 1) {
+            throw new IllegalArgumentException("currentCID is empty");
+        }
+        if (mqAll == null || mqAll.isEmpty()) {
+            throw new IllegalArgumentException("mqAll is null or mqAll empty");
+        }
+        if (cidAll == null || cidAll.isEmpty()) {
+            throw new IllegalArgumentException("cidAll is null or cidAll empty");
+        }
+
+        List&lt;MessageQueue&gt; result = new ArrayList&lt;MessageQueue&gt;();
+        if (!cidAll.contains(currentCID)) {
+            log.info("[BUG] ConsumerGroup: {} The consumerId: {} not in cidAll: {}",
+                consumerGroup,
+                currentCID,
+                cidAll);
+            return result;
+        }
+        //END: 一些前置的判断
+
+        //核心分配逻辑开始
+        int index = cidAll.indexOf(currentCID);
+        int mod = mqAll.size() % cidAll.size();
+        int averageSize = mqAll.size() &lt;= cidAll.size() ? 1 : (mod &gt; 0 &amp;&amp; index &lt; mod ? mqAll.size() / cidAll.size() + 1 : mqAll.size() / cidAll.size());//平均分配，每个cid分配多少队列
+        int startIndex = (mod &gt; 0 &amp;&amp; index &lt; mod) ? index * averageSize : index * averageSize + mod; //从哪里开始分配，分配的位点index是什么。
+        int range = Math.min(averageSize, mqAll.size() - startIndex);//真正分配的数量，避免除不尽的情况（实际上，有除不尽的情况）
+
+        //开始分配本cid应该拿的队列列表
+        for (int i = 0; i &lt; range; i++) {
+            result.add(mqAll.get((startIndex + i) % mqAll.size()));
+        }
+        return result;
+    }
+</code></pre>
+
+<h2>Rebalance是怎么对多Topic做分配</h2>
+
+<p>细心地你可能会提一个问题，上面的提到的策略分配接口里，没有Topic的订阅关系的信息，那么如果一个消费者组订阅了topic1也订阅了topic2，topic下的队列数量可能是不一样的，那么最后分配的结果肯定也是不同的，那么怎么分配的呢？</p>
+
+<p>答案是：一次topic的分配就单独调用一次分配接口，每次rebalance，实际上都会被RebalanceImpl里的rebalanceByTopic调用，而每订阅一个topic就会调用rebalanceByTopic，从而触发一次上文讲到的分配策略</p>
+
+<h2>Rebalance什么时候触发</h2>
+
+<p>其实看完上文，我们已经知道RocketMQ客户端是怎么无中心地做队列分配的了。现在还有一个问题，就是这个触发时机是什么时候？</p>
+
+<p>为什么触发时机很重要呢？试想一下，突然间假设有一个消费者实例扩容了，从4个变成5个。如果有一个实例以5个去做负载均衡，其他四个老消费者以为在线的消费者还是只有四个，最后分配的结果肯定是会有重复的（某些情况甚至会漏分配），所以这个“节奏”很重要。</p>
+
+<p>简单地来说，RocketMQ有三个时机会触发负载均衡：</p>
+
+<ol>
+<li><p>启动的时候，会立即触发</p></li>
+<li><p>有消费实例数量的变更的时候。broker在接受到消费者的心跳包的时候如果发现这个实例是新的实例的时候，会广播一个消费者数量变更的事件给所有消费者实例；同理，当发现一个消费者实例的连接断了，也会广播这样的一个事件</p></li>
+<li>定期触发（默认20秒）。</li>
+</ol>
+
+
+<p>第一个时机很好理解。启动的时候，消费者需要需要知道自己要分配什么队列，所以要触发Rebalance。</p>
+
+<p>第二个时机实际也很好理解。因为有实例的数量变更，所以分配的结果肯定也需要调整的，这时候就要广播给各消费者。</p>
+
+<p>第三点定期触发的原因实际上是一个补偿机制，为了避免第二点广播的时候因为网络异常等原因丢失了重分配的信号，或者还有别的场景实际上也需要重新计算分配结果（例如队列的数量变化、权限变化），所以需要一个定时任务做补偿。</p>
+
+<p>从以上的触发时机可以看出，大部分情况下，消费者实例应该都是“节奏一致的”，如果出现异常场景或某些特殊场景，也会因为定时任务的补偿而达到最终一致的状态。所以如果你发现消费者分配有重复/漏分，很有可能这个消费者有短暂异常，没有及时地触发Rebalance，这个也可以从客户端日志中看出问题以便具体排查：如果一个消费者负载均衡后发现自己的分配的队列发生了变化：会有类似的日志（每一个Topic都会单独打印）：</p>
+
+<pre><code class="java">rebalanced result changed. allocateMessageQueueStrategyName=AVG, group=my-consumer, topic=topic_event_repay, clientId=10.22.224.39@114452, mqAllSize=9, cidAllSize=1, rebalanceResultSize=9, rebalanceResultSet=[MessageQueue [topic=topic_event_repay, brokerName=broker-1, queueId=2], MessageQueue [topic=topic_event_repay, brokerName=broker-1, queueId=1], MessageQueue [topic=topic_event_repay, brokerName=broker-2, queueId=2], MessageQueue [topic=topic_event_repay, brokerName=broker-3, queueId=0], MessageQueue [topic=topic_event_repay, brokerName=broker-1, queueId=0], MessageQueue [topic=topic_event_repay, brokerName=broker-2, queueId=1], MessageQueue [topic=topic_event_repay, brokerName=broker-3, queueId=2], MessageQueue [topic=topic_event_repay, brokerName=broker-2, queueId=0], MessageQueue [topic=topic_event_repay, brokerName=broker-3, queueId=1]]
+</code></pre>
+
+<p>从而判断是否及时地触发了负载均衡。</p>
+
+<p>注：虽然每次Rebalance都会触发，但是如果重新分配后发现和原来已分配的队列是一致的，并不会有实际的重排动作。如：上次分配的是q0,q1，这次分配的也是q0,q1意味着整体的外部状态并没有修改，是不会有真正的重排动作的，这时候在日志上并不会有所表现。</p>
+
+<h2>Rebalance可能会到来消息的重复</h2>
+
+<p>实际上，Rebalance如果真的发现前后有变化（重排），这是一个很重的操作。因为它需要drop掉当前分配的队列以及其中的任务，还需要同步消费进度等。<strong>而由于这个过程比较长，且很可能每个消费者实际drop队列和分配队列是不一致的，所以通常情况下，重排都意味着有消息的重复投递。</strong>所以消费者端必须要做好消费的幂等。</p>
+
+<p>我们不妨假设这样一个分配过程：A1本来拥有q0，这次重排需要拿q1，A2本来拥有q1，这次重排不需要q1了。那么对于A2来说，他首先要做的是：把q1的任务中断（drop队列），然后在合适的时机把q1的消费进度同步一下，再重新分配（这个例子这里不太重要），同样的A1也是要经历一样的过程：把q0的任务中断（drop队列），然后在合适的时机把q0的消费进度同步一下，然后重新分配——拿到q1。</p>
+
+<p>我们假设A1的过程比A2要快，这里有两个可能：</p>
+
+<p>1.一种情况是A1在A2把q1队列drop掉之前，A1就又拿到了q1，所以在这个时间窗口上观察，你会发现q1短暂地同时分配给了A1和A2。而由于RocketMQ的消费模型是Pull模式，所以A1、A2会同时拉取消息，消息就重复了。</p>
+
+<p>2.另一种情况可能性更大，A2的确drop掉了队列不拉取了，但是消费进度（假设为OF1）还没及时同步到broker。那么A1拿到了q1之后，他需要第一时间知道自己从哪里（位点）拉取消息，所以他会询问一次broker，而broker这时候他的信息也是落后的，就会返回一个较老的消息位点OF2，那么[OF2,OF1]之间的消息就会重复。</p>
+
+<p>可以看到，光负载均衡的这个实现原理，就会导致RocketMQ消息重复比一般的消息中间件概率要大，而且严重不少（消息是批量重复的）。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[消息幂等（去重）通用解决方案，RocketMQ]]></title>
@@ -424,7 +626,7 @@ CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp(
 
 <p>所以，社区中经常有人问：“为什么我设了<code>CONSUME_FROM_LAST_OFFSET</code>，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。</p>
 
-<p>对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：<a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-clean-commitlog/%20%22RocketMQ%E2%80%94%E2%80%94%E6%B6%88%E6%81%AF%E6%96%87%E4%BB%B6%E8%BF%87%E6%9C%9F%E5%8E%9F%E7%90%86">RocketMQ——消息文件过期原理</a></p>
+<p>对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：<a href="http://jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" title="RocketMQ——消息文件过期原理">RocketMQ——消息文件过期原理</a></p>
 
 <h2>消息ACK机制</h2>
 
@@ -658,362 +860,6 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 <p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
 
 <p><img src="/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[RocketMQ——通信协议]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
-    <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
-    <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
-
-<p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
-
-<h2>通讯协议</h2>
-
-<p>协议分为以下四部分：</p>
-
-<p><img src="/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
-
-<p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
-
-<ul>
-<li><p>header: 协议的头，数据是序列化后的json。json的每个key字段都是固定的，不同的通讯请求字段不一样。后面解释</p></li>
-<li><p>body: 请求的二进制实际数据。例如发送消息的网络请求中，body中传输实际的消息内容。</p></li>
-<li><p>length:2 3 4 端整体的长度。四个字节整数。</p></li>
-<li><p>header length: header的长度。四个字节整数。</p></li>
-</ul>
-
-
-<h3>Header</h3>
-
-<p>协议header具体标识整个通讯请求的元数据，如请求什么，怎样的方式请求（异步/oneway）请求客户端的版本，语言，请求的具体参数等。</p>
-
-<p>header是序列化的json,以下是json中的所有字段,并阐述起在请求和响应两个阶段的区别。</p>
-
-<table>
-<thead>
-<tr>
-<th> 字段      </th>
-<th> 类型                   </th>
-<th> Request                                                                                                                          </th>
-<th> Response                                                                                   </th>
-<th>   </th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td> code      </td>
-<td> 整数                   </td>
-<td> 请求操作码。响应方通过code决定如何处理请求。                                                                                       </td>
-<td> 响应码。0表示成功，非0表示错误码。                                                         </td>
-<td>   </td>
-</tr>
-<tr>
-<td> language  </td>
-<td> 字符串                 </td>
-<td> 标记请求方的语言类型，如JAVA。                                                                                                   </td>
-<td> 应答方方的所使用的语言。                                                                   </td>
-<td>   </td>
-</tr>
-<tr>
-<td> version   </td>
-<td> 整数                   </td>
-<td> 请求方的版本号                                                                                                                   </td>
-<td> 应答方的版本号                                                                             </td>
-<td>   </td>
-</tr>
-<tr>
-<td> opaque    </td>
-<td> 整数                   </td>
-<td> 在同一个连接上，标记是哪次请求。服务响应的时候会返回这个请求标识码，以达到请求方多线程中复用连接，在收到响应的时候找到对应的请求 </td>
-<td> 原请求的opaque。应答方不做修改原值返回。                                                   </td>
-<td>   </td>
-</tr>
-<tr>
-<td> flag      </td>
-<td> 整数                   </td>
-<td> 通信层的标识位。标识这次通信的类型。                                                                                             </td>
-<td> 通信层的标识位。标识这次通信的类型。                                                       </td>
-<td>   </td>
-</tr>
-<tr>
-<td> remark    </td>
-<td> 字符串                 </td>
-<td> 传输的自定义文本                                                                                                                 </td>
-<td> 应答的文本信息。通常存放错误信息。                                                         </td>
-<td>   </td>
-</tr>
-<tr>
-<td> extFields </td>
-<td> HashMap&lt;String,String> </td>
-<td> 请求自定义字段。不同的请求会有不一样的参数列表，这里存放那些请求自定义的参数列表。                                               </td>
-<td> 响应自定义字段。不同的响应会有不一样的参数列表，若有，这里则存放那些请求自定义的参数列表。 </td>
-<td>   </td>
-</tr>
-</tbody>
-</table>
-
-
-<h4>Header详解：</h4>
-
-<h5>code:</h5>
-
-<p>请求/响应码。所有的请求码参考代码<code>RequestCode.java</code>。响应码则在<code>ResponseCode.java</code>中。</p>
-
-<h5>language:</h5>
-
-<p>由于要支持多语言，所以这一字段可以给通信双方知道对方通信层锁使用的开发语言。</p>
-
-<h5>version:</h5>
-
-<p>给通信层知道对方的版本号，响应方可以以此做兼容老版本等的特殊操作。</p>
-
-<h5>opaque:</h5>
-
-<p>请求标识码。在Java版的通信层中，这个只是一个不断自增的整形，为了收到应答方响应的的时候找到对应的请求。</p>
-
-<p>flag： 按位(bit)解释。</p>
-
-<p>第0位标识是这次通信是request还是response，0标识request, 1 标识response。</p>
-
-<p>第1位标识是否是oneway请求，1标识oneway。应答方在处理oneway请求的时候，不会做出响应，请求方也无序等待应答方响应。</p>
-
-<h5>remark:</h5>
-
-<p>附带的文本信息。常见的如存放一些broker/nameserver返回的一些异常信息，方便开发人员定位问题。</p>
-
-<h5>extFields：</h5>
-
-<p>这个字段不通的请求/响应不一样，完全自定义。数据结构上是java的hashmap。在Java的每个RemotingCammand中，其实都带有一个CommandCustomHeader的属性成员，可以认为他是一个强类型的extFields，再最后传输的时候，这个CommandCustomHeader会被忽略，而传输前会把其中的所有字段全部都原封不动塞到extFields中，以作传输。</p>
-
-<p>以发送消息为例(code=310)，发送消息的自定义header是SendMessageRequestHeaderV2（只是字段名对比SendMessageRequestHeader压缩了）。有以下字段：</p>
-
-<pre><code>@CFNotNull
-private String a;// producerGroup;
-@CFNotNull
-private String b;// topic;
-@CFNotNull
-private String c;// defaultTopic;
-@CFNotNull
-private Integer d;// defaultTopicQueueNums;
-@CFNotNull
-private Integer e;// queueId;
-@CFNotNull
-private Integer f;// sysFlag;
-@CFNotNull
-private Long g;// bornTimestamp;
-@CFNotNull
-private Integer h;// flag;
-@CFNullable
-private String i;// properties;
-@CFNullable
-private Integer j;// reconsumeTimes;
-@CFNullable
-private boolean k;// unitMode = false;
-</code></pre>
-
-<p>这些字段都会原封不动的去到extFields中做传输，最后看到的发送消息的请求header会类似如：</p>
-
-<pre><code>{  
-    "code":310,
-    "extFields":{  
-        "f":"0",
-        "g":"1482158310125",
-        "d":"4",
-        "e":"0",
-        "b":"TopicTest",
-        "c":"TBW102",
-        "a":"please_rename_unique_group_name",
-        "j":"0",
-        "k":"false",
-        "h":"0",
-        "i":"TAGS\u0001TagA\u0002WAIT\u0001true\u0002"
-    },
-    "flag":0,
-    "language":"JAVA",
-    "opaque":206,
-    "version":79
-}
-</code></pre>
-
-<p>注：其中fastjson把值为null的remark过滤了。</p>
-
-<h2>请求码列表</h2>
-
-<p>以下是截至到3.2.6的所有请求码列表</p>
-
-<pre><code>
-    // Broker 发送消息
-    public static final int SEND_MESSAGE = 10;
-    // Broker 订阅消息
-    public static final int PULL_MESSAGE = 11;
-    // Broker 查询消息
-    public static final int QUERY_MESSAGE = 12;
-    // Broker 查询Broker Offset
-    public static final int QUERY_BROKER_OFFSET = 13;
-    // Broker 查询Consumer Offset
-    public static final int QUERY_CONSUMER_OFFSET = 14;
-    // Broker 更新Consumer Offset
-    public static final int UPDATE_CONSUMER_OFFSET = 15;
-    // Broker 更新或者增加一个Topic
-    public static final int UPDATE_AND_CREATE_TOPIC = 17;
-    // Broker 获取所有Topic的配置（Slave和Namesrv都会向Master请求此配置）
-    public static final int GET_ALL_TOPIC_CONFIG = 21;
-    // Broker 获取所有Topic配置（Slave和Namesrv都会向Master请求此配置）
-    public static final int GET_TOPIC_CONFIG_LIST = 22;
-    // Broker 获取所有Topic名称列表
-    public static final int GET_TOPIC_NAME_LIST = 23;
-    // Broker 更新Broker上的配置
-    public static final int UPDATE_BROKER_CONFIG = 25;
-    // Broker 获取Broker上的配置
-    public static final int GET_BROKER_CONFIG = 26;
-    // Broker 触发Broker删除文件
-    public static final int TRIGGER_DELETE_FILES = 27;
-    // Broker 获取Broker运行时信息
-    public static final int GET_BROKER_RUNTIME_INFO = 28;
-    // Broker 根据时间查询队列的Offset
-    public static final int SEARCH_OFFSET_BY_TIMESTAMP = 29;
-    // Broker 查询队列最大Offset
-    public static final int GET_MAX_OFFSET = 30;
-    // Broker 查询队列最小Offset
-    public static final int GET_MIN_OFFSET = 31;
-    // Broker 查询队列最早消息对应时间
-    public static final int GET_EARLIEST_MSG_STORETIME = 32;
-    // Broker 根据消息ID来查询消息
-    public static final int VIEW_MESSAGE_BY_ID = 33;
-    // Broker Client向Client发送心跳，并注册自身
-    public static final int HEART_BEAT = 34;
-    // Broker Client注销
-    public static final int UNREGISTER_CLIENT = 35;
-    // Broker Consumer将处理不了的消息发回服务器
-    public static final int CONSUMER_SEND_MSG_BACK = 36;
-    // Broker Commit或者Rollback事务
-    public static final int END_TRANSACTION = 37;
-    // Broker 获取ConsumerId列表通过GroupName
-    public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
-    // Broker 主动向Producer回查事务状态
-    public static final int CHECK_TRANSACTION_STATE = 39;
-    // Broker Broker通知Consumer列表变化
-    public static final int NOTIFY_CONSUMER_IDS_CHANGED = 40;
-    // Broker Consumer向Master锁定队列
-    public static final int LOCK_BATCH_MQ = 41;
-    // Broker Consumer向Master解锁队列
-    public static final int UNLOCK_BATCH_MQ = 42;
-    // Broker 获取所有Consumer Offset
-    public static final int GET_ALL_CONSUMER_OFFSET = 43;
-    // Broker 获取所有定时进度
-    public static final int GET_ALL_DELAY_OFFSET = 45;
-    // Namesrv 向Namesrv追加KV配置
-    public static final int PUT_KV_CONFIG = 100;
-    // Namesrv 从Namesrv获取KV配置
-    public static final int GET_KV_CONFIG = 101;
-    // Namesrv 从Namesrv获取KV配置
-    public static final int DELETE_KV_CONFIG = 102;
-    // Namesrv 注册一个Broker，数据都是持久化的，如果存在则覆盖配置
-    public static final int REGISTER_BROKER = 103;
-    // Namesrv 卸载一个Broker，数据都是持久化的
-    public static final int UNREGISTER_BROKER = 104;
-    // Namesrv 根据Topic获取Broker Name、队列数(包含读队列与写队列)
-    public static final int GET_ROUTEINTO_BY_TOPIC = 105;
-    // Namesrv 获取注册到Name Server的所有Broker集群信息
-    public static final int GET_BROKER_CLUSTER_INFO = 106;
-    public static final int UPDATE_AND_CREATE_SUBSCRIPTIONGROUP = 200;
-    public static final int GET_ALL_SUBSCRIPTIONGROUP_CONFIG = 201;
-    public static final int GET_TOPIC_STATS_INFO = 202;
-    public static final int GET_CONSUMER_CONNECTION_LIST = 203;
-    public static final int GET_PRODUCER_CONNECTION_LIST = 204;
-    public static final int WIPE_WRITE_PERM_OF_BROKER = 205;
-
-    // 从Name Server获取完整Topic列表
-    public static final int GET_ALL_TOPIC_LIST_FROM_NAMESERVER = 206;
-    // 从Broker删除订阅组
-    public static final int DELETE_SUBSCRIPTIONGROUP = 207;
-    // 从Broker获取消费状态（进度）
-    public static final int GET_CONSUME_STATS = 208;
-    // Suspend Consumer消费过程
-    public static final int SUSPEND_CONSUMER = 209;
-    // Resume Consumer消费过程
-    public static final int RESUME_CONSUMER = 210;
-    // 重置Consumer Offset
-    public static final int RESET_CONSUMER_OFFSET_IN_CONSUMER = 211;
-    // 重置Consumer Offset
-    public static final int RESET_CONSUMER_OFFSET_IN_BROKER = 212;
-    // 调整Consumer线程池数量
-    public static final int ADJUST_CONSUMER_THREAD_POOL = 213;
-    // 查询消息被哪些消费组消费
-    public static final int WHO_CONSUME_THE_MESSAGE = 214;
-
-    // 从Broker删除Topic配置
-    public static final int DELETE_TOPIC_IN_BROKER = 215;
-    // 从Namesrv删除Topic配置
-    public static final int DELETE_TOPIC_IN_NAMESRV = 216;
-    // Namesrv 通过 project 获取所有的 server ip 信息
-    public static final int GET_KV_CONFIG_BY_VALUE = 217;
-    // Namesrv 删除指定 project group 下的所有 server ip 信息
-    public static final int DELETE_KV_CONFIG_BY_VALUE = 218;
-    // 通过NameSpace获取所有的KV List
-    public static final int GET_KVLIST_BY_NAMESPACE = 219;
-
-    // offset 重置
-    public static final int RESET_CONSUMER_CLIENT_OFFSET = 220;
-    // 客户端订阅消息
-    public static final int GET_CONSUMER_STATUS_FROM_CLIENT = 221;
-    // 通知 broker 调用 offset 重置处理
-    public static final int INVOKE_BROKER_TO_RESET_OFFSET = 222;
-    // 通知 broker 调用客户端订阅消息处理
-    public static final int INVOKE_BROKER_TO_GET_CONSUMER_STATUS = 223;
-
-    // Broker 查询topic被谁消费
-    // 2014-03-21 Add By shijia
-    public static final int QUERY_TOPIC_CONSUME_BY_WHO = 300;
-
-    // 获取指定集群下的所有 topic
-    // 2014-03-26
-    public static final int GET_TOPICS_BY_CLUSTER = 224;
-
-    // 向Broker注册Filter Server
-    // 2014-04-06 Add By shijia
-    public static final int REGISTER_FILTER_SERVER = 301;
-    // 向Filter Server注册Class
-    // 2014-04-06 Add By shijia
-    public static final int REGISTER_MESSAGE_FILTER_CLASS = 302;
-    // 根据 topic 和 group 获取消息的时间跨度
-    public static final int QUERY_CONSUME_TIME_SPAN = 303;
-    // 获取所有系统内置 Topic 列表
-    public static final int GET_SYSTEM_TOPIC_LIST_FROM_NS = 304;
-    public static final int GET_SYSTEM_TOPIC_LIST_FROM_BROKER = 305;
-
-    // 清理失效队列
-    public static final int CLEAN_EXPIRED_CONSUMEQUEUE = 306;
-
-    // 通过Broker查询Consumer内存数据
-    // 2014-07-19 Add By shijia
-    public static final int GET_CONSUMER_RUNNING_INFO = 307;
-
-    // 查找被修正 offset (转发组件）
-    public static final int QUERY_CORRECTION_OFFSET = 308;
-
-    // 通过Broker直接向某个Consumer发送一条消息，并立刻消费，返回结果给broker，再返回给调用方
-    // 2014-08-11 Add By shijia
-    public static final int CONSUME_MESSAGE_DIRECTLY = 309;
-
-    // Broker 发送消息，优化网络数据包
-    public static final int SEND_MESSAGE_V2 = 310;
-
-    // 单元化相关 topic
-    public static final int GET_UNIT_TOPIC_LIST = 311;
-    // 获取含有单元化订阅组的 Topic 列表
-    public static final int GET_HAS_UNIT_SUB_TOPIC_LIST = 312;
-    // 获取含有单元化订阅组的非单元化 Topic 列表
-    public static final int GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST = 313;
-    // 克隆某一个组的消费进度到新的组
-    public static final int CLONE_GROUP_OFFSET = 314;
-
-    // 查看Broker上的各种统计信息
-    public static final int VIEW_BROKER_STATS_DATA = 315;
-</code></pre>
 ]]></content>
   </entry>
   

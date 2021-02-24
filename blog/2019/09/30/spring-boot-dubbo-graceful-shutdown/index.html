@@ -142,7 +142,7 @@
 
 <p>要解决这个问题，可简单可行的思路是：给Dubbo退出一定的时间去处理，然后再执行Spring容器的关闭。但由于钩子方法的时机并不能程序员控制，那么怎么样才能做到呢——禁用原生Spring的钩子方法，在合适的时机手动销毁Spring容器。</p>
 
-<h1>优雅退出方案：</h1>
+<h1>优雅退出方案（简版）——给予固定睡眠时间后才关闭Spring容器：</h1>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -181,6 +181,116 @@
 </span><span class='line'>    <span class="o">}</span>
 </span><span class='line'><span class="o">});</span>
 </span></code></pre></td></tr></table></div></figure>
+
+
+<h1>优雅退出方案（升级版）——动态地等待消费者及生产者连接关闭后才关闭Spring容器：</h1>
+
+<p>上面的方案正常情况下也够用，因为大部分时间我们只需要估算一个退出时间，让dubbo处理销毁的工作即可，但是对于一些退出时间相对变化较大（如有动态的消费者），表现出来的结果就是dubbo的退出时间有时候较短，有时候缺比较长。如果直接给一个较大的睡眠时间，可能使得每次程序退出都等很久，就显得不太优雅了。</p>
+
+<p>那么我们就可以使用一些底层的dubbo api去确认消费者和生产者的连接已经关闭，以下是一个方法用以取代上面代码片段中的sleep的语句：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 等待Dubbo退出，优雅退出的shutdown hook可使用</span>
+</span><span class='line'><span class="cm"> * @param sleepMillis 每次发现Dubbo没退出完就睡眠等待的毫秒数</span>
+</span><span class='line'><span class="cm"> * @param sleepMaxTimes 最多睡眠的次数，避免一直dubbo退出太久卡住程序的退出，达到此次数后会不再等待</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">waitDubboShutdown</span><span class="o">(</span><span class="kt">long</span> <span class="n">sleepMillis</span><span class="o">,</span> <span class="kt">int</span> <span class="n">sleepMaxTimes</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">sleepWaitTimes</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">sleepWaitTimes</span> <span class="o">&lt;</span><span class="n">sleepMaxTimes</span><span class="o">;</span> <span class="n">sleepWaitTimes</span><span class="o">++){</span><span class="c1">//如果dubbo的server没有关闭完成，会睡眠等待，最多等待三次</span>
+</span><span class='line'>        <span class="n">Collection</span> <span class="n">existingDubboServers</span> <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getServers</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">Collection</span> <span class="n">existingDubboExporters</span>  <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getExporters</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;existing dubbo servers : {}, existing dubbo expoerters {} ,  sleepWaitTimes : {}&quot;</span><span class="o">,</span> <span class="n">existingDubboServers</span><span class="o">,</span> <span class="n">existingDubboExporters</span><span class="o">,</span> <span class="n">sleepWaitTimes</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">existingDubboServers</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">existingDubboExporters</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="n">sleepMillis</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//优雅退出失败，打印日志</span>
+</span><span class='line'>    <span class="n">Collection</span> <span class="n">existingDubboServers</span> <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getServers</span><span class="o">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">existingDubboServers</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;DUBBO服务Server依然存在，不再等待其销毁，可能会导致优雅退出失败 {}&quot;</span><span class="o">,</span><span class="n">existingDubboServers</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Collection</span> <span class="n">existingDubboExporters</span>  <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getExporters</span><span class="o">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">existingDubboExporters</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;DUBBO服务Exporters依然存在，不再等待其销毁，可能会导致优雅退出失败 {}&quot;</span><span class="o">,</span><span class="n">existingDubboExporters</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>注：这个方法用到了DubboProtocol的底层API，所以如果你的协议不是使用&#8221;dubbo&#8221;而是如HTTP协议、redis协议，则此方法不可用。关于协议的部分，可以参考官方文档：<a href="http://dubbo.apache.org/zh-cn/docs/user/references/protocol/introduction.html">http://dubbo.apache.org/zh-cn/docs/user/references/protocol/introduction.html</a></p>
+
+<p>那么最后，升级版的优雅退出代码则如下所示：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SpringApplication</span> <span class="n">application</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="n">Main</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'><span class="n">application</span><span class="o">.</span><span class="na">setRegisterShutdownHook</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span><span class="c1">//关闭spring的shutdown hook，后续手动触发</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">ConfigurableApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+</span><span class='line'><span class="n">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">addShutdownHook</span><span class="o">(</span><span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="s">&quot;T_SHUTDOWN_HOOK&quot;</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;”====================shutdown App====================“。&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//....这里可以做其他优雅退出处理，例如回收本地线程池、关闭定时调度器等的操作</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">waitDubboShutdown</span><span class="o">(</span><span class="mi">1000</span><span class="o">,</span><span class="mi">5</span><span class="o">);</span><span class="c1">//每次等1000ms，最多等5次；优雅退出时间是动态的（可能1秒就能优雅退出完毕）；但如果退出时间大于5秒，那么则放弃优雅退出，直接退出。</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//关闭spring容器</span>
+</span><span class='line'>        <span class="n">context</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
 
 </div>
 
@@ -274,6 +384,10 @@ var jiathis_config = {data_track_clickback:'true'};
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/11/26/rocketmq-consumer-allocate/">为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/06/08/rocketmq-message-dedup/">消息幂等（去重）通用解决方案，RocketMQ</a>
       </li>
     
@@ -287,10 +401,6 @@ var jiathis_config = {data_track_clickback:'true'};
     
       <li class="post">
         <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
       </li>
     
   </ul>
@@ -393,7 +503,7 @@ var jiathis_config = {data_track_clickback:'true'};
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2020 - Jaskey Lam -
+  Copyright &copy; 2021 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

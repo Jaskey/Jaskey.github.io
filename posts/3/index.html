@@ -77,6 +77,151 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-15T15:48:01+08:00'><span class='date'>2016-12-15 Thu</span> <span class='time'>15:48</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
+
+<p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>
+
+<h2>角色：</h2>
+
+<h3>Producer</h3>
+
+<p>生产者。发送消息的客户端角色。发送消息的时候需要指定Topic。</p>
+
+<h3>Consumer</h3>
+
+<p>消费者。消费消息的客户端角色。通常是后台处理异步消费的系统。 RocketMQ中Consumer有两种实现：PushConsumer和PullConsumer。</p>
+
+<h4>PushConsumer</h4>
+
+<p>推送模式（虽然RocketMQ使用的是长轮询）的消费者。消息的能及时被消费。使用非常简单，内部已处理如线程池消费、流控、负载均衡、异常处理等等的各种场景。</p>
+
+<h4>PullConsumer</h4>
+
+<p>拉取模式的消费者。应用主动控制拉取的时机，怎么拉取，怎么消费等。主动权更高。但要自己处理各种场景。</p>
+
+<h2>概念术语</h2>
+
+<h3>Producer Group</h3>
+
+<p>标识发送同一类消息的Producer，通常发送逻辑一致。发送普通消息的时候，仅标识使用，并无特别用处。若事务消息，如果某条发送某条消息的producer-A宕机，使得事务消息一直处于PREPARED状态并超时，则broker会回查同一个group的其 他producer，确认这条消息应该commit还是rollback。但开源版本并不支持事务消息。</p>
+
+<h3>Consumer Group</h3>
+
+<p>标识一类Consumer的集合名称，这类Consumer通常消费一类消息，且消费逻辑一致。同一个Consumer Group下的各个实例将共同消费topic的消息，起到负载均衡的作用。</p>
+
+<p>消费进度以Consumer Group为粒度管理，不同Consumer Group之间消费进度彼此不受影响，即消息A被Consumer Group1消费过，也会再给Consumer Group2消费。</p>
+
+<p>注： RocketMQ要求同一个Consumer Group的消费者必须要拥有相同的注册信息，即必须要听一样的topic(并且tag也一样)。</p>
+
+<h3>Topic</h3>
+
+<p>标识一类消息的逻辑名字，消息的逻辑管理单位。无论消息生产还是消费，都需要指定Topic。</p>
+
+<h3>Tag</h3>
+
+<p>RocketMQ支持给在发送的时候给topic打tag，同一个topic的消息虽然逻辑管理是一样的。但是消费topic1的时候，如果你订阅的时候指定的是tagA，那么tagB的消息将不会投递。</p>
+
+<h3>Message Queue</h3>
+
+<p>简称Queue或Q。消息物理管理单位。一个Topic将有若干个Q。若Topic同时创建在不通的Broker，则不同的broker上都有若干Q，消息将物理地存储落在不同Broker结点上，具有水平扩展的能力。</p>
+
+<p>无论生产者还是消费者，实际的生产和消费都是针对Q级别。例如Producer发送消息的时候，会预先选择（默认轮询）好该Topic下面的某一条Q地发送；Consumer消费的时候也会负载均衡地分配若干个Q，只拉取对应Q的消息。</p>
+
+<p>每一条message queue均对应一个文件，这个文件存储了实际消息的索引信息。并且即使文件被删除，也能通过实际纯粹的消息文件（commit log）恢复回来。</p>
+
+<h3>Offset</h3>
+
+<p>RocketMQ中，有很多offset的概念。但通常我们只关心暴露到客户端的offset。一般我们不特指的话，就是指逻辑Message Queue下面的offset。</p>
+
+<p>注： 逻辑offset的概念在RocketMQ中字面意思实际上和真正的意思有一定差别，这点在设计上显得有点混乱。祥见下面的解释。</p>
+
+<p>可以认为一条逻辑的message queue是无限长的数组。一条消息进来下标就会涨1,而这个数组的下标就是offset。</p>
+
+<h4>max offset</h4>
+
+<p> 字面上可以理解为这是标识message queue中的max offset表示消息的最大offset。但是从源码上看，这个offset实际上是最新消息的offset+1，即：下一条消息的offset。</p>
+
+<h4>min offset：</h4>
+
+<p>标识现存在的最小offset。而由于消息存储一段时间后，消费会被物理地从磁盘删除，message queue的min offset也就对应增长。这意味着比min offset要小的那些消息已经不在broker上了，无法被消费。</p>
+
+<h4>consumer offset</h4>
+
+<p>字面上，可以理解为标记Consumer Group在一条逻辑Message Queue上，消息消费到哪里即消费进度。但从源码上看，这个数值是消费过的最新消费的消息offset+1，即实际上表示的是<strong>下次拉取的offset位置</strong>。</p>
+
+<p>消费者拉取消息的时候需要指定offset，broker不主动推送消息， offset的消息返回给客户端。</p>
+
+<p>consumer刚启动的时候会获取持久化的consumer offset，用以决定从哪里开始消费，consumer以此发起第一次请求。</p>
+
+<p>每次消息消费成功后，这个offset在会先更新到内存，而后定时持久化。在集群消费模式下，会同步持久化到broker，而在广播模式下，则会持久化到本地文件。</p>
+
+<h3>集群消费</h3>
+
+<p>消费者的一种消费模式。一个Consumer Group中的各个Consumer实例分摊去消费消息，即一条消息只会投递到一个Consumer Group下面的一个实例。</p>
+
+<p>实际上，每个Consumer是平均分摊Message Queue的去做拉取消费。例如某个Topic有3条Q，其中一个Consumer Group 有 3 个实例（可能是 3 个进程，或者 3 台机器），那么每个实例只消费其中的1条Q。</p>
+
+<p>而由Producer发送消息的时候是轮询所有的Q,所以消息会平均散落在不同的Q上，可以认为Q上的消息是平均的。那么实例也就平均地消费消息了。</p>
+
+<p>这种模式下，消费进度的存储会持久化到Broker。</p>
+
+<h3>广播消费</h3>
+
+<p>消费者的一种消费模式。消息将对一个Consumer Group下的各个Consumer实例都投递一遍。即即使这些 Consumer 属于同一个Consumer Group，消息也会被Consumer Group 中的每个Consumer都消费一次。</p>
+
+<p>实际上，是一个消费组下的每个消费者实例都获取到了topic下面的每个Message Queue去拉取消费。所以消息会投递到每个消费者实例。</p>
+
+<p>这种模式下，消费进度会存储持久化到实例本地。</p>
+
+<h3>顺序消息</h3>
+
+<p>消费消息的顺序要同发送消息的顺序一致。由于Consumer消费消息的时候是针对Message Queue顺序拉取并开始消费，且一条Message Queue只会给一个消费者（集群模式下），所以能够保证同一个消费者实例对于Q上消息的消费是顺序地开始消费（不一定顺序消费完成，因为消费可能并行）。</p>
+
+<p>在RocketMQ中，顺序消费主要指的是都是Queue级别的局部顺序。这一类消息为满足顺序性，必须Producer单线程顺序发送，且发送到同一个队列，这样Consumer就可以按照Producer发送的顺序去消费消息。</p>
+
+<p>生产者发送的时候可以用MessageQueueSelector为某一批消息（通常是有相同的唯一标示id）选择同一个Queue，则这一批消息的消费将是顺序消息（并由同一个consumer完成消息）。或者Message Queue的数量只有1，但这样消费的实例只能有一个，多出来的实例都会空跑。</p>
+
+<h3>普通顺序消息</h3>
+
+<p>顺序消息的一种，正常情况下可以保证完全的顺序消息，但是一旦发生异常，Broker宕机或重启，由于队列总数发生发化，消费者会触发负载均衡，而默认地负载均衡算法采取哈希取模平均，这样负载均衡分配到定位的队列会发化，使得队列可能分配到别的实例上，则会短暂地出现消息顺序不一致。</p>
+
+<p>如果业务能容忍在集群异常情况（如某个 Broker 宕机或者重启）下，消息短暂的乱序，使用普通顺序方式比较合适。</p>
+
+<h3>严格顺序消息</h3>
+
+<p>顺序消息的一种，无论正常异常情况都能保证顺序，但是牺牲了分布式 Failover 特性，即 Broker集群中只要有一台机器不可用，则整个集群都不可用，服务可用性大大降低。</p>
+
+<p>如果服务器部署为同步双写模式，此缺陷可通过备机自动切换为主避免，不过仍然会存在几分钟的服务不可用。（依赖同步双写，主备自动切换，自动切换功能目前并未实现）</p>
+
+<p>目前已知的应用只有数据库 binlog 同步强依赖严格顺序消息，其他应用绝大部分都可以容忍短暂乱序，推荐使用普通的顺序消息</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2016/12/14/rocketmq-component/">RocketMQ——组件</a></h1>
     
     
@@ -674,49 +819,6 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/05/07/change-intelij-short-cut/">修改IntelliJ的快捷键中的CTRL+Y为Redo操作</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-07T18:02:57+08:00'><span class='date'>2015-05-07 Thu</span> <span class='time'>18:02</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>IntelliJ是一个非常强大的IDE，但是对于长期习惯Windows用户，里面有些快捷键非常不好。最典型的就是<kbd>CTRL</kbd>+<kbd>Y</kbd>，在IntelliJ里面<kbd>CTRL</kbd>+<kbd>Y</kbd>是删除操作，可是我们习惯与<KBD>CTRL</KBD>+<KBD>Y</KBD>是Redo（重做）操作。</p>
-
-<p>可以用以下方式修改这些快捷键,注：适用如IDEA, PyCharm等IDE:</p>
-
-<ol>
-<li>进入Settings（快捷键：<kbd>CTRL</kbd>+<kbd>ALT</kbd>+<kbd>S</kbd>，或者<kbd>SHITT</kbd>*2出<code>Search Everywhere</code>中搜索settings进入）</li>
-<li>左边菜单选择KeyMap（可搜索）</li>
-<li>选择默认的keymaps（IntelliJ的）,然后选择copy出一份新的，在新的keymaps里面修改</li>
-<li>在新的keymaps里面的<code>Main Menu--&gt;Edit--&gt;Redo</code> 右键选择 <code>Add Keyboard Shortcut</code></li>
-<li>键盘按<kbd>CTRL</kbd>+<kbd>Y</kbd> (修改的快捷键)</li>
-<li>OK</li>
-<li>选择 &ldquo;Remove&rdquo; ，当窗口提示： &ldquo;the shortcut is already assigned to other actions. Do you want to remove other assignments?&rdquo;</li>
-<li>Apply</li>
-</ol>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -734,6 +836,10 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/11/26/rocketmq-consumer-allocate/">为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/06/08/rocketmq-message-dedup/">消息幂等（去重）通用解决方案，RocketMQ</a>
       </li>
     
@@ -747,10 +853,6 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
     
       <li class="post">
         <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
       </li>
     
   </ul>
@@ -852,7 +954,7 @@ objectMapper.writeValue(new File(jsonFilePath), listObject);
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2020 - Jaskey Lam -
+  Copyright &copy; 2021 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

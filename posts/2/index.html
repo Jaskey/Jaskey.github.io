@@ -77,6 +77,221 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2020/03/18/sharding-sphere-data-desensitization/">基于Sharding Sphere实现数据“一键脱敏”</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2020-03-18T20:53:00+08:00'><span class='date'>2020-03-18 Wed</span> <span class='time'>20:53</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在真实业务场景中，数据库中经常需要存储某些客户的关键性敏感信息如：身份证号、银行卡号、姓名、手机号码等，此类信息按照合规要求，通常需要实现加密存储以满足合规要求。</p>
+
+<h3>痛点一：</h3>
+
+<p>通常的解决方案是我们书写SQL的时候，把对应的加密字段手动进行加密再进行插入，在查询的时候使用之前再手动进行解密。此方法固然可行，但是使用起来非常不便捷且繁琐，使得日常的业务开发与存储合规的细节紧耦合</p>
+
+<h3>痛点二：</h3>
+
+<p>对于一些为了快速上线而一开始没有实现合规脱敏的系统，如何比较快速的使得已有业务满足合规要求的同时，尽量减少对原系统的改造。（通常的这个过程至少包括：1.新增脱敏列的存储 2.同时做数据迁移 3.业务的代码做兼容逻辑等）。</p>
+
+<p>Apache ShardingSphere下面存在一个数据脱敏模块，此模块集成的常用的数据脱敏的功能。其基本原理是对用户输入的SQL进行解析拦截，并依靠用户的脱敏配置进行SQL的改写，从而实现对原文字段的加密及加密字段的解密。最终实现对用户无感的加解密存储、查询。</p>
+
+<h2>脱敏配置Quick Start——Spring 显示配置：</h2>
+
+<p>以下介绍基于Spring如何快速让系统支持脱敏配置。</p>
+
+<h3>1.引入依赖</h3>
+
+<pre><code>&lt;!-- for spring namespace --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.shardingsphere&lt;/groupId&gt;
+    &lt;artifactId&gt;sharding-jdbc-spring-namespace&lt;/artifactId&gt;
+    &lt;version&gt;${sharding-sphere.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<h3>2.创建脱敏配置规则对象</h3>
+
+<p>在创建数据源之前，需要准备一个EncryptRuleConfiguration进行脱敏的配置，以下是一个例子，对于同一个数据源里两张表card_info，pay_order的不同字段进行AES的加密</p>
+
+<pre><code>private EncryptRuleConfiguration getEncryptRuleConfiguration() {
+Properties props = new Properties();
+
+//自带aes算法需要
+props.setProperty("aes.key.value", aeskey);
+EncryptorRuleConfiguration encryptorConfig = new EncryptorRuleConfiguration("AES", props);
+
+//自定义算法
+//props.setProperty("qb.finance.aes.key.value", aeskey);
+//EncryptorRuleConfiguration encryptorConfig = new EncryptorRuleConfiguration("QB-FINANCE-AES", props);
+
+EncryptRuleConfiguration encryptRuleConfig = new EncryptRuleConfiguration();
+encryptRuleConfig.getEncryptors().put("aes", encryptorConfig);
+
+//START: card_info 表的脱敏配置
+{
+    EncryptColumnRuleConfiguration columnConfig1 = new EncryptColumnRuleConfiguration("", "name", "", "aes");
+    EncryptColumnRuleConfiguration columnConfig2 = new EncryptColumnRuleConfiguration("", "id_no", "", "aes");
+    EncryptColumnRuleConfiguration columnConfig3 = new EncryptColumnRuleConfiguration("", "finshell_card_no", "", "aes");
+    Map&lt;String, EncryptColumnRuleConfiguration&gt; columnConfigMaps = new HashMap&lt;&gt;();
+    columnConfigMaps.put("name", columnConfig1);
+    columnConfigMaps.put("id_no", columnConfig2);
+    columnConfigMaps.put("finshell_card_no", columnConfig3);
+    EncryptTableRuleConfiguration tableConfig = new EncryptTableRuleConfiguration(columnConfigMaps);
+    encryptRuleConfig.getTables().put("card_info", tableConfig);
+}
+//END: card_info 表的脱敏配置
+
+//START: pay_order 表的脱敏配置
+{
+    EncryptColumnRuleConfiguration columnConfig1 = new EncryptColumnRuleConfiguration("", "card_no", "", "aes");
+    Map&lt;String, EncryptColumnRuleConfiguration&gt; columnConfigMaps = new HashMap&lt;&gt;();
+    columnConfigMaps.put("card_no", columnConfig1);
+    EncryptTableRuleConfiguration tableConfig = new EncryptTableRuleConfiguration(columnConfigMaps);
+    encryptRuleConfig.getTables().put("pay_order", tableConfig);
+}
+
+log.info("脱敏配置构建完成:{} ", encryptRuleConfig);
+return encryptRuleConfig;
+</code></pre>
+
+<p>}</p>
+
+<p>说明：</p>
+
+<ol>
+<li>创建 EncryptColumnRuleConfiguration 的时候有四个参数，前两个参数分表叫plainColumn、cipherColumn，其意思是数据库存储里面真实的两个列（名文列、脱敏列），对于新的系统，只需要设置脱敏列即可，所以以上示例为plainColumn为&#8221;&ldquo;。</li>
+<li>创建EncryptTableRuleConfiguration 的时候需要传入一个map，这个map存的value即#1中说明的EncryptColumnRuleConfiguration ，而其key则是一个逻辑列，对于新系统，此逻辑列即为真实的脱敏列。Sharding Shpere在拦截到SQL改写的时候，会按照用户的配置，把逻辑列映射为名文列或者脱敏列（默认）如下的示例</li>
+</ol>
+
+
+<p><img src="http://jaskey.github.io/images/shardingsphere/basic.png" title="shardings sphere basic" alt="shardings sphere basic" /></p>
+
+<h3>3.使用Sharding Sphere的数据源进行管理</h3>
+
+<p>把原始的数据源包装一层</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@Bean("tradePlatformDataSource")
+</span><span class='line'>public DataSource dataSource(@Qualifier("druidDataSource") DataSource ds) throws SQLException {
+</span><span class='line'>    return EncryptDataSourceFactory.createDataSource(ds, getEncryptRuleConfiguration(), new Properties());
+</span><span class='line'>
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>脱敏配置Quick Start——Spring Boot版：</h2>
+
+<p>以下步骤使用Spring Boot管理，可以仅用配置文件解决：</p>
+
+<p>1.引入依赖</p>
+
+<pre><code>&lt;!-- for spring boot --&gt;
+
+&lt;dependency&gt;
+&lt;groupId&gt;org.apache.shardingsphere&lt;/groupId&gt;
+    &lt;artifactId&gt;sharding-jdbc-spring-boot-starter&lt;/artifactId&gt;
+    &lt;version&gt;${sharding-sphere.version}&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;!-- for spring namespace --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.shardingsphere&lt;/groupId&gt;
+    &lt;artifactId&gt;sharding-jdbc-spring-namespace&lt;/artifactId&gt;
+    &lt;version&gt;${sharding-sphere.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<ol>
+<li>Spring 配置文件</li>
+</ol>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>spring.shardingsphere.datasource.name=ds
+</span><span class='line'>spring.shardingsphere.datasource.ds.type=com.alibaba.druid.pool.DruidDataSource
+</span><span class='line'>spring.shardingsphere.datasource.ds.driver-class-name=com.mysql.jdbc.Driver
+</span><span class='line'>spring.shardingsphere.datasource.ds.url=xxxxxxxxxxxxx
+</span><span class='line'>spring.shardingsphere.datasource.ds.username=xxxxxxx
+</span><span class='line'>spring.shardingsphere.datasource.ds.password=xxxxxxxxxxxx
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'># 默认的AES加密器
+</span><span class='line'>spring.shardingsphere.encrypt.encryptors.encryptor_aes.type=aes
+</span><span class='line'>spring.shardingsphere.encrypt.encryptors.encryptor_aes.props.aes.key.value=hkiqAXU6Ur5fixGHaO4Lb2V2ggausYwW
+</span><span class='line'>
+</span><span class='line'># card_info 姓名 AES加密
+</span><span class='line'>spring.shardingsphere.encrypt.tables.card_info.columns.name.cipherColumn=name
+</span><span class='line'>spring.shardingsphere.encrypt.tables.card_info.columns.name.encryptor=encryptor_aes
+</span><span class='line'>
+</span><span class='line'># card_info 身份证 AES加密
+</span><span class='line'>spring.shardingsphere.encrypt.tables.card_info.columns.id_no.cipherColumn=id_no
+</span><span class='line'>spring.shardingsphere.encrypt.tables.card_info.columns.id_no.encryptor=encryptor_aes
+</span><span class='line'>
+</span><span class='line'># card_info 银行卡号 AES加密
+</span><span class='line'>spring.shardingsphere.encrypt.tables.card_info.columns.finshell_card_no.cipherColumn=finshell_card_no
+</span><span class='line'>spring.shardingsphere.encrypt.tables.card_info.columns.finshell_card_no.encryptor=encryptor_aes
+</span><span class='line'>
+</span><span class='line'># pay_order 银行卡号 AES加密
+</span><span class='line'>spring.shardingsphere.encrypt.tables.pay_order.columns.card_no.cipherColumn=card_no
+</span><span class='line'>spring.shardingsphere.encrypt.tables.pay_order.columns.card_no.encryptor=encryptor_aes</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2019/09/30/spring-boot-dubbo-graceful-shutdown/">SpringBoot+Dubbo优雅退出分析及方案</a></h1>
     
     
@@ -145,7 +360,7 @@
 
 <p>要解决这个问题，可简单可行的思路是：给Dubbo退出一定的时间去处理，然后再执行Spring容器的关闭。但由于钩子方法的时机并不能程序员控制，那么怎么样才能做到呢——禁用原生Spring的钩子方法，在合适的时机手动销毁Spring容器。</p>
 
-<h1>优雅退出方案：</h1>
+<h1>优雅退出方案（简版）——给予固定睡眠时间后才关闭Spring容器：</h1>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -184,6 +399,116 @@
 </span><span class='line'>    <span class="o">}</span>
 </span><span class='line'><span class="o">});</span>
 </span></code></pre></td></tr></table></div></figure>
+
+
+<h1>优雅退出方案（升级版）——动态地等待消费者及生产者连接关闭后才关闭Spring容器：</h1>
+
+<p>上面的方案正常情况下也够用，因为大部分时间我们只需要估算一个退出时间，让dubbo处理销毁的工作即可，但是对于一些退出时间相对变化较大（如有动态的消费者），表现出来的结果就是dubbo的退出时间有时候较短，有时候缺比较长。如果直接给一个较大的睡眠时间，可能使得每次程序退出都等很久，就显得不太优雅了。</p>
+
+<p>那么我们就可以使用一些底层的dubbo api去确认消费者和生产者的连接已经关闭，以下是一个方法用以取代上面代码片段中的sleep的语句：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 等待Dubbo退出，优雅退出的shutdown hook可使用</span>
+</span><span class='line'><span class="cm"> * @param sleepMillis 每次发现Dubbo没退出完就睡眠等待的毫秒数</span>
+</span><span class='line'><span class="cm"> * @param sleepMaxTimes 最多睡眠的次数，避免一直dubbo退出太久卡住程序的退出，达到此次数后会不再等待</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">waitDubboShutdown</span><span class="o">(</span><span class="kt">long</span> <span class="n">sleepMillis</span><span class="o">,</span> <span class="kt">int</span> <span class="n">sleepMaxTimes</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">sleepWaitTimes</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">sleepWaitTimes</span> <span class="o">&lt;</span><span class="n">sleepMaxTimes</span><span class="o">;</span> <span class="n">sleepWaitTimes</span><span class="o">++){</span><span class="c1">//如果dubbo的server没有关闭完成，会睡眠等待，最多等待三次</span>
+</span><span class='line'>        <span class="n">Collection</span> <span class="n">existingDubboServers</span> <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getServers</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">Collection</span> <span class="n">existingDubboExporters</span>  <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getExporters</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;existing dubbo servers : {}, existing dubbo expoerters {} ,  sleepWaitTimes : {}&quot;</span><span class="o">,</span> <span class="n">existingDubboServers</span><span class="o">,</span> <span class="n">existingDubboExporters</span><span class="o">,</span> <span class="n">sleepWaitTimes</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">existingDubboServers</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">existingDubboExporters</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="n">sleepMillis</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//优雅退出失败，打印日志</span>
+</span><span class='line'>    <span class="n">Collection</span> <span class="n">existingDubboServers</span> <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getServers</span><span class="o">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">existingDubboServers</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;DUBBO服务Server依然存在，不再等待其销毁，可能会导致优雅退出失败 {}&quot;</span><span class="o">,</span><span class="n">existingDubboServers</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Collection</span> <span class="n">existingDubboExporters</span>  <span class="o">=</span> <span class="n">DubboProtocol</span><span class="o">.</span><span class="na">getDubboProtocol</span><span class="o">().</span><span class="na">getExporters</span><span class="o">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">existingDubboExporters</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;DUBBO服务Exporters依然存在，不再等待其销毁，可能会导致优雅退出失败 {}&quot;</span><span class="o">,</span><span class="n">existingDubboExporters</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>注：这个方法用到了DubboProtocol的底层API，所以如果你的协议不是使用&#8221;dubbo&#8221;而是如HTTP协议、redis协议，则此方法不可用。关于协议的部分，可以参考官方文档：<a href="http://dubbo.apache.org/zh-cn/docs/user/references/protocol/introduction.html">http://dubbo.apache.org/zh-cn/docs/user/references/protocol/introduction.html</a></p>
+
+<p>那么最后，升级版的优雅退出代码则如下所示：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SpringApplication</span> <span class="n">application</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="n">Main</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'><span class="n">application</span><span class="o">.</span><span class="na">setRegisterShutdownHook</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span><span class="c1">//关闭spring的shutdown hook，后续手动触发</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">ConfigurableApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+</span><span class='line'><span class="n">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">addShutdownHook</span><span class="o">(</span><span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="s">&quot;T_SHUTDOWN_HOOK&quot;</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;”====================shutdown App====================“。&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//....这里可以做其他优雅退出处理，例如回收本地线程池、关闭定时调度器等的操作</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">waitDubboShutdown</span><span class="o">(</span><span class="mi">1000</span><span class="o">,</span><span class="mi">5</span><span class="o">);</span><span class="c1">//每次等1000ms，最多等5次；优雅退出时间是动态的（可能1秒就能优雅退出完毕）；但如果退出时间大于5秒，那么则放弃优雅退出，直接退出。</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//关闭spring容器</span>
+</span><span class='line'>        <span class="n">context</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
 
 </div>
   
@@ -2234,7 +2559,7 @@ CONSUME_FROM_TIMESTAMP//从某个时间点开始消费，和setConsumeTimestamp(
 
 <p>所以，社区中经常有人问：“为什么我设了<code>CONSUME_FROM_LAST_OFFSET</code>，历史的消息还是被消费了”？ 原因就在于只有全新的消费组才会使用到这些策略，老的消费组都是按已经存储过的消费进度继续消费。</p>
 
-<p>对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：<a href="http://jaskey.github.io/blog/2016/12/19/rocketmq-clean-commitlog/%20%22RocketMQ%E2%80%94%E2%80%94%E6%B6%88%E6%81%AF%E6%96%87%E4%BB%B6%E8%BF%87%E6%9C%9F%E5%8E%9F%E7%90%86">RocketMQ——消息文件过期原理</a></p>
+<p>对于老消费组想跳过历史消息需要自身做过滤，或者使用先修改消费进度。示例代码请参看：<a href="http://jaskey.github.io/blog/2017/02/16/rocketmq-clean-commitlog/" title="RocketMQ——消息文件过期原理">RocketMQ——消息文件过期原理</a></p>
 
 <h2>消息ACK机制</h2>
 
@@ -3041,151 +3366,6 @@ private boolean k;// unitMode = false;
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/12/15/rocketmq-concept/">RocketMQ——角色与术语详解</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-12-15T15:48:01+08:00'><span class='date'>2016-12-15 Thu</span> <span class='time'>15:48</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>RocketMQ中有很多概念，其中包括一些术语和角色。</p>
-
-<p>理清楚基本的概念能有效的帮助理解RocketMQ的原理以及排查问题。</p>
-
-<h2>角色：</h2>
-
-<h3>Producer</h3>
-
-<p>生产者。发送消息的客户端角色。发送消息的时候需要指定Topic。</p>
-
-<h3>Consumer</h3>
-
-<p>消费者。消费消息的客户端角色。通常是后台处理异步消费的系统。 RocketMQ中Consumer有两种实现：PushConsumer和PullConsumer。</p>
-
-<h4>PushConsumer</h4>
-
-<p>推送模式（虽然RocketMQ使用的是长轮询）的消费者。消息的能及时被消费。使用非常简单，内部已处理如线程池消费、流控、负载均衡、异常处理等等的各种场景。</p>
-
-<h4>PullConsumer</h4>
-
-<p>拉取模式的消费者。应用主动控制拉取的时机，怎么拉取，怎么消费等。主动权更高。但要自己处理各种场景。</p>
-
-<h2>概念术语</h2>
-
-<h3>Producer Group</h3>
-
-<p>标识发送同一类消息的Producer，通常发送逻辑一致。发送普通消息的时候，仅标识使用，并无特别用处。若事务消息，如果某条发送某条消息的producer-A宕机，使得事务消息一直处于PREPARED状态并超时，则broker会回查同一个group的其 他producer，确认这条消息应该commit还是rollback。但开源版本并不支持事务消息。</p>
-
-<h3>Consumer Group</h3>
-
-<p>标识一类Consumer的集合名称，这类Consumer通常消费一类消息，且消费逻辑一致。同一个Consumer Group下的各个实例将共同消费topic的消息，起到负载均衡的作用。</p>
-
-<p>消费进度以Consumer Group为粒度管理，不同Consumer Group之间消费进度彼此不受影响，即消息A被Consumer Group1消费过，也会再给Consumer Group2消费。</p>
-
-<p>注： RocketMQ要求同一个Consumer Group的消费者必须要拥有相同的注册信息，即必须要听一样的topic(并且tag也一样)。</p>
-
-<h3>Topic</h3>
-
-<p>标识一类消息的逻辑名字，消息的逻辑管理单位。无论消息生产还是消费，都需要指定Topic。</p>
-
-<h3>Tag</h3>
-
-<p>RocketMQ支持给在发送的时候给topic打tag，同一个topic的消息虽然逻辑管理是一样的。但是消费topic1的时候，如果你订阅的时候指定的是tagA，那么tagB的消息将不会投递。</p>
-
-<h3>Message Queue</h3>
-
-<p>简称Queue或Q。消息物理管理单位。一个Topic将有若干个Q。若Topic同时创建在不通的Broker，则不同的broker上都有若干Q，消息将物理地存储落在不同Broker结点上，具有水平扩展的能力。</p>
-
-<p>无论生产者还是消费者，实际的生产和消费都是针对Q级别。例如Producer发送消息的时候，会预先选择（默认轮询）好该Topic下面的某一条Q地发送；Consumer消费的时候也会负载均衡地分配若干个Q，只拉取对应Q的消息。</p>
-
-<p>每一条message queue均对应一个文件，这个文件存储了实际消息的索引信息。并且即使文件被删除，也能通过实际纯粹的消息文件（commit log）恢复回来。</p>
-
-<h3>Offset</h3>
-
-<p>RocketMQ中，有很多offset的概念。但通常我们只关心暴露到客户端的offset。一般我们不特指的话，就是指逻辑Message Queue下面的offset。</p>
-
-<p>注： 逻辑offset的概念在RocketMQ中字面意思实际上和真正的意思有一定差别，这点在设计上显得有点混乱。祥见下面的解释。</p>
-
-<p>可以认为一条逻辑的message queue是无限长的数组。一条消息进来下标就会涨1,而这个数组的下标就是offset。</p>
-
-<h4>max offset</h4>
-
-<p> 字面上可以理解为这是标识message queue中的max offset表示消息的最大offset。但是从源码上看，这个offset实际上是最新消息的offset+1，即：下一条消息的offset。</p>
-
-<h4>min offset：</h4>
-
-<p>标识现存在的最小offset。而由于消息存储一段时间后，消费会被物理地从磁盘删除，message queue的min offset也就对应增长。这意味着比min offset要小的那些消息已经不在broker上了，无法被消费。</p>
-
-<h4>consumer offset</h4>
-
-<p>字面上，可以理解为标记Consumer Group在一条逻辑Message Queue上，消息消费到哪里即消费进度。但从源码上看，这个数值是消费过的最新消费的消息offset+1，即实际上表示的是<strong>下次拉取的offset位置</strong>。</p>
-
-<p>消费者拉取消息的时候需要指定offset，broker不主动推送消息， offset的消息返回给客户端。</p>
-
-<p>consumer刚启动的时候会获取持久化的consumer offset，用以决定从哪里开始消费，consumer以此发起第一次请求。</p>
-
-<p>每次消息消费成功后，这个offset在会先更新到内存，而后定时持久化。在集群消费模式下，会同步持久化到broker，而在广播模式下，则会持久化到本地文件。</p>
-
-<h3>集群消费</h3>
-
-<p>消费者的一种消费模式。一个Consumer Group中的各个Consumer实例分摊去消费消息，即一条消息只会投递到一个Consumer Group下面的一个实例。</p>
-
-<p>实际上，每个Consumer是平均分摊Message Queue的去做拉取消费。例如某个Topic有3条Q，其中一个Consumer Group 有 3 个实例（可能是 3 个进程，或者 3 台机器），那么每个实例只消费其中的1条Q。</p>
-
-<p>而由Producer发送消息的时候是轮询所有的Q,所以消息会平均散落在不同的Q上，可以认为Q上的消息是平均的。那么实例也就平均地消费消息了。</p>
-
-<p>这种模式下，消费进度的存储会持久化到Broker。</p>
-
-<h3>广播消费</h3>
-
-<p>消费者的一种消费模式。消息将对一个Consumer Group下的各个Consumer实例都投递一遍。即即使这些 Consumer 属于同一个Consumer Group，消息也会被Consumer Group 中的每个Consumer都消费一次。</p>
-
-<p>实际上，是一个消费组下的每个消费者实例都获取到了topic下面的每个Message Queue去拉取消费。所以消息会投递到每个消费者实例。</p>
-
-<p>这种模式下，消费进度会存储持久化到实例本地。</p>
-
-<h3>顺序消息</h3>
-
-<p>消费消息的顺序要同发送消息的顺序一致。由于Consumer消费消息的时候是针对Message Queue顺序拉取并开始消费，且一条Message Queue只会给一个消费者（集群模式下），所以能够保证同一个消费者实例对于Q上消息的消费是顺序地开始消费（不一定顺序消费完成，因为消费可能并行）。</p>
-
-<p>在RocketMQ中，顺序消费主要指的是都是Queue级别的局部顺序。这一类消息为满足顺序性，必须Producer单线程顺序发送，且发送到同一个队列，这样Consumer就可以按照Producer发送的顺序去消费消息。</p>
-
-<p>生产者发送的时候可以用MessageQueueSelector为某一批消息（通常是有相同的唯一标示id）选择同一个Queue，则这一批消息的消费将是顺序消息（并由同一个consumer完成消息）。或者Message Queue的数量只有1，但这样消费的实例只能有一个，多出来的实例都会空跑。</p>
-
-<h3>普通顺序消息</h3>
-
-<p>顺序消息的一种，正常情况下可以保证完全的顺序消息，但是一旦发生异常，Broker宕机或重启，由于队列总数发生发化，消费者会触发负载均衡，而默认地负载均衡算法采取哈希取模平均，这样负载均衡分配到定位的队列会发化，使得队列可能分配到别的实例上，则会短暂地出现消息顺序不一致。</p>
-
-<p>如果业务能容忍在集群异常情况（如某个 Broker 宕机或者重启）下，消息短暂的乱序，使用普通顺序方式比较合适。</p>
-
-<h3>严格顺序消息</h3>
-
-<p>顺序消息的一种，无论正常异常情况都能保证顺序，但是牺牲了分布式 Failover 特性，即 Broker集群中只要有一台机器不可用，则整个集群都不可用，服务可用性大大降低。</p>
-
-<p>如果服务器部署为同步双写模式，此缺陷可通过备机自动切换为主避免，不过仍然会存在几分钟的服务不可用。（依赖同步双写，主备自动切换，自动切换功能目前并未实现）</p>
-
-<p>目前已知的应用只有数据库 binlog 同步强依赖严格顺序消息，其他应用绝大部分都可以容忍短暂乱序，推荐使用普通的顺序消息</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -3203,6 +3383,10 @@ private boolean k;// unitMode = false;
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/11/26/rocketmq-consumer-allocate/">为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/06/08/rocketmq-message-dedup/">消息幂等（去重）通用解决方案，RocketMQ</a>
       </li>
     
@@ -3216,10 +3400,6 @@ private boolean k;// unitMode = false;
     
       <li class="post">
         <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/19/handle-duplicate-request/">优雅地处理重复请求（并发请求）——附Java实现</a>
       </li>
     
   </ul>
@@ -3321,7 +3501,7 @@ private boolean k;// unitMode = false;
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2020 - Jaskey Lam -
+  Copyright &copy; 2021 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

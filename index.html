@@ -77,6 +77,577 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2022/04/14/cache-consistency/">挑战大型系统的缓存设计——应对一致性问题</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2022-04-14T17:03:26+08:00'><span class='date'>2022-04-14 Thu</span> <span class='time'>17:03</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在真实的业务场景中，我们业务的数据——例如订单、会员、支付等——都是持久化到数据库中的，因为数据库能有很好的事务保证、持久化保证。但是，正因为数据库要能够满足这么多优秀的功能特性，使得数据库在设计上通常难以兼顾到性能，因此往往不能满足大型流量下的性能要求，像是 MySQL 数据库只能承担“千”这个级别的 QPS，否则很可能会不稳定，进而导致整个系统的故障。</p>
+
+<p>但是客观上，我们的业务规模很可能要求着更高的 QPS，有些业务的规模本身就非常大，也有些业务会遇到一些流量高峰，比如电商会遇到大促的情况。</p>
+
+<p>而这时候大部分的流量实际上都是<strong>读请求</strong>，而且大部分数据也是没有那么多变化的，如热门商品信息、微博的内容等常见数据就是如此。此时，<strong>缓存就是我们应对此类场景的利器</strong>。</p>
+
+<h2>缓存的意义</h2>
+
+<p>所谓缓存，实际上就是用空间换时间，准确地说是用<strong>更高速的空间来换时间</strong>，从而<strong>整体</strong><strong>上</strong><strong>提升读的性能</strong>。</p>
+
+<p>何为更高速的空间呢？</p>
+
+<ol>
+<li>更快的存储介质。通常情况下，如果说数据库的速度慢，就得用更快的存储介质去替代它，目前最常见的就是Redis。Redis 单实例的读 QPS 可以高达 10w/s，90% 的场景下只需要正确使用 Redis 就能应对。</li>
+<li>就近使用本地内存。就像 CPU 也有高速缓存一样，缓存也可以分为一级缓存、二级缓存。即便 Redis 本身性能已经足够高了，但访问一次 Redis 毕竟也需要一次网络 IO，而使用本地内存无疑有更快的速度。不过单机的内存是十分有限的，所以这种一级缓存只能存储非常少量的数据，通常是最热点的那些 key 对应的数据。这就相当于额外消耗宝贵的服务内存去换取高速的读取性能。</li>
+</ol>
+
+
+<h2>引入缓存后的一致性挑战</h2>
+
+<p>用空间换时间，意味着数据同时存在于多个空间。最常见的场景就是数据同时存在于 Redis 与 MySQL 上（为了问题的普适性，后面举例中若没有特别说明，缓存均指 Redis 缓存）。</p>
+
+<p>实际上，最权威最全的数据还是在 MySQL 里的，只要 Redis 数据没有得到及时的更新而导致最新数据没有同步到 Redis 中，就出现了数据不一致。</p>
+
+<p>大部分情况下，只要使用了缓存，就必然会有不一致的情况出现，只是说这个不一致的时间窗口是否能做到足够的小。有些不合理的设计可能会导致数据持续不一致，这是我们需要改善设计去避免的。</p>
+
+<h2>缓存不一致性无法客观地完全消灭</h2>
+
+<p>为什么我们几乎没办法做到缓存和数据库之间的强一致呢？</p>
+
+<p>正常情况下，我们需要在数据库更新完后，把对应的最新数据同步到缓存中，以便在读请求的时候，能读到新的数据而不是旧的数据（脏数据）。但是很可惜，由于数据库和 Redis 之间是没有事务保证的，所以我们无法确保写入数据库成功后，写入 Redis 也是一定成功的；即便 Redis 写入能成功，在数据库写入成功后到 Redis 写入成功前的这段时间里，Redis 数据也肯定是和 MySQL 不一致的。如下图：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-1.png" title="image-1" alt="图片" /></p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-2.png" title="image-2" alt="图片" />
+所以说这个时间窗口是没办法完全消灭的，除非我们付出极大的代价，使用分布式事务等各种手段去维持强一致，但是这样会使得系统的整体性能大幅度下降，甚至比不用缓存还慢，这样不就与我们使用缓存的目标背道而驰了吗？</p>
+
+<p>不过虽然无法做到强一致，但是我们能做到的是缓存与数据库达到最终一致，而且不一致的时间窗口我们能做到尽可能短，按照经验来说，如果能将时间优化到 1ms 之内，这个一致性问题带来的影响我们就可以忽略不计。</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-3.png" title="image-3" alt="图片" /></p>
+
+<h2>更新缓存的手段</h2>
+
+<p>通常情况下，我们在处理查询请求的时候，使用缓存的逻辑如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>data = queryDataRedis(key);
+</span><span class='line'>if (data ==null) {
+</span><span class='line'>     data = queryDataMySQL(key); //缓存查询不到，从MySQL做查询
+</span><span class='line'>     if (data!=null) {
+</span><span class='line'>         updateRedis(key, data);//查询完数据后更新到MySQL
+</span><span class='line'>     }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>也就是说<strong>优先查询缓存，查询不到才查询数据库</strong>。如果这时候数据库查到数据了，就将缓存的数据进行更新。
+这样的逻辑是正确的，而一致性的问题一般不来源于此，而是出现在处理<strong>写请求</strong>的时候。所以我们简化成最简单的写请求的逻辑，此时你可能会面临多个选择，究竟是直接更新缓存，还是失效缓存？而无论是更新缓存还是失效缓存，都可以选择在更新数据库之前，还是之后操作。</p>
+
+<p>这样就演变出 4 个策略：<strong>更新数据库后更新缓存、更新数据库前更新缓存、更新数据库后删除缓存、更新数据库前删除缓存</strong><strong>。</strong>下面我们来分别讲述。</p>
+
+<h3>更新数据库后更新缓存的不一致问题</h3>
+
+<p>一种常见的操作是，设置一个过期时间，让写请求以数据库为准，过期后，读请求同步数据库中的最新数据给缓存。那么在加入了过期时间后，是否就不会有问题了呢？并不是这样。</p>
+
+<p>大家设想一下这样的场景。</p>
+
+<p>假如这里有一个计数器，把数据库自减 1，原始数据库数据是 100，同时有两个写请求申请计数减一，假设线程 A 先减数据库成功，线程 B 后减数据库成功。那么这时候数据库的值是 98，缓存里正确的值应该也要是 98。</p>
+
+<p>但是特殊场景下，你可能会遇到这样的情况：</p>
+
+<ol>
+<li>线程 A 和线程 B 同时更新这个数据</li>
+<li>更新数据库的顺序是先 A 后 B</li>
+<li>更新缓存时顺序是先 B 后 A
+如果我们的代码逻辑还是更新数据库后立刻更新缓存的数据，那么——</li>
+</ol>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>updateMySQL();
+</span><span class='line'>updateRedis(key, data);</span></code></pre></td></tr></table></div></figure>
+
+
+<p>就可能出现：数据库的值是 100->99->98，但是缓存的数据却是 100->98->99，也就是数据库与缓存的不一致。而且这个不一致只能等到下一次数据库更新或者缓存失效才可能修复。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>线程B（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>问题</strong>                                                     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 更新数据库为99      </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新数据库为98      </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新缓存数据为98    </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;"> 更新缓存数据为99    </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为99，但是实际上数据库的值已经是98，数据不一致 </td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>更新数据库前更新缓存的不一致问题</h3>
+
+<p>那你可能会想，这是否表示，我应该先让缓存更新，之后再去更新数据库呢？类似这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>updateRedis(key, data);//先更新缓存
+</span><span class='line'>updateMySQL();//再更新数据库</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样操作产生的问题更是显而易见的，因为我们无法保证数据库的更新成功，万一数据库更新失败了，你缓存的数据就不只是脏数据，而是错误数据了。
+你可能会想，是否我在更新数据库失败的时候做 Redis 回滚的操作能够解决呢？这其实也是不靠谱的，因为我们也不能保证这个回滚的操作 100% 被成功执行。</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-4.png" title="image-4" alt="图片" /></p>
+
+<p>同时，在写写并发的场景下，同样有类似的一致性问题，请看以下情况：</p>
+
+<ol>
+<li>线程 A 和线程 B 同时更新同这个数据</li>
+<li>更新缓存的顺序是先 A 后 B</li>
+<li>更新数据库的顺序是先 B 后 A
+举个例子。线程 A 希望把计数器置为 0，线程 B 希望置为 1。而按照以上场景，缓存确实被设置为 1，但数据库却被设置为 0。</li>
+</ol>
+
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>线程B（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>问题</strong>                                                     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 更新缓存为0         </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新缓存为1         </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新数据库为1       </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;"> 更新数据库数据为0   </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为1，但是实际上数据库的值是0，数据不一致 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>所以<strong>通常情况下，更新缓存再更新数据库是我们</strong><strong>应该避免使用</strong><strong>的</strong><strong>一种</strong><strong>手段</strong>。</p>
+
+<h3>更新数据库前删除缓存的问题</h3>
+
+<p>那如果采取删除缓存的策略呢？也就是说我们在更新数据库的时候失效对应的缓存，让缓存在下次触发读请求时进行更新，是否会更好呢？同样地，针对在更新数据库前和数据库后这两个删除时机，我们来比较下其差异。</p>
+
+<p>最直观的做法，我们可能会先让缓存失效，然后去更新数据库，代码逻辑如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>deleteRedis(key);//先删除缓存让缓存失效
+</span><span class='line'>updateMySQL();//再更新数据库</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样的逻辑看似没有问题，毕竟删除缓存后即便数据库更新失败了，也只是缓存上没有数据而已。然后并发两个写请求过来，无论怎么样的执行顺序，缓存最后的值也都是会被删除的，也就是说在并发写写的请求下这样的处理是没问题的。
+然而，这种处理在读写并发的场景下却存在着隐患。</p>
+
+<p>还是刚刚更新计数的例子。例如现在缓存的数据是 100，数据库也是 100，这时候需要对此计数减 1，减成功后，数据库应该是 99。如果这之后触发读请求，缓存如果有效的话，里面应该也要被更新为 99 才是正确的。</p>
+
+<p>那么思考下这样的请求情况：</p>
+
+<ol>
+<li>线程 A 更新这个数据的同时，线程 B 读取这个数据</li>
+<li>线程 A 成功删除了缓存里的老数据，这时候线程 B 查询数据发现缓存失效</li>
+<li>线程 A 更新数据库成功</li>
+</ol>
+
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong>         </th>
+<th style="text-align:left;"> <strong>线程B（读请求）</strong>                           </th>
+<th style="text-align:left;"> <strong>问题</strong>                                                    </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 删除缓存值                  </td>
+<td style="text-align:left;">                                               </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;"> 1.读取缓存数据，缓存缺失，从数据库读取数据100 </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;"> 更新数据库中的数据X的值为99 </td>
+<td style="text-align:left;">                                               </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;"> 将数据100的值写入缓存                         </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为100，但是实际上数据库的值已经是99了 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可以看到，在读写并发的场景下，一样会有不一致的问题。</p>
+
+<p>针对这种场景，有个做法是所谓的“<strong>延迟双删策略</strong>”，就是说，既然可能因为读请求把一个旧的值又写回去，那么我在写请求处理完之后，等到差不多的时间延迟再重新删除这个缓存值。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>线程C（新的读请求）</strong>     </th>
+<th style="text-align:left;"> <strong>线程D（新的读请求）</strong>                  </th>
+<th style="text-align:left;"> <strong>问题</strong>                           </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T5       </td>
+<td style="text-align:left;"> sleep(N)            </td>
+<td style="text-align:left;"> 缓存存在，读取到缓存旧值100 </td>
+<td style="text-align:left;">                                          </td>
+<td style="text-align:left;"> 其他线程可能在双删成功前读到脏数据 </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T6       </td>
+<td style="text-align:left;"> 删除缓存值          </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;">                                          </td>
+<td style="text-align:left;">                                    </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T7       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;"> 缓存缺失，从数据库读取数据的最新值（99） </td>
+<td style="text-align:left;">                                    </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>这种解决思路的关键在于对 N 的时间的判断，如果 N 时间太短，线程 A 第二次删除缓存的时间依旧早于线程 B 把脏数据写回缓存的时间，那么相当于做了无用功。而 N 如果设置得太长，那么在触发双删之前，新请求看到的都是脏数据。</p>
+
+<h3>更新数据库后删除缓存</h3>
+
+<p>那如果我们把更新数据库放在删除缓存之前呢，问题是否解决？我们继续从读写并发的场景看下去，有没有类似的问题。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong>             </th>
+<th style="text-align:left;"> <strong>线程B（读请求）</strong>                        </th>
+<th style="text-align:left;"> <strong>线程C（读请求）</strong>                   </th>
+<th style="text-align:left;"> <strong>潜在问题</strong>                            </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 更新主库 X = 99（原值 X = 100） </td>
+<td style="text-align:left;">                                            </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;">                                            </td>
+<td style="text-align:left;"> 读取数据，查询到缓存还有数据，返回100 </td>
+<td style="text-align:left;"> 线程C实际上读取到了和数据库不一致的数据 </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;"> 删除缓存                        </td>
+<td style="text-align:left;">                                            </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 查询缓存，缓存缺失，查询数据库得到当前值99 </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T5       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 将99写入缓存                               </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可以看到，大体上，采取先更新数据库再删除缓存的策略是没有问题的，仅在更新数据库成功到缓存删除之间的时间差内，可能会被别的线程读取到老值。</p>
+
+<p>而在开篇的时候我们说过，缓存不一致性的问题无法在客观上完全消灭，因为我们无法保证数据库和缓存的操作是一个事务里的，而我们能做到的只是尽量缩短不一致的时间窗口。</p>
+
+<p>在更新数据库后删除缓存这个场景下，不一致窗口仅仅是 T2 到 T3 的时间，大概是 1ms 左右，在大部分业务场景下我们都可以忽略不计。</p>
+
+<p>但是真实场景下，还是会有一个情况存在不一致的可能性，这个场景是读线程发现缓存不存在，于是读写并发时，读线程回写进去老值。并发情况如下：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong>             </th>
+<th style="text-align:left;"> <strong>线程B（读请求&ndash;缓存不存在场景）</strong>         </th>
+<th style="text-align:left;"> <strong>潜在问题</strong>                                                </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 查询缓存，缓存缺失，查询数据库得到当前值100 </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;"> 更新主库 X = 99（原值 X = 100） </td>
+<td style="text-align:left;">                                             </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;"> 删除缓存                        </td>
+<td style="text-align:left;">                                             </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 将100写入缓存                               </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为100，但是实际上数据库的值已经是99了 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>总的来说，这个不一致场景出现条件非常严格，因为并发量很大时，缓存不太可能不存在；如果并发很大，而缓存真的不存在，那么很可能是这时的写场景很多，因为写场景会删除缓存。所以待会我们会提到，写场景很多时候实际上并不适合采取删除策略。</p>
+
+<h3>总结四种更新策略</h3>
+
+<p>终上所述，我们对比了四个更新缓存的手段，做一个总结对比，如下图：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>策略</strong>              </th>
+<th style="text-align:left;"> <strong>并发场景</strong>        </th>
+<th style="text-align:left;"> <strong>潜在问题</strong>                                                 </th>
+<th style="text-align:left;"> <strong>应对方案</strong>                                                 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> 更新数据库+更新缓存   </td>
+<td style="text-align:left;"> 写+读               </td>
+<td style="text-align:left;"> 线程A未更新完缓存之前，线程B的读请求会短暂读到旧值           </td>
+<td style="text-align:left;"> 可以忽略                                                     </td>
+</tr>
+<tr>
+<td style="text-align:left;">                       </td>
+<td style="text-align:left;"> 写+写               </td>
+<td style="text-align:left;"> 更新数据库的顺序是先A后B，但更新缓存时顺序是先B后A，数据库和缓存数据不一致 </td>
+<td style="text-align:left;"> 分布式锁（操作重）                                           </td>
+</tr>
+<tr>
+<td style="text-align:left;"> 更新缓存+更新数据库   </td>
+<td style="text-align:left;"> 无并发              </td>
+<td style="text-align:left;"> 线程A还未更新完缓存但是更新数据库可能失败                    </td>
+<td style="text-align:left;"> 利用MQ确认数据库更新成功（较复杂）                           </td>
+</tr>
+<tr>
+<td style="text-align:left;">                       </td>
+<td style="text-align:left;"> 写+写               </td>
+<td style="text-align:left;"> 更新缓存的顺序是先A后B，但更新数据库时顺序是先B后A           </td>
+<td style="text-align:left;"> 分布式锁（操作很重）                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> 删除缓存值+更新数据库 </td>
+<td style="text-align:left;"> 写+读               </td>
+<td style="text-align:left;"> 写请求的线程A删除了缓存在更新数据库之前，这时候读请求线程B到来，因为缓存缺失，则把当前数据读取出来放到缓存，而后线程A更新成功了数据库 </td>
+<td style="text-align:left;"> 延迟双删（但是延迟的时间不好估计，且延迟的过程中依旧有不一致的时间窗口） </td>
+</tr>
+<tr>
+<td style="text-align:left;"> 更新数据库+删除缓存值 </td>
+<td style="text-align:left;"> 写+读（缓存命中）   </td>
+<td style="text-align:left;"> 线程A完成数据库更新成功后，尚未删除缓存，线程B有并发读请求会读到旧的脏数据<br> </td>
+<td style="text-align:left;"> 可以忽略                                                     </td>
+</tr>
+<tr>
+<td style="text-align:left;">                       </td>
+<td style="text-align:left;"> 写+读（缓存不命中） </td>
+<td style="text-align:left;"> 读请求不命中缓存，写请求处理完之后读请求才回写缓存，此时缓存不一致 </td>
+<td style="text-align:left;"> 分布式锁（操作重）                                           </td>
+</tr>
+</tbody>
+</table>
+
+
+<p><strong>从一致性的角度来看，采取更新数据库后删除缓存值，是更为适合的策略</strong><strong>。</strong>因为出现不一致的场景的条件更为苛刻，概率相比其他方案更低。</p>
+
+<p>那么是否更新缓存这个策略就一无是处呢？不是的！</p>
+
+<p>删除缓存值意味着对应的 key 会失效，那么这时候读请求都会打到数据库。如果这个数据的写操作非常频繁，就会导致缓存的作用变得非常小。而如果这时候某些 Key 还是非常大的热 key，就可能因为扛不住数据量而导致系统不可用。</p>
+
+<p>如下图所示：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-5.png" title="删除策略频繁的缓存失效导致读请求无法利用缓存" alt="图片" /></p>
+
+<p>所以做个简单总结，足以适应绝大部分的互联网开发场景的决策：</p>
+
+<ul>
+<li><p><strong>针对大部分读多写少场景，建议选择更新数据库后删除缓存的策略。</strong></p></li>
+<li><p><strong>针对读写相当或者写多读少的场景，建议选择更新数据库后更新缓存的策略。</strong></p></li>
+</ul>
+
+
+<h2>最终一致性如何保证？</h2>
+
+<h3>缓存设置过期时间</h3>
+
+<p>第一个方法便是我们上面提到的，当我们无法确定 MySQL 更新完成后，缓存的更新/删除一定能成功，例如 Redis 挂了导致写入失败了，或者当时网络出现故障，更常见的是服务当时刚好发生重启了，没有执行这一步的代码。</p>
+
+<p>这些时候 MySQL 的数据就无法刷到 Redis 了。为了避免这种不一致性永久存在，使用缓存的时候，我们必须要给缓存设置一个过期时间，例如 1 分钟，这样即使出现了更新 Redis 失败的极端场景，不一致的时间窗口最多也只是 1 分钟。</p>
+
+<p>这是我们最终一致性的兜底方案，万一出现任何情况的不一致问题，最后都能通过缓存失效后重新查询数据库，然后回写到缓存，来做到缓存与数据库的最终一致。</p>
+
+<h3>如何减少缓存删除/更新的失败？</h3>
+
+<p>万一删除缓存这一步因为服务重启没有执行，或者 Redis 临时不可用导致删除缓存失败了，就会有一个较长的时间（缓存的剩余过期时间）是数据不一致的。</p>
+
+<p>那我们有没有什么手段来减少这种不一致的情况出现呢？这时候借助一个可靠的消息中间件就是一个不错的选择。</p>
+
+<p>因为消息中间件有 ATLEAST-ONCE 的机制，如下图所示。</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-6.png" title="image-6" alt="图片" /></p>
+
+<p>我们把删除 Redis 的请求以消费 MQ 消息的手段去失效对应的 Key 值，如果 Redis 真的存在异常导致无法删除成功，我们依旧可以依靠 MQ 的重试机制来让最终 Redis 对应的 Key 失效。</p>
+
+<p>而你们或许会问，极端场景下，是否存在更新数据库后 MQ 消息没发送成功，或者没机会发送出去机器就重启的情况？</p>
+
+<p>这个场景的确比较麻烦，如果 MQ 使用的是 RocketMQ，我们可以借助 RocketMQ 的事务消息，来让删除缓存的消息最终一定发送出去。而如果你没有使用 RocketMQ，或者你使用的消息中间件并没有事务消息的特性，则可以采取消息表的方式让更新数据库和发送消息一起成功。事实上这个话题比较大了，我们不在这里展开。</p>
+
+<h3>如何处理复杂的多缓存场景？</h3>
+
+<p>有些时候，真实的缓存场景并不是数据库中的一个记录对应一个 Key 这么简单，有可能一个数据库记录的更新会牵扯到多个 Key 的更新。还有另外一个场景是，更新不同的数据库的记录时可能需要更新同一个 Key 值，这常见于一些 App 首页数据的缓存。</p>
+
+<p>我们以一个数据库记录对应多个 Key 的场景来举例。</p>
+
+<p>假如系统设计上我们缓存了一个粉丝的主页信息、主播打赏榜 TOP10 的粉丝、单日 TOP 100 的粉丝等多个信息。如果这个粉丝注销了，或者这个粉丝触发了打赏的行为，上面多个 Key 可能都需要更新。只是一个打赏的记录，你可能就要做：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>updateMySQL();//更新数据库一条记录
+</span><span class='line'>deleteRedisKey1();//失效主页信息的缓存
+</span><span class='line'>updateRedisKey2();//更新打赏榜TOP10
+</span><span class='line'>deleteRedisKey3();//更新单日打赏榜TOP100</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这就涉及多个 Redis 的操作，每一步都可能失败，影响到后面的更新。甚至从系统设计上，更新数据库可能是单独的一个服务，而这几个不同的 Key 的缓存维护却在不同的 3 个微服务中，这就大大增加了系统的复杂度和提高了缓存操作失败的可能性。最可怕的是，操作更新记录的地方很大概率不只在一个业务逻辑中，而是散发在系统各个零散的位置。
+针对这个场景，解决方案和上文提到的保证最终一致性的操作一样，就是把更新缓存的操作以 MQ 消息的方式发送出去，由不同的系统或者专门的一个系统进行订阅，而做聚合的操作。如下图：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-7.png" title="不同业务系统订阅MQ消息单独维护各自的缓存Key" alt="图片" /></p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-8.png" title="专门更新缓存的服务订阅MQ消息维护所有相关Key的缓存操作" alt="图片" /></p>
+
+<h3>通过订阅 MySQL binlog 的方式处理缓存</h3>
+
+<p>上面讲到的 MQ 处理方式需要业务代码里面显式地发送 MQ 消息。还有一种优雅的方式便是订阅 MySQL 的 binlog，监听数据的真实变化情况以处理相关的缓存。</p>
+
+<p>例如刚刚提到的例子中，如果粉丝又触发打赏了，这时候我们利用 binlog 表监听是能及时发现的，发现后就能集中处理了，而且无论是在什么系统什么位置去更新数据，都能做到集中处理。</p>
+
+<p>目前业界类似的产品有 Canal，具体的操作图如下：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-9.png" title="利用Canel订阅数据库binlog变更从而发出MQ消息，让一个专门消费者服务维护所有相关Key的缓存操作" alt="图片" /></p>
+
+<p>到这里，针对大型系统缓存设计如何保证最终一致性，我们已经从策略、场景、操作方案等角度进行了细致的讲述，这些是我根据多年开发经验进行总结的，希望能对你起到帮助。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2020/11/26/rocketmq-consumer-allocate/">为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）</a></h1>
     
     
@@ -2474,295 +3045,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2020/04/27/gc-basics/">Java GC垃圾收集器这点小事</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2020-04-27T15:08:05+08:00'><span class='date'>2020-04-27 Mon</span> <span class='time'>15:08</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>​    对于大多数的应用来说，其实默认的JVM设置就够用了，但当你意识到有GC引起的性能问题、并且仅仅加大堆内存空间也解决不了的时候，那你就应该考虑下GC的调优了。但对于大多数程序员来说，这是很麻烦的，因为调优需要很多耐心，并且需要知道垃圾回收器的运作原理及背后对应用的影响。本文是high-level层面的关于Java垃圾回收器的总览，并以例子的形式去讲解性能定位的一些问题。</p>
-
-<p>​    正文开始。</p>
-
-<p>​    Java提供了很多种垃圾回收器，会在gc运行的线程中搭配着不同的算法。不同的回收器工作原理不一样，优缺点也不同。最重要的是无论哪一种回收器都会&#8221;stop the world&#8221;。就是说，在收集和回收的过程中，你的应用程序（或多或少）都会处于暂停状态，只不过不同算法的stop the world的表现有所不同。有些算法一直都会闲置不工作直到必须要垃圾收集才开始工作，然后就暂停应用程序很长的时间；而有一些则能和应用程序同步的进行所以在“stop the world”阶段就会有更少的暂停。选择最合适的算法要取决于你的目标：你是想优化整体的吞吐量即便不时地就会长时间暂停也是可以接受的，还是说你是想得到低延迟的优化通过分散各个时间以得到每时每刻都低延迟。</p>
-
-<p>​    为了增强垃圾回收的过程，Java（准确的说是 HotSpot JVM）把堆分成了两个代，年轻代和年老代（还有一个叫永久代的区域不在我们本文讨论范围）</p>
-
-<p><img src="http://jaskey.github.io/images/gc/hotspot-heap.png" title="hotspot-heap" alt="hotspot-heap" /></p>
-
-<p>​    年轻代是一些“年轻”的对象存放的地方，而年轻代还会继续分为以下三个区域：</p>
-
-<ol>
-<li>伊甸区（Eden Space）</li>
-<li>幸存区1（Survivor Space 1）</li>
-<li>幸存区2（Survivor Space 2）</li>
-</ol>
-
-
-<p>​    默认情况下，伊甸区是大于两个幸存者区的总和的。例如在我的Mac OS X上的64位HotSpot JVM上，伊甸区占了大概年轻代76%的区域。所有的对象一开始都会在伊甸区创建，当伊甸区满了之后，就会触发一次次要的垃圾回收（minor gc），期间新对象会快速地被检查是否可以进行垃圾回收。一旦发现那些对象已经死亡（dead），也就是说没有再被其他对象引用了（这里先简单忽略掉引用的具体类型带来的一些差异，不在本文讨论），就会被标记为死亡然后被垃圾回收掉。而其中“幸存”的对象就会被移到其中的一个空的Survivor Space。你可能会问，具体移动到哪一个幸存区呢？要回答这个问题，首先我们先聊一下幸存区的设计。</p>
-
-<p>​    之所以设计两个幸存区，是为了避免内存碎片。假设只有一个幸存区（然后我们把幸存区想象成一个内存中连续的数组），当年轻代的gc在这个数组上运行了一遍后，会标记一些死亡对象然后删除掉，这样的话势必会在内存中留下一些空洞的区域（原来的对象存活的位置），那么就有必要做压缩了。所以为了避免做压缩，HotSpot JVM就从一个幸存者区复制所有幸存的对象到另外一个（空的）幸存者区里，这样就没有空洞了。这里我们讲到了压缩，顺便提一下年老代的垃圾回收器（除了CMS）在进行年老代垃圾回收的时候都会进行压缩以避免内存碎片。</p>
-
-<p>​    简单地说，次要的垃圾回收（当伊甸区满的时候）就会把存活的对象从伊甸区和其中一个幸存区（gc日志中以“from”呈现）左右捣腾地搬到另外一个幸存区（又叫“to”）。这样会一直的持续下去直到以下的条件发生：</p>
-
-<ol>
-<li>对象达到了最大的晋升时间阈值（<em>maximum tenuring threshold</em>），就是说在年轻代被左右捣腾得足够久了，媳妇熬成婆。</li>
-<li>幸存区已经没有空间去接受新生的对象了（后面会讲到）</li>
-</ol>
-
-
-<p>​    以上条件发生后，对象就会被移动到年老代了。下面用一个具体的例子来理解下。假设我们有以下的应用程序，它会在初始化的时候创建一些长期存活的对象，也会在运行的过程中不断的创建很多存活时间很短的对象（例如我们的web服务器程序在处理请求的时候会不断分配存活时间很短的对象）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">createFewLongLivedAndManyShortLivedObjects</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Double</span><span class="o">&gt;</span> <span class="n">set</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Double</span><span class="o">&gt;();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="kt">long</span> <span class="n">l</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">Double</span> <span class="n">longLivedDouble</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Double</span><span class="o">(</span><span class="n">l</span><span class="o">++);</span>
-</span><span class='line'>            <span class="n">set</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">longLivedDouble</span><span class="o">);</span>  <span class="c1">// 加到集合里，让这些对象能持续的存活</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">while</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 不断地创建一些存活时间短的对象（这里在实际代码中比较极端，仅为演示用）</span>
-</span><span class='line'>            <span class="n">Double</span> <span class="n">shortLivedDouble</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Double</span><span class="o">(</span><span class="n">l</span><span class="o">++);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p> 在运行这个程序的过程中我们启用GC的部分日志参数：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">-</span><span class="n">Xmx100m</span>                     <span class="c1">// 分配100MV的堆内存</span>
-</span><span class='line'><span class="o">-</span><span class="nl">XX:</span><span class="o">-</span><span class="n">PrintGC</span>                 <span class="c1">// 开启GC日志打印</span>
-</span><span class='line'><span class="o">-</span><span class="nl">XX:</span><span class="o">+</span><span class="n">PrintHeapAtGC</span>           <span class="c1">// 开启GC日志打印堆信息</span>
-</span><span class='line'><span class="o">-</span><span class="nl">XX:</span><span class="n">MaxTenuringThreshold</span><span class="o">=</span><span class="mi">15</span>  <span class="c1">// 为了让对象能在年轻代呆久一点</span>
-</span><span class='line'><span class="o">-</span><span class="nl">XX:</span><span class="o">+</span><span class="n">UseConcMarkSweepGC</span>      <span class="c1">// 暂时先忽略这个配置，后面会讲到</span>
-</span><span class='line'><span class="o">-</span><span class="nl">XX:</span><span class="o">+</span><span class="n">UseParNewGC</span>             <span class="c1">// 暂时先忽略这个配置，后面会讲到</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>gc 日志会显示垃圾收集前后的情况如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>Heap <span class="nt">&lt;b&gt;</span>before<span class="nt">&lt;/b&gt;</span> GC invocations=5 (full 0):
-</span><span class='line'> par new (<span class="nt">&lt;u&gt;</span>young<span class="nt">&lt;/u&gt;</span>) generation total 30720K, used 28680K
-</span><span class='line'>  eden space 27328K,   <span class="nt">&lt;b&gt;</span>100%<span class="nt">&lt;/b&gt;</span> used
-</span><span class='line'>  from space 3392K,   <span class="nt">&lt;b&gt;</span>39%<span class="nt">&lt;/b&gt;</span> used
-</span><span class='line'>  to   space 3392K,   0% used
-</span><span class='line'> concurrent mark-sweep (<span class="nt">&lt;u&gt;</span>old<span class="nt">&lt;/u&gt;</span>) generation total 68288K, used <span class="nt">&lt;b&gt;</span>0K<span class="nt">&lt;/b&gt;</span> <span class="nt">&lt;br/&gt;</span>
-</span><span class='line'>Heap <span class="nt">&lt;b&gt;</span>after<span class="nt">&lt;/b&gt;</span> GC invocations=6 (full 0):
-</span><span class='line'> par new generation (<span class="nt">&lt;u&gt;</span>young<span class="nt">&lt;/u&gt;</span>) total 30720K, used 1751K
-</span><span class='line'>  eden space 27328K,   <span class="nt">&lt;b&gt;</span>0%<span class="nt">&lt;/b&gt;</span> used
-</span><span class='line'>  from space 3392K,   <span class="nt">&lt;b&gt;</span>51%<span class="nt">&lt;/b&gt;</span> used
-</span><span class='line'>  to   space 3392K,   0% used
-</span><span class='line'> concurrent mark-sweep (<span class="nt">&lt;u&gt;</span>old<span class="nt">&lt;/u&gt;</span>) generation total 68288K, used <span class="nt">&lt;b&gt;</span>0K<span class="nt">&lt;/b&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>​    从这个日志里我们能得到以下信息。第一，在这次gc之前，已经发生了5次的minor gc了（所以这次是第6次）。第二，伊甸区占用了100%所以触发了这次的gc。第三，其中一个幸存区域已经使用了39%的空间（还有不少可用空间）。而这次垃圾收集结束后，我们能看到伊甸区就被清空了（0%）然后幸存者区域上升到51%。这意味着伊甸区和其中一个幸存区里存活的对象已经被移动到另外一个幸存区了，然后死亡的对象已经被垃圾回收了。怎么推断的死亡对象被回收了呢？我们看到伊甸区原来是比幸存区要大的（27328K vs 3392K），而后面幸存区的空间大小仅仅是轻微的上升（伊甸区被清空了），所以大量的对象肯定是被垃圾回收了。而我们再看看年老代，年老代是一直都是空的，无论是这次垃圾回收前还是后（回想一下，我们设置了晋升阈值为15）。</p>
-
-<p>​    下面我们再试另外一个实验。这次用多线程不断的创建存活时间很短的对象。直觉上判断，依旧应该没有对象会上升到年老代才对，因为minor gc就应该可以把这些对象清理干净。我们来看看实际情况如何</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">createManyShortLivedObjects</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="kd">final</span> <span class="kt">int</span> <span class="n">NUMBER_OF_THREADS</span> <span class="o">=</span> <span class="mi">100</span><span class="o">;</span>
-</span><span class='line'>        <span class="kd">final</span> <span class="kt">int</span> <span class="n">NUMBER_OF_OBJECTS_EACH_TIME</span> <span class="o">=</span> <span class="mi">1000000</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">NUMBER_OF_THREADS</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">new</span> <span class="nf">Thread</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="k">while</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">NUMBER_OF_OBJECTS_EACH_TIME</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                            <span class="n">Double</span> <span class="n">shortLivedDouble</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Double</span><span class="o">(</span><span class="mf">1.0d</span><span class="o">);</span>
-</span><span class='line'>                        <span class="o">}</span>
-</span><span class='line'>                        <span class="n">sleepMillis</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
-</span><span class='line'>                    <span class="o">}</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>            <span class="o">}).</span><span class="na">start</span><span class="o">();</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这次，我们只给10MB的内存，然后看看GC日志</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Heap</span> <span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="n">before</span><span class="o">&lt;/</span><span class="n">b</span><span class="o">&gt;</span> <span class="n">GC</span> <span class="n">invocations</span><span class="o">=</span><span class="mi">0</span> <span class="o">(</span><span class="n">full</span> <span class="mi">0</span><span class="o">):</span>
-</span><span class='line'> <span class="n">par</span> <span class="nf">new</span> <span class="o">(&lt;</span><span class="n">u</span><span class="o">&gt;</span><span class="n">young</span><span class="o">&lt;/</span><span class="n">u</span><span class="o">&gt;)</span> <span class="n">generation</span> <span class="n">total</span> <span class="mi">3072</span><span class="n">K</span><span class="o">,</span> <span class="n">used</span> <span class="mi">2751</span><span class="n">K</span>
-</span><span class='line'>  <span class="n">eden</span> <span class="n">space</span> <span class="mi">2752</span><span class="n">K</span><span class="o">,</span>  <span class="mi">99</span><span class="o">%</span> <span class="n">used</span>
-</span><span class='line'>  <span class="n">from</span> <span class="n">space</span> <span class="mi">320</span><span class="n">K</span><span class="o">,</span>   <span class="mi">0</span><span class="o">%</span> <span class="n">used</span>
-</span><span class='line'>  <span class="n">to</span>   <span class="n">space</span> <span class="mi">320</span><span class="n">K</span><span class="o">,</span>   <span class="mi">0</span><span class="o">%</span> <span class="n">used</span>
-</span><span class='line'> <span class="n">concurrent</span> <span class="n">mark</span><span class="o">-</span><span class="n">sweep</span> <span class="o">(&lt;</span><span class="n">u</span><span class="o">&gt;</span><span class="n">old</span><span class="o">&lt;/</span><span class="n">u</span><span class="o">&gt;)</span> <span class="n">generation</span> <span class="n">total</span> <span class="mi">6848</span><span class="n">K</span><span class="o">,</span> <span class="n">used</span> <span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="mi">0</span><span class="n">K</span><span class="o">&lt;/</span><span class="n">b</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span>
-</span><span class='line'><span class="n">Heap</span> <span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="n">after</span><span class="o">&lt;/</span><span class="n">b</span><span class="o">&gt;</span> <span class="n">GC</span> <span class="n">invocations</span><span class="o">=</span><span class="mi">1</span> <span class="o">(</span><span class="n">full</span> <span class="mi">0</span><span class="o">):</span>
-</span><span class='line'> <span class="n">par</span> <span class="k">new</span> <span class="nf">generation</span>  <span class="o">(&lt;</span><span class="n">u</span><span class="o">&gt;</span><span class="n">young</span><span class="o">&lt;/</span><span class="n">u</span><span class="o">&gt;)</span>  <span class="n">total</span> <span class="mi">3072</span><span class="n">K</span><span class="o">,</span> <span class="n">used</span> <span class="mi">318</span><span class="n">K</span>
-</span><span class='line'>  <span class="n">eden</span> <span class="n">space</span> <span class="mi">2752</span><span class="n">K</span><span class="o">,</span>   <span class="mi">0</span><span class="o">%</span> <span class="n">used</span>
-</span><span class='line'>  <span class="n">from</span> <span class="n">space</span> <span class="mi">320</span><span class="n">K</span><span class="o">,</span>  <span class="mi">99</span><span class="o">%</span> <span class="n">used</span>
-</span><span class='line'>  <span class="n">to</span>   <span class="n">space</span> <span class="mi">320</span><span class="n">K</span><span class="o">,</span>   <span class="mi">0</span><span class="o">%</span> <span class="n">used</span>
-</span><span class='line'> <span class="n">concurrent</span> <span class="n">mark</span><span class="o">-</span><span class="n">sweep</span> <span class="o">(&lt;</span><span class="n">u</span><span class="o">&gt;</span><span class="n">old</span><span class="o">&lt;/</span><span class="n">u</span><span class="o">&gt;)</span> <span class="n">generation</span> <span class="n">total</span> <span class="mi">6848</span><span class="n">K</span><span class="o">,</span> <span class="n">used</span> <span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="mi">76</span><span class="n">K</span><span class="o">&lt;/</span><span class="n">b</span><span class="o">&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>​    从日志上看，并不如我们一开始想的那样。这次，老年代在第一次minor gc之后，接受了一些对象。实际上这些对象都是存活时间很短的对象，并且我们设置了晋升阈值是15次，再而且日志里显示的gc只是第一次垃圾收集。这个现象背后实际上是这样的：应用程序创建了大量的对象在伊甸区，minor gc启动的时候尝试去回收，但是大多数的这些存活时间很短的对象实际上都是active的（被一个运行中的线程引用着）。那么年轻代的垃圾收集器就只好把这些对象移动到年老代了。这其实是一个不好的现象，因为这些被移到到年老代的对象其实是过早衰老了（prematurely aged），它们只有在老年代的major gc才能被回收，而major gc通常会耗时更长。对于某些垃圾算法例如CMS，major gc会在年老代70%内存占据后出发。这个值可以通过参数修改<code>-XX:CMSInitiatingOccupancyFraction=70</code></p>
-
-<p>​    怎么样防止这些短暂存活的对象过早衰老呢？有几个方法，其中一个理论上可行的方法是估计这些活跃的短暂存活对象的数量，然后设置合理的年轻代大小。我们下面来试试：</p>
-
-<ul>
-<li>年轻代默认是整个堆大小的1/3，这次我们通过 <code>-XX:NewRatio=1</code> 来修改其大小让他内存更大些（大约3.4MB，原来是3MB）</li>
-<li>同时调整幸存者区的大小：<code>-XX:SurvivorRatio=1</code> （大约1.6MB一个区，原来是0.3MB）</li>
-</ul>
-
-
-<p>问题就解决了。经过8次的minor gc，年老代依旧是空的</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>Heap <span class="nt">&lt;b&gt;</span>before<span class="nt">&lt;/b&gt;</span> GC invocations=7 (full 0):
-</span><span class='line'> par new generation   total 3456K, used 2352K
-</span><span class='line'>  eden space 1792K,  99% used
-</span><span class='line'>  from space 1664K,  33% used
-</span><span class='line'>  to   space 1664K,   0% used
-</span><span class='line'> concurrent mark-sweep generation total 5120K, used <span class="nt">&lt;b&gt;</span>0K<span class="nt">&lt;/b&gt;</span> <span class="nt">&lt;br/&gt;</span>
-</span><span class='line'>Heap <span class="nt">&lt;b&gt;</span>after<span class="nt">&lt;/b&gt;</span> GC invocations=8 (full 0):
-</span><span class='line'> par new generation   total 3456K, used 560K
-</span><span class='line'>  eden space 1792K,   0% used
-</span><span class='line'>  from space 1664K,  33% used
-</span><span class='line'>  to   space 1664K,   0% used [
-</span><span class='line'> concurrent mark-sweep generation total 5120K, used <span class="nt">&lt;b&gt;</span>0K<span class="nt">&lt;/b&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>​    对于GC调优，没有银弹。这里只是简单地示意。对于实际的应用，需要不断的修改配置试错来找到最佳配置。例如，这次其实我们也可以将堆的总大小调大一倍来解决此问题。</p>
-
-<h2>垃圾回收算法</h2>
-
-<p>​    接下来我们来看看具体的垃圾回收算法。Hotspot JVM针对年轻代和年老代有多个不同的算法。从宏观层面上看，有三种类型的垃圾回收算法，每一类都有单独的<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/collectors.html">性能特性</a>:</p>
-
-<p><strong>serial collector</strong> ：使用一条线程进行所有的垃圾回收工作，相对来说也是高效的因为没有线程之间的通信。适用于单处理器的机器。使用<code>-XX:+UseSerialGC.</code>启用</p>
-
-<p><strong>parallel collector</strong> (同时也称作吞吐回收器) ：使用多线程进行垃圾回收，这样能显著的降低垃圾回收的负荷。设计来适用于这样的应用：拥有中等或大数据集的，运行在多核处理器或多线程的硬件</p>
-
-<p><strong>concurrent collector</strong>： 大部分的垃圾回收工作会同步的进行（不阻塞应用的运行）以维持短暂的GC暂停时间。它是设计给中等或大数据集的、响应时间比整体的吞吐量要更重要的应用，因为用这种算法去降低GC的停顿会一定程度降低应用的性能。</p>
-
-<p><img src="http://jaskey.github.io/images/gc/gc-compared.png" title="gc-compared" alt="gc-compared" /></p>
-
-<p>​    HotSpot JVM可以让我们选择不同的GC算法去回收年轻代和年老代，但是某些算法是需要配套的使用才兼容的。例如，你不能选择<em>Parallel Scavenge</em>去回收年轻代的同时，使用CMS收集器去回收年老代因为这两个收集器是不兼容的。以下是兼容的收集器的示意图</p>
-
-<p><img src="http://jaskey.github.io/images/gc/gc-collectors-pairing.jpg" title="gc-collectors-pairing" alt="gc-collectors-pairing" /></p>
-
-<ol>
-<li>“Serial”是一个stop-the-world，复制算法的垃圾收集器，使用一条GC线程。</li>
-<li>“Parallel Scavenge”是一个stop-the-world、采用复制算法的垃圾收集器，但是使用多条GC线程。</li>
-<li>ParNew是一个stop-the-world，复制算法的收集器，使用多条GC线程。它和Parallel Scavenge的区别是它做了一些增强以适应搭配CMS使用。例如ParNew会做必要的同步（synchronization ）以便它能在CMS的同步阶段运行。</li>
-<li>Serial Old 是一个stop-the-world，采用标记-清除-压缩算法的回收器，使用一条GC线程</li>
-<li>CMS（Concurrent Mark Sweep）是一个同步能力最强、低延迟的垃圾回收器</li>
-<li>Parallel Old是一个压缩算法的垃圾回收器，使用多个GC线程。</li>
-</ol>
-
-
-<p>​    对于服务端的应用程序（需要处理客户端请求）来说，使用CMS+ParNew是不错的选择。</p>
-
-<p>我在大概10GB堆内存的程序中使用过也能保持响应时间稳定和短暂的GC暂停时间。我认识的一些开发者使用Parallel collectors (<em>Parallel Scavenge</em> + <em>Parallel Old</em>) ，效果也不错。</p>
-
-<p>​    其中一件需要注意的事是CMS已经宣布废弃了，会被Oralce推荐使用一个新的同步收集器取代， <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/vm/G1.html">Garbage-First</a> 简称 <strong>G1</strong>, 一个最先由Java推出的垃圾收集器</p>
-
-<p>​    G1是一个服务端类型（server-style）的垃圾回收器，针对多处理器、大内存的计算机使用。它能尽可能地满足一个GC延迟时间的目标，同时也有很高的吞吐量</p>
-
-<p>​    <strong>G1</strong> 会同时在年轻代和年老代进行工作。它针对大堆有专门的优化（>10GB）。我没有亲身尝试过G1，我团队里的开发者仍然使用的CMS，所以我还不能对两者进行比较。但通过快速的搜索之后，我找到了一个性能对比说CMS会比G1更好（<a href="http://blog.novatec-gmbh.de/g1-action-better-cms/">CMS outperforming</a> <a href="https://dzone.com/articles/g1-vs-cms-vs-parallel-gc">G1</a>）。我倾向于谨慎，但G1应该是不错的。我们能靠以下参数启动</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>-XX:+UseG1GC
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>注：以上由本人摘选翻译自<a href="https://codeahoy.com/2017/08/06/basics-of-java-garbage-collection/">https://codeahoy.com/2017/08/06/basics-of-java-garbage-collection/</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -2778,6 +3060,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2022/04/14/cache-consistency/">挑战大型系统的缓存设计——应对一致性问题</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2020/11/26/rocketmq-consumer-allocate/">为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）</a>
       </li>
     
@@ -2791,10 +3077,6 @@
     
       <li class="post">
         <a href="/blog/2020/05/25/elastic-job-timmer-active-standby/">Elastic Job从单点到高可用、同城主备、同城双活</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2020/05/22/dubbo-refernececonfig-is-not-destroyed-when-finalize/">[DUBBO] ReferenceConfig(null) Is Not DESTROYED When FINALIZE分析及解决</a>
       </li>
     
   </ul>
@@ -2896,7 +3178,7 @@
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2021 - Jaskey Lam -
+  Copyright &copy; 2022 - Jaskey Lam -
   <span class="credit">联系邮箱:linjunjie1103@gmail.com</a></span>
 </p>
 

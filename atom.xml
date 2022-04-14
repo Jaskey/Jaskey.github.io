@@ -4,7 +4,7 @@
   <title><![CDATA[薛定谔的风口猪]]></title>
   <link href="https://Jaskey.github.io/atom.xml" rel="self"/>
   <link href="https://Jaskey.github.io/"/>
-  <updated>2021-02-24T21:41:53+08:00</updated>
+  <updated>2022-04-14T17:33:27+08:00</updated>
   <id>https://Jaskey.github.io/</id>
   <author>
     <name><![CDATA[Jaskey Lam]]></name>
@@ -12,6 +12,557 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[挑战大型系统的缓存设计——应对一致性问题]]></title>
+    <link href="https://Jaskey.github.io/blog/2022/04/14/cache-consistency/"/>
+    <updated>2022-04-14T17:03:26+08:00</updated>
+    <id>https://Jaskey.github.io/blog/2022/04/14/cache-consistency</id>
+    <content type="html"><![CDATA[<p>在真实的业务场景中，我们业务的数据——例如订单、会员、支付等——都是持久化到数据库中的，因为数据库能有很好的事务保证、持久化保证。但是，正因为数据库要能够满足这么多优秀的功能特性，使得数据库在设计上通常难以兼顾到性能，因此往往不能满足大型流量下的性能要求，像是 MySQL 数据库只能承担“千”这个级别的 QPS，否则很可能会不稳定，进而导致整个系统的故障。</p>
+
+<p>但是客观上，我们的业务规模很可能要求着更高的 QPS，有些业务的规模本身就非常大，也有些业务会遇到一些流量高峰，比如电商会遇到大促的情况。</p>
+
+<p>而这时候大部分的流量实际上都是<strong>读请求</strong>，而且大部分数据也是没有那么多变化的，如热门商品信息、微博的内容等常见数据就是如此。此时，<strong>缓存就是我们应对此类场景的利器</strong>。</p>
+
+<h2>缓存的意义</h2>
+
+<p>所谓缓存，实际上就是用空间换时间，准确地说是用<strong>更高速的空间来换时间</strong>，从而<strong>整体</strong><strong>上</strong><strong>提升读的性能</strong>。</p>
+
+<p>何为更高速的空间呢？</p>
+
+<ol>
+<li>更快的存储介质。通常情况下，如果说数据库的速度慢，就得用更快的存储介质去替代它，目前最常见的就是Redis。Redis 单实例的读 QPS 可以高达 10w/s，90% 的场景下只需要正确使用 Redis 就能应对。</li>
+<li>就近使用本地内存。就像 CPU 也有高速缓存一样，缓存也可以分为一级缓存、二级缓存。即便 Redis 本身性能已经足够高了，但访问一次 Redis 毕竟也需要一次网络 IO，而使用本地内存无疑有更快的速度。不过单机的内存是十分有限的，所以这种一级缓存只能存储非常少量的数据，通常是最热点的那些 key 对应的数据。这就相当于额外消耗宝贵的服务内存去换取高速的读取性能。</li>
+</ol>
+
+
+<h2>引入缓存后的一致性挑战</h2>
+
+<p>用空间换时间，意味着数据同时存在于多个空间。最常见的场景就是数据同时存在于 Redis 与 MySQL 上（为了问题的普适性，后面举例中若没有特别说明，缓存均指 Redis 缓存）。</p>
+
+<p>实际上，最权威最全的数据还是在 MySQL 里的，只要 Redis 数据没有得到及时的更新而导致最新数据没有同步到 Redis 中，就出现了数据不一致。</p>
+
+<p>大部分情况下，只要使用了缓存，就必然会有不一致的情况出现，只是说这个不一致的时间窗口是否能做到足够的小。有些不合理的设计可能会导致数据持续不一致，这是我们需要改善设计去避免的。</p>
+
+<h2>缓存不一致性无法客观地完全消灭</h2>
+
+<p>为什么我们几乎没办法做到缓存和数据库之间的强一致呢？</p>
+
+<p>正常情况下，我们需要在数据库更新完后，把对应的最新数据同步到缓存中，以便在读请求的时候，能读到新的数据而不是旧的数据（脏数据）。但是很可惜，由于数据库和 Redis 之间是没有事务保证的，所以我们无法确保写入数据库成功后，写入 Redis 也是一定成功的；即便 Redis 写入能成功，在数据库写入成功后到 Redis 写入成功前的这段时间里，Redis 数据也肯定是和 MySQL 不一致的。如下图：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-1.png" title="image-1" alt="图片" /></p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-2.png" title="image-2" alt="图片" />
+所以说这个时间窗口是没办法完全消灭的，除非我们付出极大的代价，使用分布式事务等各种手段去维持强一致，但是这样会使得系统的整体性能大幅度下降，甚至比不用缓存还慢，这样不就与我们使用缓存的目标背道而驰了吗？</p>
+
+<p>不过虽然无法做到强一致，但是我们能做到的是缓存与数据库达到最终一致，而且不一致的时间窗口我们能做到尽可能短，按照经验来说，如果能将时间优化到 1ms 之内，这个一致性问题带来的影响我们就可以忽略不计。</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-3.png" title="image-3" alt="图片" /></p>
+
+<h2>更新缓存的手段</h2>
+
+<p>通常情况下，我们在处理查询请求的时候，使用缓存的逻辑如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>data = queryDataRedis(key);
+</span><span class='line'>if (data ==null) {
+</span><span class='line'>     data = queryDataMySQL(key); //缓存查询不到，从MySQL做查询
+</span><span class='line'>     if (data!=null) {
+</span><span class='line'>         updateRedis(key, data);//查询完数据后更新到MySQL
+</span><span class='line'>     }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>也就是说<strong>优先查询缓存，查询不到才查询数据库</strong>。如果这时候数据库查到数据了，就将缓存的数据进行更新。
+这样的逻辑是正确的，而一致性的问题一般不来源于此，而是出现在处理<strong>写请求</strong>的时候。所以我们简化成最简单的写请求的逻辑，此时你可能会面临多个选择，究竟是直接更新缓存，还是失效缓存？而无论是更新缓存还是失效缓存，都可以选择在更新数据库之前，还是之后操作。</p>
+
+<p>这样就演变出 4 个策略：<strong>更新数据库后更新缓存、更新数据库前更新缓存、更新数据库后删除缓存、更新数据库前删除缓存</strong><strong>。</strong>下面我们来分别讲述。</p>
+
+<h3>更新数据库后更新缓存的不一致问题</h3>
+
+<p>一种常见的操作是，设置一个过期时间，让写请求以数据库为准，过期后，读请求同步数据库中的最新数据给缓存。那么在加入了过期时间后，是否就不会有问题了呢？并不是这样。</p>
+
+<p>大家设想一下这样的场景。</p>
+
+<p>假如这里有一个计数器，把数据库自减 1，原始数据库数据是 100，同时有两个写请求申请计数减一，假设线程 A 先减数据库成功，线程 B 后减数据库成功。那么这时候数据库的值是 98，缓存里正确的值应该也要是 98。</p>
+
+<p>但是特殊场景下，你可能会遇到这样的情况：</p>
+
+<ol>
+<li>线程 A 和线程 B 同时更新这个数据</li>
+<li>更新数据库的顺序是先 A 后 B</li>
+<li>更新缓存时顺序是先 B 后 A
+如果我们的代码逻辑还是更新数据库后立刻更新缓存的数据，那么——</li>
+</ol>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>updateMySQL();
+</span><span class='line'>updateRedis(key, data);</span></code></pre></td></tr></table></div></figure>
+
+
+<p>就可能出现：数据库的值是 100->99->98，但是缓存的数据却是 100->98->99，也就是数据库与缓存的不一致。而且这个不一致只能等到下一次数据库更新或者缓存失效才可能修复。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>线程B（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>问题</strong>                                                     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 更新数据库为99      </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新数据库为98      </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新缓存数据为98    </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;"> 更新缓存数据为99    </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为99，但是实际上数据库的值已经是98，数据不一致 </td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>更新数据库前更新缓存的不一致问题</h3>
+
+<p>那你可能会想，这是否表示，我应该先让缓存更新，之后再去更新数据库呢？类似这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>updateRedis(key, data);//先更新缓存
+</span><span class='line'>updateMySQL();//再更新数据库</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样操作产生的问题更是显而易见的，因为我们无法保证数据库的更新成功，万一数据库更新失败了，你缓存的数据就不只是脏数据，而是错误数据了。
+你可能会想，是否我在更新数据库失败的时候做 Redis 回滚的操作能够解决呢？这其实也是不靠谱的，因为我们也不能保证这个回滚的操作 100% 被成功执行。</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-4.png" title="image-4" alt="图片" /></p>
+
+<p>同时，在写写并发的场景下，同样有类似的一致性问题，请看以下情况：</p>
+
+<ol>
+<li>线程 A 和线程 B 同时更新同这个数据</li>
+<li>更新缓存的顺序是先 A 后 B</li>
+<li>更新数据库的顺序是先 B 后 A
+举个例子。线程 A 希望把计数器置为 0，线程 B 希望置为 1。而按照以上场景，缓存确实被设置为 1，但数据库却被设置为 0。</li>
+</ol>
+
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>线程B（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>问题</strong>                                                     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 更新缓存为0         </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新缓存为1         </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 更新数据库为1       </td>
+<td style="text-align:left;">                                                              </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;"> 更新数据库数据为0   </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为1，但是实际上数据库的值是0，数据不一致 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>所以<strong>通常情况下，更新缓存再更新数据库是我们</strong><strong>应该避免使用</strong><strong>的</strong><strong>一种</strong><strong>手段</strong>。</p>
+
+<h3>更新数据库前删除缓存的问题</h3>
+
+<p>那如果采取删除缓存的策略呢？也就是说我们在更新数据库的时候失效对应的缓存，让缓存在下次触发读请求时进行更新，是否会更好呢？同样地，针对在更新数据库前和数据库后这两个删除时机，我们来比较下其差异。</p>
+
+<p>最直观的做法，我们可能会先让缓存失效，然后去更新数据库，代码逻辑如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>deleteRedis(key);//先删除缓存让缓存失效
+</span><span class='line'>updateMySQL();//再更新数据库</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样的逻辑看似没有问题，毕竟删除缓存后即便数据库更新失败了，也只是缓存上没有数据而已。然后并发两个写请求过来，无论怎么样的执行顺序，缓存最后的值也都是会被删除的，也就是说在并发写写的请求下这样的处理是没问题的。
+然而，这种处理在读写并发的场景下却存在着隐患。</p>
+
+<p>还是刚刚更新计数的例子。例如现在缓存的数据是 100，数据库也是 100，这时候需要对此计数减 1，减成功后，数据库应该是 99。如果这之后触发读请求，缓存如果有效的话，里面应该也要被更新为 99 才是正确的。</p>
+
+<p>那么思考下这样的请求情况：</p>
+
+<ol>
+<li>线程 A 更新这个数据的同时，线程 B 读取这个数据</li>
+<li>线程 A 成功删除了缓存里的老数据，这时候线程 B 查询数据发现缓存失效</li>
+<li>线程 A 更新数据库成功</li>
+</ol>
+
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong>         </th>
+<th style="text-align:left;"> <strong>线程B（读请求）</strong>                           </th>
+<th style="text-align:left;"> <strong>问题</strong>                                                    </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 删除缓存值                  </td>
+<td style="text-align:left;">                                               </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;"> 1.读取缓存数据，缓存缺失，从数据库读取数据100 </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;"> 更新数据库中的数据X的值为99 </td>
+<td style="text-align:left;">                                               </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;"> 将数据100的值写入缓存                         </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为100，但是实际上数据库的值已经是99了 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可以看到，在读写并发的场景下，一样会有不一致的问题。</p>
+
+<p>针对这种场景，有个做法是所谓的“<strong>延迟双删策略</strong>”，就是说，既然可能因为读请求把一个旧的值又写回去，那么我在写请求处理完之后，等到差不多的时间延迟再重新删除这个缓存值。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong> </th>
+<th style="text-align:left;"> <strong>线程C（新的读请求）</strong>     </th>
+<th style="text-align:left;"> <strong>线程D（新的读请求）</strong>                  </th>
+<th style="text-align:left;"> <strong>问题</strong>                           </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T5       </td>
+<td style="text-align:left;"> sleep(N)            </td>
+<td style="text-align:left;"> 缓存存在，读取到缓存旧值100 </td>
+<td style="text-align:left;">                                          </td>
+<td style="text-align:left;"> 其他线程可能在双删成功前读到脏数据 </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T6       </td>
+<td style="text-align:left;"> 删除缓存值          </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;">                                          </td>
+<td style="text-align:left;">                                    </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T7       </td>
+<td style="text-align:left;">                     </td>
+<td style="text-align:left;">                             </td>
+<td style="text-align:left;"> 缓存缺失，从数据库读取数据的最新值（99） </td>
+<td style="text-align:left;">                                    </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>这种解决思路的关键在于对 N 的时间的判断，如果 N 时间太短，线程 A 第二次删除缓存的时间依旧早于线程 B 把脏数据写回缓存的时间，那么相当于做了无用功。而 N 如果设置得太长，那么在触发双删之前，新请求看到的都是脏数据。</p>
+
+<h3>更新数据库后删除缓存</h3>
+
+<p>那如果我们把更新数据库放在删除缓存之前呢，问题是否解决？我们继续从读写并发的场景看下去，有没有类似的问题。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong>             </th>
+<th style="text-align:left;"> <strong>线程B（读请求）</strong>                        </th>
+<th style="text-align:left;"> <strong>线程C（读请求）</strong>                   </th>
+<th style="text-align:left;"> <strong>潜在问题</strong>                            </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;"> 更新主库 X = 99（原值 X = 100） </td>
+<td style="text-align:left;">                                            </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;">                                            </td>
+<td style="text-align:left;"> 读取数据，查询到缓存还有数据，返回100 </td>
+<td style="text-align:left;"> 线程C实际上读取到了和数据库不一致的数据 </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;"> 删除缓存                        </td>
+<td style="text-align:left;">                                            </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 查询缓存，缓存缺失，查询数据库得到当前值99 </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T5       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 将99写入缓存                               </td>
+<td style="text-align:left;">                                       </td>
+<td style="text-align:left;">                                         </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>可以看到，大体上，采取先更新数据库再删除缓存的策略是没有问题的，仅在更新数据库成功到缓存删除之间的时间差内，可能会被别的线程读取到老值。</p>
+
+<p>而在开篇的时候我们说过，缓存不一致性的问题无法在客观上完全消灭，因为我们无法保证数据库和缓存的操作是一个事务里的，而我们能做到的只是尽量缩短不一致的时间窗口。</p>
+
+<p>在更新数据库后删除缓存这个场景下，不一致窗口仅仅是 T2 到 T3 的时间，大概是 1ms 左右，在大部分业务场景下我们都可以忽略不计。</p>
+
+<p>但是真实场景下，还是会有一个情况存在不一致的可能性，这个场景是读线程发现缓存不存在，于是读写并发时，读线程回写进去老值。并发情况如下：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>时间</strong> </th>
+<th style="text-align:left;"> <strong>线程A（写请求）</strong>             </th>
+<th style="text-align:left;"> <strong>线程B（读请求&ndash;缓存不存在场景）</strong>         </th>
+<th style="text-align:left;"> <strong>潜在问题</strong>                                                </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> T1       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 查询缓存，缓存缺失，查询数据库得到当前值100 </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T2       </td>
+<td style="text-align:left;"> 更新主库 X = 99（原值 X = 100） </td>
+<td style="text-align:left;">                                             </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T3       </td>
+<td style="text-align:left;"> 删除缓存                        </td>
+<td style="text-align:left;">                                             </td>
+<td style="text-align:left;">                                                             </td>
+</tr>
+<tr>
+<td style="text-align:left;"> T4       </td>
+<td style="text-align:left;">                                 </td>
+<td style="text-align:left;"> 将100写入缓存                               </td>
+<td style="text-align:left;"> 此时缓存的值被显式更新为100，但是实际上数据库的值已经是99了 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>总的来说，这个不一致场景出现条件非常严格，因为并发量很大时，缓存不太可能不存在；如果并发很大，而缓存真的不存在，那么很可能是这时的写场景很多，因为写场景会删除缓存。所以待会我们会提到，写场景很多时候实际上并不适合采取删除策略。</p>
+
+<h3>总结四种更新策略</h3>
+
+<p>终上所述，我们对比了四个更新缓存的手段，做一个总结对比，如下图：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> <strong>策略</strong>              </th>
+<th style="text-align:left;"> <strong>并发场景</strong>        </th>
+<th style="text-align:left;"> <strong>潜在问题</strong>                                                 </th>
+<th style="text-align:left;"> <strong>应对方案</strong>                                                 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> 更新数据库+更新缓存   </td>
+<td style="text-align:left;"> 写+读               </td>
+<td style="text-align:left;"> 线程A未更新完缓存之前，线程B的读请求会短暂读到旧值           </td>
+<td style="text-align:left;"> 可以忽略                                                     </td>
+</tr>
+<tr>
+<td style="text-align:left;">                       </td>
+<td style="text-align:left;"> 写+写               </td>
+<td style="text-align:left;"> 更新数据库的顺序是先A后B，但更新缓存时顺序是先B后A，数据库和缓存数据不一致 </td>
+<td style="text-align:left;"> 分布式锁（操作重）                                           </td>
+</tr>
+<tr>
+<td style="text-align:left;"> 更新缓存+更新数据库   </td>
+<td style="text-align:left;"> 无并发              </td>
+<td style="text-align:left;"> 线程A还未更新完缓存但是更新数据库可能失败                    </td>
+<td style="text-align:left;"> 利用MQ确认数据库更新成功（较复杂）                           </td>
+</tr>
+<tr>
+<td style="text-align:left;">                       </td>
+<td style="text-align:left;"> 写+写               </td>
+<td style="text-align:left;"> 更新缓存的顺序是先A后B，但更新数据库时顺序是先B后A           </td>
+<td style="text-align:left;"> 分布式锁（操作很重）                                         </td>
+</tr>
+<tr>
+<td style="text-align:left;"> 删除缓存值+更新数据库 </td>
+<td style="text-align:left;"> 写+读               </td>
+<td style="text-align:left;"> 写请求的线程A删除了缓存在更新数据库之前，这时候读请求线程B到来，因为缓存缺失，则把当前数据读取出来放到缓存，而后线程A更新成功了数据库 </td>
+<td style="text-align:left;"> 延迟双删（但是延迟的时间不好估计，且延迟的过程中依旧有不一致的时间窗口） </td>
+</tr>
+<tr>
+<td style="text-align:left;"> 更新数据库+删除缓存值 </td>
+<td style="text-align:left;"> 写+读（缓存命中）   </td>
+<td style="text-align:left;"> 线程A完成数据库更新成功后，尚未删除缓存，线程B有并发读请求会读到旧的脏数据<br> </td>
+<td style="text-align:left;"> 可以忽略                                                     </td>
+</tr>
+<tr>
+<td style="text-align:left;">                       </td>
+<td style="text-align:left;"> 写+读（缓存不命中） </td>
+<td style="text-align:left;"> 读请求不命中缓存，写请求处理完之后读请求才回写缓存，此时缓存不一致 </td>
+<td style="text-align:left;"> 分布式锁（操作重）                                           </td>
+</tr>
+</tbody>
+</table>
+
+
+<p><strong>从一致性的角度来看，采取更新数据库后删除缓存值，是更为适合的策略</strong><strong>。</strong>因为出现不一致的场景的条件更为苛刻，概率相比其他方案更低。</p>
+
+<p>那么是否更新缓存这个策略就一无是处呢？不是的！</p>
+
+<p>删除缓存值意味着对应的 key 会失效，那么这时候读请求都会打到数据库。如果这个数据的写操作非常频繁，就会导致缓存的作用变得非常小。而如果这时候某些 Key 还是非常大的热 key，就可能因为扛不住数据量而导致系统不可用。</p>
+
+<p>如下图所示：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-5.png" title="删除策略频繁的缓存失效导致读请求无法利用缓存" alt="图片" /></p>
+
+<p>所以做个简单总结，足以适应绝大部分的互联网开发场景的决策：</p>
+
+<ul>
+<li><p><strong>针对大部分读多写少场景，建议选择更新数据库后删除缓存的策略。</strong></p></li>
+<li><p><strong>针对读写相当或者写多读少的场景，建议选择更新数据库后更新缓存的策略。</strong></p></li>
+</ul>
+
+
+<h2>最终一致性如何保证？</h2>
+
+<h3>缓存设置过期时间</h3>
+
+<p>第一个方法便是我们上面提到的，当我们无法确定 MySQL 更新完成后，缓存的更新/删除一定能成功，例如 Redis 挂了导致写入失败了，或者当时网络出现故障，更常见的是服务当时刚好发生重启了，没有执行这一步的代码。</p>
+
+<p>这些时候 MySQL 的数据就无法刷到 Redis 了。为了避免这种不一致性永久存在，使用缓存的时候，我们必须要给缓存设置一个过期时间，例如 1 分钟，这样即使出现了更新 Redis 失败的极端场景，不一致的时间窗口最多也只是 1 分钟。</p>
+
+<p>这是我们最终一致性的兜底方案，万一出现任何情况的不一致问题，最后都能通过缓存失效后重新查询数据库，然后回写到缓存，来做到缓存与数据库的最终一致。</p>
+
+<h3>如何减少缓存删除/更新的失败？</h3>
+
+<p>万一删除缓存这一步因为服务重启没有执行，或者 Redis 临时不可用导致删除缓存失败了，就会有一个较长的时间（缓存的剩余过期时间）是数据不一致的。</p>
+
+<p>那我们有没有什么手段来减少这种不一致的情况出现呢？这时候借助一个可靠的消息中间件就是一个不错的选择。</p>
+
+<p>因为消息中间件有 ATLEAST-ONCE 的机制，如下图所示。</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-6.png" title="image-6" alt="图片" /></p>
+
+<p>我们把删除 Redis 的请求以消费 MQ 消息的手段去失效对应的 Key 值，如果 Redis 真的存在异常导致无法删除成功，我们依旧可以依靠 MQ 的重试机制来让最终 Redis 对应的 Key 失效。</p>
+
+<p>而你们或许会问，极端场景下，是否存在更新数据库后 MQ 消息没发送成功，或者没机会发送出去机器就重启的情况？</p>
+
+<p>这个场景的确比较麻烦，如果 MQ 使用的是 RocketMQ，我们可以借助 RocketMQ 的事务消息，来让删除缓存的消息最终一定发送出去。而如果你没有使用 RocketMQ，或者你使用的消息中间件并没有事务消息的特性，则可以采取消息表的方式让更新数据库和发送消息一起成功。事实上这个话题比较大了，我们不在这里展开。</p>
+
+<h3>如何处理复杂的多缓存场景？</h3>
+
+<p>有些时候，真实的缓存场景并不是数据库中的一个记录对应一个 Key 这么简单，有可能一个数据库记录的更新会牵扯到多个 Key 的更新。还有另外一个场景是，更新不同的数据库的记录时可能需要更新同一个 Key 值，这常见于一些 App 首页数据的缓存。</p>
+
+<p>我们以一个数据库记录对应多个 Key 的场景来举例。</p>
+
+<p>假如系统设计上我们缓存了一个粉丝的主页信息、主播打赏榜 TOP10 的粉丝、单日 TOP 100 的粉丝等多个信息。如果这个粉丝注销了，或者这个粉丝触发了打赏的行为，上面多个 Key 可能都需要更新。只是一个打赏的记录，你可能就要做：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>updateMySQL();//更新数据库一条记录
+</span><span class='line'>deleteRedisKey1();//失效主页信息的缓存
+</span><span class='line'>updateRedisKey2();//更新打赏榜TOP10
+</span><span class='line'>deleteRedisKey3();//更新单日打赏榜TOP100</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这就涉及多个 Redis 的操作，每一步都可能失败，影响到后面的更新。甚至从系统设计上，更新数据库可能是单独的一个服务，而这几个不同的 Key 的缓存维护却在不同的 3 个微服务中，这就大大增加了系统的复杂度和提高了缓存操作失败的可能性。最可怕的是，操作更新记录的地方很大概率不只在一个业务逻辑中，而是散发在系统各个零散的位置。
+针对这个场景，解决方案和上文提到的保证最终一致性的操作一样，就是把更新缓存的操作以 MQ 消息的方式发送出去，由不同的系统或者专门的一个系统进行订阅，而做聚合的操作。如下图：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-7.png" title="不同业务系统订阅MQ消息单独维护各自的缓存Key" alt="图片" /></p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-8.png" title="专门更新缓存的服务订阅MQ消息维护所有相关Key的缓存操作" alt="图片" /></p>
+
+<h3>通过订阅 MySQL binlog 的方式处理缓存</h3>
+
+<p>上面讲到的 MQ 处理方式需要业务代码里面显式地发送 MQ 消息。还有一种优雅的方式便是订阅 MySQL 的 binlog，监听数据的真实变化情况以处理相关的缓存。</p>
+
+<p>例如刚刚提到的例子中，如果粉丝又触发打赏了，这时候我们利用 binlog 表监听是能及时发现的，发现后就能集中处理了，而且无论是在什么系统什么位置去更新数据，都能做到集中处理。</p>
+
+<p>目前业界类似的产品有 Canal，具体的操作图如下：</p>
+
+<p><img src="http://jaskey.github.io/images/cache-consistency/image-9.png" title="利用Canel订阅数据库binlog变更从而发出MQ消息，让一个专门消费者服务维护所有相关Key的缓存操作" alt="图片" /></p>
+
+<p>到这里，针对大型系统缓存设计如何保证最终一致性，我们已经从策略、场景、操作方案等角度进行了细致的讲述，这些是我根据多年开发经验进行总结的，希望能对你起到帮助。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[为什么在一段时间内RocketMQ的队列同时分配给了两个消费者？详细剖析消费者负载均衡中的坑（上）]]></title>
@@ -5069,532 +5620,6 @@ public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
 <p>在实现上，其中一个不同就是在consumer分配queue的时候，会所有consumer都分到所有的queue。</p>
 
 <p><img src="https://Jaskey.github.io/images/rocketmq/consumer-broadcast.png" title="消费者广播模式" alt="消费者广播模式" /></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[RocketMQ——通信协议]]></title>
-    <link href="https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol/"/>
-    <updated>2016-12-19T20:49:23+08:00</updated>
-    <id>https://Jaskey.github.io/blog/2016/12/19/rocketmq-network-protocol</id>
-    <content type="html"><![CDATA[<p>RocketMQ的通信协议其实很简单，但是无论是官方的用户手册，还是网上的博客，并没有很清晰简单地把其中所有的内容和原理讲明白。 对于需要扩展其他语言SDK的开发来说，意味着必须要深入到Java源码才能弄懂其概念。笔者通过深入源码，本文希望以尽量简短的语言描述清楚协议的每个字段及其意义。</p>
-
-<p>无论是发送消息，拉取消息，还是发送心跳等所有的网络通讯层协议（客户端与broker/nameserver间，broker与nameserver间）都使用一套一样的协议。并且无论请求还是响应，协议是一样的，协议头的字段也是固定的。</p>
-
-<h2>通讯协议</h2>
-
-<p>协议分为以下四部分：</p>
-
-<p><img src="https://Jaskey.github.io/images/rocketmq/protocol.png" title="RocketMQ协议" alt="RocketMQ协议" /></p>
-
-<p>其中后两部分是通讯的实际数据。前两段都是四个字节的整形，分别表示两段实际数据的长度。</p>
-
-<ul>
-<li><p>header: 协议的头，数据是序列化后的json。json的每个key字段都是固定的，不同的通讯请求字段不一样。后面解释</p></li>
-<li><p>body: 请求的二进制实际数据。例如发送消息的网络请求中，body中传输实际的消息内容。</p></li>
-<li><p>length:2 3 4 端整体的长度。四个字节整数。</p></li>
-<li><p>header length: header的长度。四个字节整数。</p></li>
-</ul>
-
-
-<h3>Header</h3>
-
-<p>协议header具体标识整个通讯请求的元数据，如请求什么，怎样的方式请求（异步/oneway）请求客户端的版本，语言，请求的具体参数等。</p>
-
-<p>header是序列化的json,以下是json中的所有字段,并阐述起在请求和响应两个阶段的区别。</p>
-
-<table>
-<thead>
-<tr>
-<th> 字段      </th>
-<th> 类型                   </th>
-<th> Request                                                                                                                          </th>
-<th> Response                                                                                   </th>
-<th>   </th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td> code      </td>
-<td> 整数                   </td>
-<td> 请求操作码。响应方通过code决定如何处理请求。                                                                                       </td>
-<td> 响应码。0表示成功，非0表示错误码。                                                         </td>
-<td>   </td>
-</tr>
-<tr>
-<td> language  </td>
-<td> 字符串                 </td>
-<td> 标记请求方的语言类型，如JAVA。                                                                                                   </td>
-<td> 应答方方的所使用的语言。                                                                   </td>
-<td>   </td>
-</tr>
-<tr>
-<td> version   </td>
-<td> 整数                   </td>
-<td> 请求方的版本号                                                                                                                   </td>
-<td> 应答方的版本号                                                                             </td>
-<td>   </td>
-</tr>
-<tr>
-<td> opaque    </td>
-<td> 整数                   </td>
-<td> 在同一个连接上，标记是哪次请求。服务响应的时候会返回这个请求标识码，以达到请求方多线程中复用连接，在收到响应的时候找到对应的请求 </td>
-<td> 原请求的opaque。应答方不做修改原值返回。                                                   </td>
-<td>   </td>
-</tr>
-<tr>
-<td> flag      </td>
-<td> 整数                   </td>
-<td> 通信层的标识位。标识这次通信的类型。                                                                                             </td>
-<td> 通信层的标识位。标识这次通信的类型。                                                       </td>
-<td>   </td>
-</tr>
-<tr>
-<td> remark    </td>
-<td> 字符串                 </td>
-<td> 传输的自定义文本                                                                                                                 </td>
-<td> 应答的文本信息。通常存放错误信息。                                                         </td>
-<td>   </td>
-</tr>
-<tr>
-<td> extFields </td>
-<td> HashMap&lt;String,String> </td>
-<td> 请求自定义字段。不同的请求会有不一样的参数列表，这里存放那些请求自定义的参数列表。                                               </td>
-<td> 响应自定义字段。不同的响应会有不一样的参数列表，若有，这里则存放那些请求自定义的参数列表。 </td>
-<td>   </td>
-</tr>
-</tbody>
-</table>
-
-
-<h4>Header详解：</h4>
-
-<h5>code:</h5>
-
-<p>请求/响应码。所有的请求码参考代码<code>RequestCode.java</code>。响应码则在<code>ResponseCode.java</code>中。</p>
-
-<h5>language:</h5>
-
-<p>由于要支持多语言，所以这一字段可以给通信双方知道对方通信层锁使用的开发语言。</p>
-
-<h5>version:</h5>
-
-<p>给通信层知道对方的版本号，响应方可以以此做兼容老版本等的特殊操作。</p>
-
-<h5>opaque:</h5>
-
-<p>请求标识码。在Java版的通信层中，这个只是一个不断自增的整形，为了收到应答方响应的的时候找到对应的请求。</p>
-
-<p>flag： 按位(bit)解释。</p>
-
-<p>第0位标识是这次通信是request还是response，0标识request, 1 标识response。</p>
-
-<p>第1位标识是否是oneway请求，1标识oneway。应答方在处理oneway请求的时候，不会做出响应，请求方也无序等待应答方响应。</p>
-
-<h5>remark:</h5>
-
-<p>附带的文本信息。常见的如存放一些broker/nameserver返回的一些异常信息，方便开发人员定位问题。</p>
-
-<h5>extFields：</h5>
-
-<p>这个字段不通的请求/响应不一样，完全自定义。数据结构上是java的hashmap。在Java的每个RemotingCammand中，其实都带有一个CommandCustomHeader的属性成员，可以认为他是一个强类型的extFields，再最后传输的时候，这个CommandCustomHeader会被忽略，而传输前会把其中的所有字段全部都原封不动塞到extFields中，以作传输。</p>
-
-<p>以发送消息为例(code=310)，发送消息的自定义header是SendMessageRequestHeaderV2（只是字段名对比SendMessageRequestHeader压缩了）。有以下字段：</p>
-
-<pre><code>@CFNotNull
-private String a;// producerGroup;
-@CFNotNull
-private String b;// topic;
-@CFNotNull
-private String c;// defaultTopic;
-@CFNotNull
-private Integer d;// defaultTopicQueueNums;
-@CFNotNull
-private Integer e;// queueId;
-@CFNotNull
-private Integer f;// sysFlag;
-@CFNotNull
-private Long g;// bornTimestamp;
-@CFNotNull
-private Integer h;// flag;
-@CFNullable
-private String i;// properties;
-@CFNullable
-private Integer j;// reconsumeTimes;
-@CFNullable
-private boolean k;// unitMode = false;
-</code></pre>
-
-<p>这些字段都会原封不动的去到extFields中做传输，最后看到的发送消息的请求header会类似如：</p>
-
-<pre><code>{  
-    "code":310,
-    "extFields":{  
-        "f":"0",
-        "g":"1482158310125",
-        "d":"4",
-        "e":"0",
-        "b":"TopicTest",
-        "c":"TBW102",
-        "a":"please_rename_unique_group_name",
-        "j":"0",
-        "k":"false",
-        "h":"0",
-        "i":"TAGS\u0001TagA\u0002WAIT\u0001true\u0002"
-    },
-    "flag":0,
-    "language":"JAVA",
-    "opaque":206,
-    "version":79
-}
-</code></pre>
-
-<p>注：其中fastjson把值为null的remark过滤了。</p>
-
-<h2>请求码列表</h2>
-
-<p>以下是截至到3.2.6的所有请求码列表</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-<span class='line-number'>148</span>
-<span class='line-number'>149</span>
-<span class='line-number'>150</span>
-<span class='line-number'>151</span>
-<span class='line-number'>152</span>
-<span class='line-number'>153</span>
-<span class='line-number'>154</span>
-<span class='line-number'>155</span>
-<span class='line-number'>156</span>
-<span class='line-number'>157</span>
-<span class='line-number'>158</span>
-<span class='line-number'>159</span>
-<span class='line-number'>160</span>
-<span class='line-number'>161</span>
-<span class='line-number'>162</span>
-<span class='line-number'>163</span>
-<span class='line-number'>164</span>
-<span class='line-number'>165</span>
-<span class='line-number'>166</span>
-<span class='line-number'>167</span>
-<span class='line-number'>168</span>
-<span class='line-number'>169</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>
-</span><span class='line'>    // Broker 发送消息
-</span><span class='line'>    public static final int SEND_MESSAGE = 10;
-</span><span class='line'>    // Broker 订阅消息
-</span><span class='line'>    public static final int PULL_MESSAGE = 11;
-</span><span class='line'>    // Broker 查询消息
-</span><span class='line'>    public static final int QUERY_MESSAGE = 12;
-</span><span class='line'>    // Broker 查询Broker Offset
-</span><span class='line'>    public static final int QUERY_BROKER_OFFSET = 13;
-</span><span class='line'>    // Broker 查询Consumer Offset
-</span><span class='line'>    public static final int QUERY_CONSUMER_OFFSET = 14;
-</span><span class='line'>    // Broker 更新Consumer Offset
-</span><span class='line'>    public static final int UPDATE_CONSUMER_OFFSET = 15;
-</span><span class='line'>    // Broker 更新或者增加一个Topic
-</span><span class='line'>    public static final int UPDATE_AND_CREATE_TOPIC = 17;
-</span><span class='line'>    // Broker 获取所有Topic的配置（Slave和Namesrv都会向Master请求此配置）
-</span><span class='line'>    public static final int GET_ALL_TOPIC_CONFIG = 21;
-</span><span class='line'>    // Broker 获取所有Topic配置（Slave和Namesrv都会向Master请求此配置）
-</span><span class='line'>    public static final int GET_TOPIC_CONFIG_LIST = 22;
-</span><span class='line'>    // Broker 获取所有Topic名称列表
-</span><span class='line'>    public static final int GET_TOPIC_NAME_LIST = 23;
-</span><span class='line'>    // Broker 更新Broker上的配置
-</span><span class='line'>    public static final int UPDATE_BROKER_CONFIG = 25;
-</span><span class='line'>    // Broker 获取Broker上的配置
-</span><span class='line'>    public static final int GET_BROKER_CONFIG = 26;
-</span><span class='line'>    // Broker 触发Broker删除文件
-</span><span class='line'>    public static final int TRIGGER_DELETE_FILES = 27;
-</span><span class='line'>    // Broker 获取Broker运行时信息
-</span><span class='line'>    public static final int GET_BROKER_RUNTIME_INFO = 28;
-</span><span class='line'>    // Broker 根据时间查询队列的Offset
-</span><span class='line'>    public static final int SEARCH_OFFSET_BY_TIMESTAMP = 29;
-</span><span class='line'>    // Broker 查询队列最大Offset
-</span><span class='line'>    public static final int GET_MAX_OFFSET = 30;
-</span><span class='line'>    // Broker 查询队列最小Offset
-</span><span class='line'>    public static final int GET_MIN_OFFSET = 31;
-</span><span class='line'>    // Broker 查询队列最早消息对应时间
-</span><span class='line'>    public static final int GET_EARLIEST_MSG_STORETIME = 32;
-</span><span class='line'>    // Broker 根据消息ID来查询消息
-</span><span class='line'>    public static final int VIEW_MESSAGE_BY_ID = 33;
-</span><span class='line'>    // Broker Client向Client发送心跳，并注册自身
-</span><span class='line'>    public static final int HEART_BEAT = 34;
-</span><span class='line'>    // Broker Client注销
-</span><span class='line'>    public static final int UNREGISTER_CLIENT = 35;
-</span><span class='line'>    // Broker Consumer将处理不了的消息发回服务器
-</span><span class='line'>    public static final int CONSUMER_SEND_MSG_BACK = 36;
-</span><span class='line'>    // Broker Commit或者Rollback事务
-</span><span class='line'>    public static final int END_TRANSACTION = 37;
-</span><span class='line'>    // Broker 获取ConsumerId列表通过GroupName
-</span><span class='line'>    public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
-</span><span class='line'>    // Broker 主动向Producer回查事务状态
-</span><span class='line'>    public static final int CHECK_TRANSACTION_STATE = 39;
-</span><span class='line'>    // Broker Broker通知Consumer列表变化
-</span><span class='line'>    public static final int NOTIFY_CONSUMER_IDS_CHANGED = 40;
-</span><span class='line'>    // Broker Consumer向Master锁定队列
-</span><span class='line'>    public static final int LOCK_BATCH_MQ = 41;
-</span><span class='line'>    // Broker Consumer向Master解锁队列
-</span><span class='line'>    public static final int UNLOCK_BATCH_MQ = 42;
-</span><span class='line'>    // Broker 获取所有Consumer Offset
-</span><span class='line'>    public static final int GET_ALL_CONSUMER_OFFSET = 43;
-</span><span class='line'>    // Broker 获取所有定时进度
-</span><span class='line'>    public static final int GET_ALL_DELAY_OFFSET = 45;
-</span><span class='line'>    // Namesrv 向Namesrv追加KV配置
-</span><span class='line'>    public static final int PUT_KV_CONFIG = 100;
-</span><span class='line'>    // Namesrv 从Namesrv获取KV配置
-</span><span class='line'>    public static final int GET_KV_CONFIG = 101;
-</span><span class='line'>    // Namesrv 从Namesrv获取KV配置
-</span><span class='line'>    public static final int DELETE_KV_CONFIG = 102;
-</span><span class='line'>    // Namesrv 注册一个Broker，数据都是持久化的，如果存在则覆盖配置
-</span><span class='line'>    public static final int REGISTER_BROKER = 103;
-</span><span class='line'>    // Namesrv 卸载一个Broker，数据都是持久化的
-</span><span class='line'>    public static final int UNREGISTER_BROKER = 104;
-</span><span class='line'>    // Namesrv 根据Topic获取Broker Name、队列数(包含读队列与写队列)
-</span><span class='line'>    public static final int GET_ROUTEINTO_BY_TOPIC = 105;
-</span><span class='line'>    // Namesrv 获取注册到Name Server的所有Broker集群信息
-</span><span class='line'>    public static final int GET_BROKER_CLUSTER_INFO = 106;
-</span><span class='line'>    public static final int UPDATE_AND_CREATE_SUBSCRIPTIONGROUP = 200;
-</span><span class='line'>    public static final int GET_ALL_SUBSCRIPTIONGROUP_CONFIG = 201;
-</span><span class='line'>    public static final int GET_TOPIC_STATS_INFO = 202;
-</span><span class='line'>    public static final int GET_CONSUMER_CONNECTION_LIST = 203;
-</span><span class='line'>    public static final int GET_PRODUCER_CONNECTION_LIST = 204;
-</span><span class='line'>    public static final int WIPE_WRITE_PERM_OF_BROKER = 205;
-</span><span class='line'>
-</span><span class='line'>    // 从Name Server获取完整Topic列表
-</span><span class='line'>    public static final int GET_ALL_TOPIC_LIST_FROM_NAMESERVER = 206;
-</span><span class='line'>    // 从Broker删除订阅组
-</span><span class='line'>    public static final int DELETE_SUBSCRIPTIONGROUP = 207;
-</span><span class='line'>    // 从Broker获取消费状态（进度）
-</span><span class='line'>    public static final int GET_CONSUME_STATS = 208;
-</span><span class='line'>    // Suspend Consumer消费过程
-</span><span class='line'>    public static final int SUSPEND_CONSUMER = 209;
-</span><span class='line'>    // Resume Consumer消费过程
-</span><span class='line'>    public static final int RESUME_CONSUMER = 210;
-</span><span class='line'>    // 重置Consumer Offset
-</span><span class='line'>    public static final int RESET_CONSUMER_OFFSET_IN_CONSUMER = 211;
-</span><span class='line'>    // 重置Consumer Offset
-</span><span class='line'>    public static final int RESET_CONSUMER_OFFSET_IN_BROKER = 212;
-</span><span class='line'>    // 调整Consumer线程池数量
-</span><span class='line'>    public static final int ADJUST_CONSUMER_THREAD_POOL = 213;
-</span><span class='line'>    // 查询消息被哪些消费组消费
-</span><span class='line'>    public static final int WHO_CONSUME_THE_MESSAGE = 214;
-</span><span class='line'>
-</span><span class='line'>    // 从Broker删除Topic配置
-</span><span class='line'>    public static final int DELETE_TOPIC_IN_BROKER = 215;
-</span><span class='line'>    // 从Namesrv删除Topic配置
-</span><span class='line'>    public static final int DELETE_TOPIC_IN_NAMESRV = 216;
-</span><span class='line'>    // Namesrv 通过 project 获取所有的 server ip 信息
-</span><span class='line'>    public static final int GET_KV_CONFIG_BY_VALUE = 217;
-</span><span class='line'>    // Namesrv 删除指定 project group 下的所有 server ip 信息
-</span><span class='line'>    public static final int DELETE_KV_CONFIG_BY_VALUE = 218;
-</span><span class='line'>    // 通过NameSpace获取所有的KV List
-</span><span class='line'>    public static final int GET_KVLIST_BY_NAMESPACE = 219;
-</span><span class='line'>
-</span><span class='line'>    // offset 重置
-</span><span class='line'>    public static final int RESET_CONSUMER_CLIENT_OFFSET = 220;
-</span><span class='line'>    // 客户端订阅消息
-</span><span class='line'>    public static final int GET_CONSUMER_STATUS_FROM_CLIENT = 221;
-</span><span class='line'>    // 通知 broker 调用 offset 重置处理
-</span><span class='line'>    public static final int INVOKE_BROKER_TO_RESET_OFFSET = 222;
-</span><span class='line'>    // 通知 broker 调用客户端订阅消息处理
-</span><span class='line'>    public static final int INVOKE_BROKER_TO_GET_CONSUMER_STATUS = 223;
-</span><span class='line'>
-</span><span class='line'>    // Broker 查询topic被谁消费
-</span><span class='line'>    // 2014-03-21 Add By shijia
-</span><span class='line'>    public static final int QUERY_TOPIC_CONSUME_BY_WHO = 300;
-</span><span class='line'>
-</span><span class='line'>    // 获取指定集群下的所有 topic
-</span><span class='line'>    // 2014-03-26
-</span><span class='line'>    public static final int GET_TOPICS_BY_CLUSTER = 224;
-</span><span class='line'>
-</span><span class='line'>    // 向Broker注册Filter Server
-</span><span class='line'>    // 2014-04-06 Add By shijia
-</span><span class='line'>    public static final int REGISTER_FILTER_SERVER = 301;
-</span><span class='line'>    // 向Filter Server注册Class
-</span><span class='line'>    // 2014-04-06 Add By shijia
-</span><span class='line'>    public static final int REGISTER_MESSAGE_FILTER_CLASS = 302;
-</span><span class='line'>    // 根据 topic 和 group 获取消息的时间跨度
-</span><span class='line'>    public static final int QUERY_CONSUME_TIME_SPAN = 303;
-</span><span class='line'>    // 获取所有系统内置 Topic 列表
-</span><span class='line'>    public static final int GET_SYSTEM_TOPIC_LIST_FROM_NS = 304;
-</span><span class='line'>    public static final int GET_SYSTEM_TOPIC_LIST_FROM_BROKER = 305;
-</span><span class='line'>
-</span><span class='line'>    // 清理失效队列
-</span><span class='line'>    public static final int CLEAN_EXPIRED_CONSUMEQUEUE = 306;
-</span><span class='line'>
-</span><span class='line'>    // 通过Broker查询Consumer内存数据
-</span><span class='line'>    // 2014-07-19 Add By shijia
-</span><span class='line'>    public static final int GET_CONSUMER_RUNNING_INFO = 307;
-</span><span class='line'>
-</span><span class='line'>    // 查找被修正 offset (转发组件）
-</span><span class='line'>    public static final int QUERY_CORRECTION_OFFSET = 308;
-</span><span class='line'>
-</span><span class='line'>    // 通过Broker直接向某个Consumer发送一条消息，并立刻消费，返回结果给broker，再返回给调用方
-</span><span class='line'>    // 2014-08-11 Add By shijia
-</span><span class='line'>    public static final int CONSUME_MESSAGE_DIRECTLY = 309;
-</span><span class='line'>
-</span><span class='line'>    // Broker 发送消息，优化网络数据包
-</span><span class='line'>    public static final int SEND_MESSAGE_V2 = 310;
-</span><span class='line'>
-</span><span class='line'>    // 单元化相关 topic
-</span><span class='line'>    public static final int GET_UNIT_TOPIC_LIST = 311;
-</span><span class='line'>    // 获取含有单元化订阅组的 Topic 列表
-</span><span class='line'>    public static final int GET_HAS_UNIT_SUB_TOPIC_LIST = 312;
-</span><span class='line'>    // 获取含有单元化订阅组的非单元化 Topic 列表
-</span><span class='line'>    public static final int GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST = 313;
-</span><span class='line'>    // 克隆某一个组的消费进度到新的组
-</span><span class='line'>    public static final int CLONE_GROUP_OFFSET = 314;
-</span><span class='line'>
-</span><span class='line'>    // 查看Broker上的各种统计信息
-</span><span class='line'>    public static final int VIEW_BROKER_STATS_DATA = 315;
-</span></code></pre></td></tr></table></div></figure>
-
 ]]></content>
   </entry>
   
